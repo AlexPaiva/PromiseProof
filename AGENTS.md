@@ -53,15 +53,28 @@ actions.
 
 Build only:
 
-1. The propagation-failure defect.
-2. Evidence observably distinct from the initialization race.
-3. A real preference write, acknowledgement, and authoritative readback.
-4. A distinct whitelisted diagnostic replay for each seeded defect.
-5. An unchanged failing Playwright contract assertion for each OFF defect.
-6. A passing Playwright control assertion for ON in both fixtures.
-7. Five consecutive deterministic OFF and ON runs per fixture.
+1. A GPT-5.6 hypothesis manager for the two existing evidence signatures.
+2. A versioned model-input dossier built only from normalized evidence,
+   deterministic clause results, registered replay descriptions, and prior
+   replay reports.
+3. Structured model output containing ranked hypotheses, evidence references,
+   and exactly one requested replay ID.
+4. Runtime validation that rejects malformed output and every replay ID outside
+   the shared whitelist.
+5. A closed dispatcher that executes only the validated registered replay.
+6. A bounded investigation loop that records hypotheses, the selected replay,
+   the factual replay result, token usage, latency, and validation decisions.
+7. Deterministic provider tests plus a separately invoked live GPT-5.6 smoke
+   path; ordinary tests must not require credits or network access.
 
-Do not implement GPT-5.6 hypothesis management or Codex repair yet.
+The model-input boundary must exclude fixture selection, configuration and
+health responses, environment variables, source code, server logs, screenshots,
+videos, and Playwright traces. GPT-5.6 may investigate and select a replay, but
+it may not declare that the promise passed. Deterministic TypeScript retains
+verdict ownership.
+
+Do not implement Codex repair, disposable-worktree execution, or human approval
+in this milestone.
 
 ## Quality requirements
 

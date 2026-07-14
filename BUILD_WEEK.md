@@ -206,3 +206,81 @@ Future model input is explicitly allowlisted to normalized evidence, determinist
 ### Next smallest milestone
 
 Add GPT-5.6 hypothesis management for the two existing evidence signatures. The model may maintain ranked hypotheses and select exactly one registered replay; deterministic code must validate the selection, execute the replay, and retain verdict ownership. Keep Codex repair deferred until this investigation loop is deterministic.
+
+## Project audit and Milestone 03 handoff — 2026-07-14
+
+### Audited status
+
+Milestone 02 is complete and is the current deterministic foundation:
+
+- Both strict server-selected defects are implemented.
+- The same unchanged OFF contract fails with one distinct stable code per defect.
+- The shared ON control passes through a real activity HTTP boundary in both fixtures.
+- Green health, manual-demo, detector, control, and replay suites passed 10/10.
+- Five fresh OFF and five fresh ON contexts per fixture passed 20/20 structural checks.
+- Both production fixture scripts returned healthy API responses and bundled pages.
+- Six isolated local artifact directories retain both expected-red traces and all
+  determinism evidence sets.
+
+The retained artifacts are intentionally ignored generated output. A fresh clone
+can reproduce them with the documented commands, but they are not part of the Git
+history or a submission bundle yet.
+
+### Full architecture still outstanding
+
+The completed work covers Playwright journey execution and deterministic evidence
+collection/evaluation. The remaining canonical architecture is:
+
+1. GPT-5.6 ranked hypotheses and validated whitelisted replay selection.
+2. Codex preparation of a minimal source patch and regression test.
+3. Repair execution in a disposable Git worktree.
+4. A real human diff-approval or rejection gate.
+5. Launch of the approved worktree and an unchanged Playwright repair verdict.
+6. One retained end-to-end audit bundle for the complete loop.
+
+No OpenAI SDK or runtime API call exists yet. The current deterministic replay
+selector is a test oracle and temporary baseline, not the final model-driven
+investigation path.
+
+### Trust-boundary findings to preserve
+
+- Enforce the future model-input allowlist in code; documentation alone is not a
+  security boundary.
+- Never expose fixture mode, configuration, environment, source, logs, or media
+  to GPT-5.6 before replay selection.
+- Validate model output at runtime and reject arbitrary actions or replay IDs.
+- Keep the canonical evaluator and contract outside model and repair write scope.
+- The contextual endpoint currently receives an opaque test run header. It is
+  not a user ID or activity payload, but final hardening should either prove it
+  non-identifying or move correlation into the external observer.
+- The logical product, services, and recorder share one process; independent
+  Playwright network capture remains the current trust anchor.
+- Browser/API response evidence is TypeScript-cast in several places. Introduce
+  versioned runtime schemas before consuming it as model input.
+
+### Submission readiness
+
+The canonical publication target is
+`git@github.com:AlexPaiva/PromiseProof.git`. A hosted demo, license, CI, narrated
+video, and final judge command remain outstanding. Only Windows x64 and Chromium
+have been verified. The project description and reproducible setup exist in
+draft form, but submission packaging must wait until the canonical
+investigate-repair-approve-verify loop works.
+
+The core implementation was produced in this continuing Codex task. Preserve
+this task for the organizer-requested feedback/session identifier.
+
+### Milestone 03 acceptance boundary
+
+Build the GPT-5.6 investigation layer only:
+
+- Construct a versioned allowlisted investigation dossier.
+- Request structured ranked hypotheses and exactly one replay ID.
+- Reject malformed output and non-whitelisted actions deterministically.
+- Execute one registered replay and append its factual report.
+- Keep the loop bounded, auditable, and unable to declare a contract pass.
+- Provide deterministic offline provider tests and a separate live smoke command.
+- Record cost/token and latency metadata without recording the API key.
+
+Codex repair, worktree mutation, and human approval remain the following
+milestone so that model investigation can be stabilized independently.

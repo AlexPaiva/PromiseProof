@@ -4,7 +4,7 @@ PromiseProof is an OpenAI Build Week Developer Tools project that turns a produc
 
 The synthetic product, Signal Shelf, has two independently selectable defects. Both break the same OFF promise in different ways, produce different evidence, and require different diagnostic actions. Playwright captures the journey and network traffic; deterministic TypeScript alone evaluates the contract.
 
-GPT-5.6 diagnosis and Codex repair automation remain intentionally deferred. The current milestone proves that both root causes can be discriminated without giving a model the selected fixture or authority to declare success.
+GPT-5.6 diagnosis and Codex repair automation are not implemented at the current HEAD. The next scoped milestone adds only GPT-5.6 hypothesis management and validated replay selection; Codex repair remains deferred. The completed deterministic foundation proves that both root causes can be discriminated without giving a model the selected fixture or authority to declare success.
 
 ## Current evidence matrix
 
@@ -87,3 +87,9 @@ PP_PREFERENCE_NOT_PERSISTED
 These failures are product findings, not inverted tests. Green detector tests verify the exact single-violation signatures, while the uncompromised contract continues to expect zero violations.
 
 Each scenario writes normalized JSON evidence to its Playwright output directory. Failed contracts additionally preserve screenshots, video, traces, and error context. The full milestone record and limitations are in `BUILD_WEEK.md`; canonical scope and forbidden shortcuts are in `AGENTS.md`.
+
+## Current handoff
+
+Milestone 02 is complete: both seeded defects, both ON controls, the unchanged expected-red contract, two factual diagnostic replays, and five OFF plus five ON repetitions per fixture are implemented and recorded.
+
+The repository is not yet a complete Build Week submission. GPT-5.6 investigation, Codex repair in a disposable worktree, human diff approval, repaired-state Playwright verification, cross-platform CI, a judge-accessible repository, and demo packaging remain outstanding. `AGENTS.md` defines the next bounded implementation milestone; `BUILD_WEEK.md` records the audit and sequencing rationale.
