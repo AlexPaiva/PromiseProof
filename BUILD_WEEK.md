@@ -284,3 +284,51 @@ Build the GPT-5.6 investigation layer only:
 
 Codex repair, worktree mutation, and human approval remain the following
 milestone so that model investigation can be stabilized independently.
+
+## Milestone 02 deterministic-foundation checkpoint — 2026-07-14
+
+Before model integration, the complete published foundation was rerun from a
+clean worktree. `HEAD` was `752866d`, a documentation-only successor to the
+Milestone 02 implementation commit `e8d49f8`; every frozen implementation file
+matched `e8d49f8` exactly.
+
+### Fresh checkpoint results
+
+| Command | Fresh result |
+| --- | --- |
+| `npm.cmd run build` | PASS — strict typecheck plus client and server bundles |
+| `npm.cmd test` | PASS — 10/10 green cases across both fixtures |
+| `npm.cmd run test:determinism` | PASS — 20/20 fresh browser contexts |
+| `npm.cmd run verify:promise:race` | EXPECTED FAIL — exit 1, only `PP_IDENTIFIABLE_EVENT_LEAK` |
+| `npm.cmd run verify:promise:propagation` | EXPECTED FAIL — exit 1, only `PP_PREFERENCE_NOT_PERSISTED` |
+
+Both direct expected-red runs retained schema-version-2 normalized evidence,
+an attached evidence copy, screenshot, video, Playwright trace, error context,
+and a `.last-run.json` containing exactly one failed test.
+
+### Automated expected-red guard
+
+Added `npm run test:expected-red`, a green cross-platform wrapper around the two
+unchanged canonical verifiers. It deletes only each known ignored output
+directory before execution, runs the fixtures sequentially, and accepts a run
+only when all of these hold:
+
+- The child exits exactly `1` without a signal or spawn error.
+- Terminal output contains exactly the expected singleton `PP_` code.
+- Playwright reports status `failed` with exactly one failed test.
+- Exactly one primary and one byte-equal attached evidence JSON exist.
+- Evidence schema version, deterministic clause, verdict, and single violation
+  exactly match the fixture contract.
+- Normalized observations contain zero browser errors.
+- Evidence and error context contain no unrelated `PP_` code.
+- Nonempty screenshot, video, trace, and error-context artifacts exist.
+
+Four offline validator cases prove that the wrapper accepts the complete
+expected finding and rejects a crash-like exit code, an unrelated extra `PP_`
+code, and missing retained media. The real wrapper passed both fixtures and
+returned exit `0` while both nested canonical tests independently returned exit
+`1`.
+
+The Git tag `milestone-02-deterministic-foundation` identifies this protected
+checkpoint. Model integration must not modify the evaluator, contract assertion,
+seeded defects, or existing evidence-capture behavior.

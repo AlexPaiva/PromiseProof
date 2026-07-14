@@ -26,6 +26,8 @@
     "test:health": "playwright test tests/health tests/control",
     "test:detector": "playwright test tests/detector tests/diagnostics",
     "test:determinism": "playwright test --config=tests/determinism/playwright.config.ts && playwright test --config=tests/propagation/determinism.config.ts",
+    "test:expected-red:unit": "tsx --test scripts/test-expected-red.unit.ts",
+    "test:expected-red": "npm run test:expected-red:unit && tsx scripts/test-expected-red.ts",
     "verify:promise": "npm run verify:promise:race",
     "verify:promise:race": "playwright test --config=tests/contracts/playwright.config.ts",
     "verify:promise:propagation": "playwright test --config=tests/propagation/contract.config.ts"

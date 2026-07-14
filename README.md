@@ -86,6 +86,14 @@ PP_PREFERENCE_NOT_PERSISTED
 
 These failures are product findings, not inverted tests. Green detector tests verify the exact single-violation signatures, while the uncompromised contract continues to expect zero violations.
 
+For automation, run the green expected-red wrapper:
+
+```bash
+npm run test:expected-red
+```
+
+It removes stale contract output, runs both unchanged verifiers, and passes only when each exits exactly `1`, exposes only its expected `PP_` code, records the matching single normalized violation with zero browser errors, and retains fresh evidence JSON, screenshot, video, trace, and error context.
+
 Each scenario writes normalized JSON evidence to its Playwright output directory. Failed contracts additionally preserve screenshots, video, traces, and error context. The full milestone record and limitations are in `BUILD_WEEK.md`; canonical scope and forbidden shortcuts are in `AGENTS.md`.
 
 ## Current handoff
