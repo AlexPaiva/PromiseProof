@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="light" />
+    <meta name="referrer" content="no-referrer" />
+    <meta
+      name="description"
+      content="A deterministic synthetic recommendation app for PromiseProof."
+    />
+    <title>Signal Shelf · PromiseProof demo</title>
+  </head>
+  <body>
+    <div
+      id="app-root"
+      class="app-shell"
+      data-testid="app-root"
+      data-ready="false"
+      data-preference="on"
+      data-backend-preference="unknown"
+    >
+      <header class="topbar">
+        <a class="brand" href="#feed" aria-label="Signal Shelf home">
+          <span class="brand-mark" aria-hidden="true">
+            <span></span><span></span><span></span>
+          </span>
+          <span>
+            <strong>Signal Shelf</strong>
+            <small>synthetic recommendations</small>
+          </span>
+        </a>
+        <div class="environment-chip">
+          <span class="status-dot" aria-hidden="true"></span>
+          Deterministic demo
+        </div>
+      </header>
+
+      <main class="page-grid">
+        <section id="feed" class="feed-column" aria-labelledby="feed-title">
+          <div class="intro-row">
+            <div>
+              <p class="kicker">Today’s field notes</p>
+              <h1 id="feed-title">Ideas worth keeping close.</h1>
+              <p class="intro-copy">
+                A small, useful reading list that keeps working with or without
+                activity-based personalization.
+              </p>
+            </div>
+            <div
+              id="recommendation-source"
+              class="source-badge source-loading"
+              data-testid="recommendation-source"
+              data-source="loading"
+              aria-live="polite"
+            >
+              <span aria-hidden="true"></span>
+              Loading feed
+            </div>
+          </div>
+
+          <section class="preference-card" aria-labelledby="preference-title">
+            <div class="preference-copy">
+              <div class="icon-tile" aria-hidden="true">
+                <svg viewBox="0 0 24 24" role="img">
+                  <path d="M12 3a5 5 0 0 0-5 5v2.1a3 3 0 0 1-.88 2.12L5 13.34V16h14v-2.66l-1.12-1.12A3 3 0 0 1 17 10.1V8a5 5 0 0 0-5-5Zm-2 15a2 2 0 0 0 4 0" />
+                </svg>
+              </div>
+              <div>
+                <h2 id="preference-title">Activity-based personalization</h2>
+                <p id="preference-description">
+                  Use activity from this synthetic profile to shape the feed.
+                  Turn it off to use context-only recommendations.
+                </p>
+              </div>
+            </div>
+
+            <label class="switch-control">
+              <span
+                id="preference-state"
+                class="switch-state"
+                data-testid="preference-state"
+                data-state="on"
+              >ON</span>
+              <input
+                id="personalization-toggle"
+                data-testid="personalization-toggle"
+                type="checkbox"
+                role="switch"
+                aria-labelledby="preference-title"
+                aria-describedby="preference-description sync-status"
+                checked
+                disabled
+              />
+              <span class="switch-track" aria-hidden="true">
+                <span class="switch-thumb"></span>
+              </span>
+            </label>
+          </section>
+
+          <div
+            id="recommendation-items"
+            class="recommendation-grid"
+            data-testid="recommendation-items"
+            aria-busy="true"
+            aria-live="polite"
+          >
+            <div class="recommendation-skeleton" aria-hidden="true"></div>
+            <div class="recommendation-skeleton" aria-hidden="true"></div>
+            <div class="recommendation-skeleton" aria-hidden="true"></div>
+          </div>
+        </section>
+
+        <aside
+          id="evidence-panel"
+          class="evidence-panel"
+          data-testid="evidence-panel"
+          aria-labelledby="evidence-title"
+        >
+          <div class="evidence-heading">
+            <div>
+              <p class="kicker">PromiseProof trace</p>
+              <h2 id="evidence-title">What the system observed</h2>
+            </div>
+            <span class="run-label">Run <code id="run-id">demo-run</code></span>
+          </div>
+
+          <p class="promise-copy">
+            When personalization is off, activity should not reach the
+            recommendation service and the contextual feed should still work.
+          </p>
+
+          <dl class="evidence-metrics">
+            <div>
+              <dt>Browser preference</dt>
+              <dd
+                id="browser-preference"
+                data-testid="browser-preference"
+                data-state="on"
+              >ON</dd>
+            </div>
+            <div>
+              <dt>Backend preference</dt>
+              <dd
+                id="backend-preference"
+                data-testid="backend-preference"
+                data-state="loading"
+              >—</dd>
+            </div>
+            <div>
+              <dt>Activity receipts</dt>
+              <dd
+                id="activity-receipt-count"
+                data-testid="activity-receipt-count"
+                data-count="0"
+              >0</dd>
+            </div>
+            <div>
+              <dt>Recommendation mode</dt>
+              <dd
+                id="evidence-recommendation-source"
+                data-testid="evidence-recommendation-source"
+                data-source="loading"
+              >—</dd>
+            </div>
+          </dl>
+
+          <div class="timeline-heading">
+            <h3>Startup timeline</h3>
+            <span>client sequence</span>
+          </div>
+          <ol
+            id="startup-timeline"
+            class="timeline"
+            data-testid="startup-timeline"
+            aria-label="Client startup events"
+          ></ol>
+
+          <p
+            id="sync-status"
+            class="sync-status"
+            data-testid="sync-status"
+            role="status"
+            aria-live="polite"
+          >Starting deterministic run…</p>
+        </aside>
+      </main>
+
+      <footer>
+        <span>Signal Shelf is a fixed synthetic product surface.</span>
+        <span>PromiseProof milestone 01</span>
+      </footer>
+    </div>
+
+    <script type="module" src="/src/client/main.ts"></script>
+  </body>
+</html>

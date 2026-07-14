@@ -1,0 +1,36 @@
+{
+  "name": "promiseproof",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Deterministic product-promise verification for activity-based personalization.",
+  "engines": {
+    "node": ">=22.12.0",
+    "npm": ">=10"
+  },
+  "scripts": {
+    "dev": "cross-env NODE_ENV=development DEMO_MODE=initialization-race tsx watch src/server/main.ts",
+    "dev:test": "cross-env NODE_ENV=test DEMO_MODE=initialization-race tsx src/server/main.ts",
+    "build": "npm run typecheck && vite build && esbuild src/server/main.ts --bundle --platform=node --format=esm --packages=external --outfile=dist/server.mjs",
+    "start": "cross-env NODE_ENV=production DEMO_MODE=initialization-race node dist/server.mjs",
+    "typecheck": "tsc --noEmit",
+    "test": "npm run test:health && npm run test:detector",
+    "test:health": "playwright test tests/health tests/control",
+    "test:detector": "playwright test tests/detector",
+    "test:determinism": "playwright test tests/determinism",
+    "verify:promise": "playwright test --config=tests/contracts/playwright.config.ts"
+  },
+  "dependencies": {
+    "express": "^5.1.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.53.2",
+    "@types/express": "^5.0.3",
+    "@types/node": "^22.15.32",
+    "cross-env": "^7.0.3",
+    "esbuild": "^0.25.5",
+    "tsx": "^4.20.3",
+    "typescript": "^5.8.3",
+    "vite": "^7.0.0"
+  }
+}
