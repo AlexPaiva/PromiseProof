@@ -53,15 +53,15 @@ actions.
 
 Build only:
 
-1. The synthetic recommendation application.
-2. The personalization toggle.
-3. The initialization-race defect.
-4. A real identifiable activity request reaching the backend.
-5. A failing Playwright assertion for OFF.
-6. A passing Playwright control assertion for ON.
-7. Five consecutive deterministic runs.
+1. The propagation-failure defect.
+2. Evidence observably distinct from the initialization race.
+3. A real preference write, acknowledgement, and authoritative readback.
+4. A distinct whitelisted diagnostic replay for each seeded defect.
+5. An unchanged failing Playwright contract assertion for each OFF defect.
+6. A passing Playwright control assertion for ON in both fixtures.
+7. Five consecutive deterministic OFF and ON runs per fixture.
 
-Do not implement GPT-5.6 diagnosis or Codex repair yet.
+Do not implement GPT-5.6 hypothesis management or Codex repair yet.
 
 ## Quality requirements
 

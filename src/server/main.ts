@@ -14,10 +14,10 @@ function readPort(value = process.env.PORT): number {
   return parsed;
 }
 
-readDemoMode();
+const demoMode = readDemoMode();
 
 const port = readPort();
-const { application, dispose } = await createApplication();
+const { application, dispose } = await createApplication({ demoMode });
 const server = application.listen(port, "127.0.0.1", () => {
   console.log(`PromiseProof listening at http://127.0.0.1:${port}`);
 });

@@ -52,6 +52,24 @@ export class PromiseProofStore {
     return { ...stored, receipt };
   }
 
+  acknowledgePreferenceWithoutPersisting(
+    userId: string,
+    preference: PersonalizationPreference,
+    runId: string,
+  ): PreferenceUpdateResult {
+    const receivedAt = new Date().toISOString();
+    const receipt = this.#append(runId, (sequence): PreferenceReceipt => ({
+      sequence,
+      kind: "preference",
+      receiptId: `${runId}:${sequence}`,
+      receivedAt,
+      userId,
+      preference,
+    }));
+
+    return { preference, updatedAt: receivedAt, receipt };
+  }
+
   recordActivity(payload: ActivityPayload): ActivityReceipt {
     const receivedAt = new Date().toISOString();
 

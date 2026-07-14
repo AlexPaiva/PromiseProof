@@ -17,11 +17,15 @@ import type {
   PersonalizationPreference,
   PromiseEvaluation,
   PromiseEvidence,
+  PreferenceUpdatePayload,
+  PreferenceUpdateRequest,
+  PreferenceUpdateResponse,
   RecommendationSource,
   RunEvidenceLedger,
 } from '../../src/shared/types.js';
 
 const ACTIVITY_PATH = '/api/recommendations/activity';
+const PREFERENCE_PATH = /^\/api\/preferences\/[^/]+$/;
 
 interface BackendPreferenceState {
   userId: string;
@@ -37,6 +41,20 @@ interface CapturedActivityResponse {
 interface RenderedRecommendation {
   itemId: string | null;
   text: string;
+  title: string;
+  description: string;
+  visible: boolean;
+  titleVisible: boolean;
+  descriptionVisible: boolean;
+}
+
+export type NetworkObservationPhase = 'opt_out' | 'reload' | 'startup';
+
+export interface NetworkRequestObservation {
+  sequence: number;
+  phase: NetworkObservationPhase;
+  event: 'activity_post' | 'preference_read' | 'preference_write';
+  targetUserId?: string;
 }
 
 export interface ScenarioIds {
@@ -50,7 +68,10 @@ export interface ScenarioResult {
   ledger: RunEvidenceLedger;
   backendPreferenceState: BackendPreferenceState;
   networkActivityResponses: CapturedActivityResponse[];
+  networkPreferenceResponses: PreferenceUpdateResponse[];
+  networkRequestOrder: NetworkRequestObservation[];
   renderedRecommendations: RenderedRecommendation[];
+  displayedBackendPreference: PersonalizationPreference;
   browserErrors: string[];
 }
 
@@ -62,6 +83,32 @@ function isActivityRequest(request: Request): boolean {
 
 function isActivityResponse(response: Response): boolean {
   return isActivityRequest(response.request());
+}
+
+function isPreferenceRequest(request: Request): boolean {
+  return (
+    request.method() === 'PUT' &&
+    PREFERENCE_PATH.test(new URL(request.url()).pathname)
+  );
+}
+
+function isPreferenceRead(request: Request): boolean {
+  return (
+    request.method() === 'GET' &&
+    PREFERENCE_PATH.test(new URL(request.url()).pathname)
+  );
+}
+
+function preferenceTarget(request: Request): string {
+  const segment = new URL(request.url()).pathname.split('/').at(-1);
+  if (segment === undefined) {
+    throw new Error(`Preference request has no target: ${request.url()}`);
+  }
+  return decodeURIComponent(segment);
+}
+
+function isPreferenceResponse(response: Response): boolean {
+  return isPreferenceRequest(response.request());
 }
 
 function startActivityCapture(page: Page): {
@@ -101,6 +148,93 @@ function startActivityCapture(page: Page): {
       page.off('response', onResponse);
       await Promise.all(responseTasks);
     },
+  };
+}
+
+function startPreferenceCapture(page: Page): {
+  requests: PreferenceUpdateRequest[];
+  responses: PreferenceUpdateResponse[];
+  stop: () => Promise<void>;
+} {
+  const requests: PreferenceUpdateRequest[] = [];
+  const responses: PreferenceUpdateResponse[] = [];
+  const responseTasks: Promise<void>[] = [];
+
+  const onRequest = (request: Request): void => {
+    if (isPreferenceRequest(request)) {
+      requests.push({
+        targetUserId: preferenceTarget(request),
+        payload: request.postDataJSON() as PreferenceUpdatePayload,
+      });
+    }
+  };
+  const onResponse = (response: Response): void => {
+    if (!isPreferenceResponse(response)) {
+      return;
+    }
+
+    responseTasks.push(
+      response.json().then((body: PreferenceUpdateResponse) => {
+        responses.push(body);
+      }),
+    );
+  };
+
+  page.on('request', onRequest);
+  page.on('response', onResponse);
+
+  return {
+    requests,
+    responses,
+    stop: async () => {
+      page.off('request', onRequest);
+      page.off('response', onResponse);
+      await Promise.all(responseTasks);
+    },
+  };
+}
+
+function startNetworkOrderCapture(
+  page: Page,
+  initialPhase: NetworkObservationPhase,
+): {
+  observations: NetworkRequestObservation[];
+  setPhase: (phase: NetworkObservationPhase) => void;
+  stop: () => void;
+} {
+  const observations: NetworkRequestObservation[] = [];
+  let phase = initialPhase;
+
+  const onRequest = (request: Request): void => {
+    let event: NetworkRequestObservation['event'] | undefined;
+    if (isActivityRequest(request)) {
+      event = 'activity_post';
+    } else if (isPreferenceRequest(request)) {
+      event = 'preference_write';
+    } else if (isPreferenceRead(request)) {
+      event = 'preference_read';
+    }
+
+    if (event === undefined) {
+      return;
+    }
+
+    const targetsPreference = event !== 'activity_post';
+    observations.push({
+      sequence: observations.length + 1,
+      phase,
+      event,
+      ...(targetsPreference ? { targetUserId: preferenceTarget(request) } : {}),
+    });
+  };
+
+  page.on('request', onRequest);
+  return {
+    observations,
+    setPhase: (nextPhase) => {
+      phase = nextPhase;
+    },
+    stop: () => page.off('request', onRequest),
   };
 }
 
@@ -242,9 +376,16 @@ async function readRenderedRecommendations(
 
   for (let index = 0; index < count; index += 1) {
     const item = items.nth(index);
+    const title = item.getByTestId('recommendation-item-title');
+    const description = item.getByTestId('recommendation-item-description');
     rendered.push({
       itemId: await item.getAttribute('data-item-id'),
       text: (await item.innerText()).trim(),
+      title: (await title.innerText()).trim(),
+      description: (await description.innerText()).trim(),
+      visible: await item.isVisible(),
+      titleVisible: await title.isVisible(),
+      descriptionVisible: await description.isVisible(),
     });
   }
   return rendered;
@@ -257,6 +398,10 @@ async function collectResult(
   scenario: PersonalizationPreference,
   activityPayloads: ActivityPayload[],
   activityResponses: CapturedActivityResponse[],
+  preferenceUpdates: PreferenceUpdateRequest[],
+  preferenceResponses: PreferenceUpdateResponse[],
+  networkRequestOrder: NetworkRequestObservation[],
+  reloadObserved: boolean,
   browserErrors: string[],
 ): Promise<ScenarioResult> {
   const [ledger, backendPreferenceState, storagePreference, clientTimeline] =
@@ -274,12 +419,26 @@ async function collectResult(
   const sourceValue = await page
     .getByTestId('recommendation-source')
     .getAttribute('data-source');
+  const displayedBackendPreference = await page
+    .getByTestId('backend-preference')
+    .getAttribute('data-state');
+  const toggleChecked = await page
+    .getByTestId('personalization-toggle')
+    .isChecked();
 
   if (preferenceValue !== 'on' && preferenceValue !== 'off') {
     throw new Error(`UI exposed an invalid preference state: ${String(preferenceValue)}`);
   }
   if (sourceValue !== 'contextual' && sourceValue !== 'behavioral') {
     throw new Error(`UI exposed an invalid recommendation source: ${String(sourceValue)}`);
+  }
+  if (
+    displayedBackendPreference !== 'on' &&
+    displayedBackendPreference !== 'off'
+  ) {
+    throw new Error(
+      `UI exposed an invalid backend preference: ${String(displayedBackendPreference)}`,
+    );
   }
 
   const recommendationSource: RecommendationSource = sourceValue;
@@ -289,10 +448,20 @@ async function collectResult(
   const renderedIds = renderedRecommendations.flatMap((item) =>
     item.itemId === null ? [] : [item.itemId],
   );
-  const itemIds =
-    renderedIds.length === renderedRecommendations.length
-      ? renderedIds
-      : (matchingReceipt?.items.map((item) => item.id) ?? []);
+  if (renderedIds.length !== renderedRecommendations.length) {
+    throw new Error('A rendered recommendation is missing its independent item ID.');
+  }
+  const itemIds = renderedIds;
+  const feedFunctional =
+    renderedRecommendations.length > 0 &&
+    renderedRecommendations.every(
+      (item) =>
+        item.visible &&
+        item.titleVisible &&
+        item.descriptionVisible &&
+        item.title.length > 0 &&
+        item.description.length > 0,
+    );
 
   const evidence: PromiseEvidence = {
     scenario,
@@ -300,14 +469,20 @@ async function collectResult(
     userId: ids.userId,
     ui: {
       preference: preferenceValue,
-      feedFunctional: renderedRecommendations.length > 0,
+      toggleChecked,
+      feedFunctional,
     },
     storage: { preference: storagePreference },
-    request: { activityPayloads: [...activityPayloads] },
+    request: {
+      activityPayloads: [...activityPayloads],
+      preferenceUpdates: [...preferenceUpdates],
+    },
+    response: { preferenceUpdates: [...preferenceResponses] },
     backend: {
       preference: backendPreferenceState.preference,
       activityReceipts: ledger.activityReceipts,
       recommendationReceipts: ledger.recommendationReceipts,
+      preferenceReceipts: ledger.preferenceReceipts,
     },
     recommendation: {
       source: recommendationSource,
@@ -316,10 +491,14 @@ async function collectResult(
     timestamps: {
       clientTimeline,
       activityReceivedAt: ledger.activityReceipts.map((receipt) => receipt.receivedAt),
+      preferenceReceivedAt: ledger.preferenceReceipts.map(
+        (receipt) => receipt.receivedAt,
+      ),
       recommendationReceivedAt: ledger.recommendationReceipts.map(
         (receipt) => receipt.receivedAt,
       ),
     },
+    journey: { reloadObserved },
   };
 
   return {
@@ -328,7 +507,10 @@ async function collectResult(
     ledger,
     backendPreferenceState,
     networkActivityResponses: [...activityResponses],
+    networkPreferenceResponses: [...preferenceResponses],
+    networkRequestOrder: [...networkRequestOrder],
     renderedRecommendations,
+    displayedBackendPreference,
     browserErrors: [...browserErrors],
   };
 }
@@ -350,13 +532,15 @@ function normalizeJson(value: unknown): unknown {
 
 async function attachEvidence(testInfo: TestInfo, result: ScenarioResult): Promise<void> {
   const artifact = normalizeJson({
-    schemaVersion: 1,
+    schemaVersion: 2,
     evidence: result.evidence,
     evaluation: result.evaluation,
     observations: {
       backendPreferenceState: result.backendPreferenceState,
       browserErrors: result.browserErrors,
       networkActivityResponses: result.networkActivityResponses,
+      networkPreferenceResponses: result.networkPreferenceResponses,
+      networkRequestOrder: result.networkRequestOrder,
       renderedRecommendations: result.renderedRecommendations,
       runEvidenceLedger: result.ledger,
     },
@@ -381,6 +565,9 @@ export async function runPromiseScenario(
 ): Promise<ScenarioResult> {
   const browserObservation = observeBrowserErrors(page);
   let activityCapture: ReturnType<typeof startActivityCapture> | undefined;
+  let preferenceCapture: ReturnType<typeof startPreferenceCapture> | undefined;
+  let networkOrderCapture: ReturnType<typeof startNetworkOrderCapture> | undefined;
+  let reloadObserved = false;
 
   try {
     // Every case starts from the same backend state, even when the same stable IDs
@@ -394,13 +581,15 @@ export async function runPromiseScenario(
       await waitUntilReady(page);
       await expect(page.getByTestId('personalization-toggle')).toBeChecked();
 
+      // The OFF observation window begins immediately before the user's click.
+      // Initial ON traffic is discarded, but no post-click traffic can be hidden.
+      await clearEvidence(request, ids.runId);
+      activityCapture = startActivityCapture(page);
+      preferenceCapture = startPreferenceCapture(page);
+      networkOrderCapture = startNetworkOrderCapture(page, 'opt_out');
       await page.getByTestId('personalization-toggle').click();
       await expect(page.getByTestId('personalization-toggle')).not.toBeChecked();
       await expect(page.getByTestId('preference-state')).toHaveAttribute(
-        'data-state',
-        'off',
-      );
-      await expect(page.getByTestId('backend-preference')).toHaveAttribute(
         'data-state',
         'off',
       );
@@ -411,25 +600,24 @@ export async function runPromiseScenario(
       await expect
         .poll(async () => readStoredPreference(page, ids.userId))
         .toBe('off');
-      await expect
-        .poll(async () => (await readPreference(request, ids.userId)).preference)
-        .toBe('off');
-
-      // Discard legitimate ON activity from before the user opted out. The next
-      // full reload is the isolated contract observation window.
-      await clearEvidence(request, ids.runId);
-      activityCapture = startActivityCapture(page);
+      await expect(page.getByTestId('personalization-toggle')).toBeEnabled();
+      networkOrderCapture.setPhase('reload');
       const reload = await page.reload();
       expect(reload?.ok()).toBe(true);
+      reloadObserved = true;
       await waitUntilReady(page);
     } else {
       activityCapture = startActivityCapture(page);
+      preferenceCapture = startPreferenceCapture(page);
+      networkOrderCapture = startNetworkOrderCapture(page, 'startup');
       const navigation = await page.goto(scenarioUrl(ids));
       expect(navigation?.ok()).toBe(true);
       await waitUntilReady(page);
     }
 
     await activityCapture.stop();
+    await preferenceCapture.stop();
+    networkOrderCapture.stop();
     const result = await collectResult(
       page,
       request,
@@ -437,6 +625,10 @@ export async function runPromiseScenario(
       scenario,
       activityCapture.payloads,
       activityCapture.responses,
+      preferenceCapture.requests,
+      preferenceCapture.responses,
+      networkOrderCapture.observations,
+      reloadObserved,
       browserObservation.errors,
     );
     await attachEvidence(testInfo, result);
@@ -445,6 +637,10 @@ export async function runPromiseScenario(
     if (activityCapture !== undefined) {
       await activityCapture.stop();
     }
+    if (preferenceCapture !== undefined) {
+      await preferenceCapture.stop();
+    }
+    networkOrderCapture?.stop();
     browserObservation.stop();
   }
 }

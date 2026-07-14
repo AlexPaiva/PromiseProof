@@ -1,5 +1,7 @@
 export type PersonalizationPreference = "on" | "off";
 
+export type DemoMode = "initialization-race" | "propagation-failure";
+
 export type PromiseScenario = PersonalizationPreference;
 
 export type RecommendationSource = "contextual" | "behavioral";
@@ -48,6 +50,23 @@ export interface PreferenceReceipt {
   preference: PersonalizationPreference;
 }
 
+export interface PreferenceUpdatePayload {
+  runId: string;
+  preference: PersonalizationPreference;
+}
+
+export interface PreferenceUpdateRequest {
+  targetUserId: string;
+  payload: PreferenceUpdatePayload;
+}
+
+export interface PreferenceUpdateResponse {
+  userId: string;
+  preference: PersonalizationPreference;
+  updatedAt: string;
+  receipt: PreferenceReceipt;
+}
+
 export interface RunEvidenceLedger {
   runId: string;
   activityReceipts: ActivityReceipt[];
@@ -68,6 +87,7 @@ export interface PromiseEvidence {
   userId: string;
   ui: {
     preference: PersonalizationPreference;
+    toggleChecked: boolean;
     feedFunctional: boolean;
   };
   storage: {
@@ -75,11 +95,16 @@ export interface PromiseEvidence {
   };
   request: {
     activityPayloads: ActivityPayload[];
+    preferenceUpdates: PreferenceUpdateRequest[];
+  };
+  response: {
+    preferenceUpdates: PreferenceUpdateResponse[];
   };
   backend: {
     preference: PersonalizationPreference;
     activityReceipts: ActivityReceipt[];
     recommendationReceipts: RecommendationReceipt[];
+    preferenceReceipts: PreferenceReceipt[];
   };
   recommendation: {
     source: RecommendationSource;
@@ -88,7 +113,11 @@ export interface PromiseEvidence {
   timestamps: {
     clientTimeline: ClientTimelineEntry[];
     activityReceivedAt: string[];
+    preferenceReceivedAt: string[];
     recommendationReceivedAt: string[];
+  };
+  journey: {
+    reloadObserved: boolean;
   };
 }
 

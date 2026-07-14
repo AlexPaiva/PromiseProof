@@ -527,9 +527,14 @@ h1 {
 }
 
 .evidence-metrics dd[data-state="on"],
+.evidence-metrics dd[data-state="match"],
 .evidence-metrics dd[data-source="contextual"],
 .evidence-metrics dd[data-source="behavioral"] {
   color: #93d7b6;
+}
+
+.evidence-metrics dd[data-state="mismatch"] {
+  color: #ff9b79;
 }
 
 .timeline-heading {

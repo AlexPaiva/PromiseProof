@@ -9,16 +9,26 @@
     "npm": ">=10"
   },
   "scripts": {
-    "dev": "cross-env NODE_ENV=development DEMO_MODE=initialization-race tsx watch src/server/main.ts",
-    "dev:test": "cross-env NODE_ENV=test DEMO_MODE=initialization-race tsx src/server/main.ts",
+    "dev": "npm run dev:race",
+    "dev:race": "cross-env NODE_ENV=development DEMO_MODE=initialization-race tsx watch src/server/main.ts",
+    "dev:propagation": "cross-env NODE_ENV=development DEMO_MODE=propagation-failure tsx watch src/server/main.ts",
+    "dev:test": "npm run dev:test:race",
+    "dev:test:race": "cross-env NODE_ENV=test DEMO_MODE=initialization-race tsx src/server/main.ts",
+    "dev:test:propagation": "cross-env NODE_ENV=test DEMO_MODE=propagation-failure tsx src/server/main.ts",
     "build": "npm run typecheck && vite build && esbuild src/server/main.ts --bundle --platform=node --format=esm --packages=external --outfile=dist/server.mjs",
-    "start": "cross-env NODE_ENV=production DEMO_MODE=initialization-race node dist/server.mjs",
+    "start": "npm run start:race",
+    "start:race": "cross-env NODE_ENV=production DEMO_MODE=initialization-race node dist/server.mjs",
+    "start:propagation": "cross-env NODE_ENV=production DEMO_MODE=propagation-failure node dist/server.mjs",
     "typecheck": "tsc --noEmit",
-    "test": "npm run test:health && npm run test:detector",
+    "test": "npm run test:race && npm run test:propagation",
+    "test:race": "playwright test tests/health tests/control tests/detector tests/diagnostics",
+    "test:propagation": "playwright test --config=tests/propagation/playwright.config.ts",
     "test:health": "playwright test tests/health tests/control",
-    "test:detector": "playwright test tests/detector",
-    "test:determinism": "playwright test tests/determinism",
-    "verify:promise": "playwright test --config=tests/contracts/playwright.config.ts"
+    "test:detector": "playwright test tests/detector tests/diagnostics",
+    "test:determinism": "playwright test --config=tests/determinism/playwright.config.ts && playwright test --config=tests/propagation/determinism.config.ts",
+    "verify:promise": "npm run verify:promise:race",
+    "verify:promise:race": "playwright test --config=tests/contracts/playwright.config.ts",
+    "verify:promise:propagation": "playwright test --config=tests/propagation/contract.config.ts"
   },
   "dependencies": {
     "express": "^5.1.0"

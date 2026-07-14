@@ -2,91 +2,88 @@
 
 PromiseProof is an OpenAI Build Week Developer Tools project that turns a product personalization promise into reproducible browser evidence.
 
-The current milestone contains a deliberately broken synthetic recommendation product. When activity-based personalization is OFF, the saved preference and contextual feed work, but an initialization race sends one identifiable `page_view` to the recommendation service before preference hydration. Playwright captures the request, the backend records a matching receipt, and deterministic TypeScript returns `PP_IDENTIFIABLE_EVENT_LEAK`.
+The synthetic product, Signal Shelf, has two independently selectable defects. Both break the same OFF promise in different ways, produce different evidence, and require different diagnostic actions. Playwright captures the journey and network traffic; deterministic TypeScript alone evaluates the contract.
 
-GPT-5.6 diagnosis and Codex repair automation are intentionally not implemented yet. The milestone first establishes an evidence loop that those systems cannot override.
+GPT-5.6 diagnosis and Codex repair automation remain intentionally deferred. The current milestone proves that both root causes can be discriminated without giving a model the selected fixture or authority to declare success.
 
-## What is implemented
+## Current evidence matrix
 
-- A polished synthetic recommendation application named Signal Shelf.
-- An accessible activity-personalization ON/OFF switch.
-- Browser and backend preference persistence across reloads.
-- Real HTTP preference, activity, recommendation, and evidence endpoints.
-- Contextual recommendations when OFF and behavioral recommendations when ON.
-- A deterministic seeded initialization race with no timing sleeps.
-- Normalized evidence covering UI state, browser storage, captured request payloads, backend receipts, recommendation source/items, and client/server timestamps.
-- A green health/control suite, a green detector meta-test, a genuine red promise verifier, and five fresh-context repetitions of both OFF and ON.
+| Seeded fixture | OFF evidence after reload | Only violation | Selected replay |
+| --- | --- | --- | --- |
+| Initialization race | UI/storage/backend OFF; contextual feed; one captured identifiable request and matching service receipt | `PP_IDENTIFIABLE_EVENT_LEAK` | `inspect_startup_order` |
+| Propagation failure | UI/storage OFF; backend ON; contextual feed; zero activity | `PP_PREFERENCE_NOT_PERSISTED` | `inspect_preference_roundtrip` |
+
+ON remains a control in both fixtures: one correlated identifiable activity request reaches the recommendation service and the behavioral feed remains functional.
+
+The propagation seed is deliberately stronger than a missing click handler. A real OFF `PUT` crosses HTTP and receives an ordinary OFF acknowledgement and receipt, but an independent `GET` still returns ON. A test that checks only the write response would pass; the replayed write/read round trip catches the broken promise.
 
 ## Architecture
 
-PromiseProof uses one small TypeScript workspace:
+PromiseProof is one small TypeScript workspace:
 
-- `src/client` — vanilla TypeScript UI and seeded startup ordering defect.
-- `src/server` — Express application, deterministic recommendation endpoints, and in-memory evidence ledger.
-- `src/shared` — evidence schema and deterministic contract evaluator.
-- `tests` — Playwright journeys, evidence capture, detector, contract, and determinism suites.
+- `src/client` — vanilla TypeScript UI, startup ordering, and visible evidence panel.
+- `src/server` — Express API, fixed recommendation data, in-memory state, and isolated fixture injection.
+- `src/shared` — evidence schema, canonical evaluator, and whitelisted replay selection.
+- `tests` — Playwright journeys, independent network capture, contract tests, diagnostic replays, and determinism signatures.
 
-The browser and recommendation service communicate over actual HTTP. Contextual recommendation requests contain no user ID and use a no-referrer policy. Test verdicts come only from `src/shared/evaluator.ts`; the UI and any future model cannot declare a pass.
+The browser and service communicate over real HTTP. Contextual requests contain no user ID and suppress the referrer. Feed assertions require rendered DOM item IDs to match backend recommendation receipts; missing DOM evidence cannot be replaced with server data.
 
-## Requirements
+Fixture selection is an out-of-band server setting. It is not accepted through the page URL, is absent from `PromiseEvidence`, and is not an input to the replay selector. Neutral run IDs prevent the evidence itself from revealing a seeded cause.
+
+The future model-input allowlist is narrower than the retained human audit trail: normalized evidence, deterministic clause results, registered replay descriptions, and replay reports only. Health/configuration responses, environment variables, server logs, screenshots, videos, and Playwright traces are excluded because they can reveal the fixture.
+
+## Requirements and setup
 
 - Node.js 22
-- npm
+- npm 10 or newer
 - Playwright Chromium
-
-Verified platform: Windows x64. The code is designed to be portable, but macOS and Linux have not yet been verified.
-
-## Setup
 
 ```bash
 npm install
 npx playwright install chromium
 ```
 
-On Windows systems that block PowerShell's `npm.ps1`, use `npm.cmd` and `npx.cmd` instead.
+On Windows systems that block PowerShell's `npm.ps1`, use `npm.cmd` and `npx.cmd`.
 
-## Development and production
+## Development
+
+Run either deterministic fixture:
 
 ```bash
-npm run dev
-npm run build
-npm start
+npm run dev:race
+npm run dev:propagation
 ```
 
-The application runs at `http://127.0.0.1:4173`.
+Both serve Signal Shelf at `http://127.0.0.1:4173`. Production equivalents are `npm run start:race` and `npm run start:propagation` after `npm run build`.
 
 ## Verification
 
-Run the normal green suite:
+Run every green health, control, detector, and replay assertion:
 
 ```bash
 npm test
 ```
 
-Run the real OFF contract verifier:
-
-```bash
-npm run verify:promise
-```
-
-While the initialization race is seeded, this command must exit non-zero and report:
-
-```text
-PP_IDENTIFIABLE_EVENT_LEAK
-```
-
-That failure is the product finding, not a broken test harness. The green detector meta-test proves the verifier finds the seeded defect without weakening the contract.
-
-Run five fresh-browser-context repetitions for each state:
+Run five fresh OFF and five fresh ON browser contexts under each fixture—20 cases total:
 
 ```bash
 npm run test:determinism
 ```
 
-Each scenario stores a normalized JSON attachment in its Playwright output directory. Failed contract runs additionally preserve a screenshot, video, and trace.
+Run the unchanged canonical OFF assertion against each fixture:
 
-## Build Week collaboration
+```bash
+npm run verify:promise:race
+npm run verify:promise:propagation
+```
 
-The human entrant defined the canonical promise, safety boundaries, and expected-red testing structure. Codex implemented the current core milestone in the primary project task, selected the single-workspace architecture, built the application and evidence evaluator, created the Playwright harness, ran the verification matrix, and tightened the implementation after an independent integration review found lifecycle and evidence-correlation gaps.
+Both commands intentionally exit non-zero while their defect is seeded. The expected stable codes are respectively:
 
-Decisions and exact milestone results are recorded in `BUILD_WEEK.md`. The canonical scope and forbidden shortcuts remain in `AGENTS.md`.
+```text
+PP_IDENTIFIABLE_EVENT_LEAK
+PP_PREFERENCE_NOT_PERSISTED
+```
+
+These failures are product findings, not inverted tests. Green detector tests verify the exact single-violation signatures, while the uncompromised contract continues to expect zero violations.
+
+Each scenario writes normalized JSON evidence to its Playwright output directory. Failed contracts additionally preserve screenshots, video, traces, and error context. The full milestone record and limitations are in `BUILD_WEEK.md`; canonical scope and forbidden shortcuts are in `AGENTS.md`.

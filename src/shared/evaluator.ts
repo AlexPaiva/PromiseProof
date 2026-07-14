@@ -106,15 +106,17 @@ export function evaluatePromise(evidence: PromiseEvidence): PromiseEvaluation {
     }
 
     const preferencePersisted =
+      evidence.journey.reloadObserved &&
       evidence.ui.preference === "off" &&
+      !evidence.ui.toggleChecked &&
       evidence.storage.preference === "off" &&
       evidence.backend.preference === "off";
     clauses.push(
       clause(
         "preference_survives_reload",
         preferencePersisted,
-        "OFF in the UI, browser storage, and backend after reload",
-        `ui=${evidence.ui.preference}, storage=${String(evidence.storage.preference)}, backend=${evidence.backend.preference}`,
+        "a witnessed reload followed by OFF in the UI, browser storage, and backend",
+        `reload=${String(evidence.journey.reloadObserved)}, ui=${evidence.ui.preference}, toggleChecked=${String(evidence.ui.toggleChecked)}, storage=${String(evidence.storage.preference)}, backend=${evidence.backend.preference}`,
       ),
     );
     if (!preferencePersisted) {

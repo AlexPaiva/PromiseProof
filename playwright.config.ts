@@ -1,3 +1,5 @@
+import { fileURLToPath } from 'node:url';
+
 import { defineConfig } from '@playwright/test';
 
 export const promiseProofBaseUrl =
@@ -5,12 +7,15 @@ export const promiseProofBaseUrl =
 
 export default defineConfig({
   testDir: './tests',
-  testIgnore: ['**/contracts/**'],
+  testIgnore: ['**/contracts/**', '**/propagation/**'],
   fullyParallel: false,
   workers: 1,
   retries: 0,
   forbidOnly: Boolean(process.env.CI),
   reporter: [['list']],
+  outputDir: fileURLToPath(
+    new URL('./test-results/race-green', import.meta.url),
+  ),
   expect: {
     timeout: 5_000,
   },
@@ -21,7 +26,7 @@ export default defineConfig({
     video: 'retain-on-failure',
   },
   webServer: {
-    command: 'npm run dev:test',
+    command: 'npm run dev:test:race',
     url: `${promiseProofBaseUrl}/api/health`,
     reuseExistingServer: false,
     timeout: 120_000,

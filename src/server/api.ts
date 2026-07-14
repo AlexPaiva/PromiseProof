@@ -1,10 +1,11 @@
 import { Router, type RequestHandler } from "express";
 
 import type {
+  DemoMode,
   RecommendationItem,
   RecommendationSource,
 } from "../shared/types.js";
-import { DEMO_MODE } from "./domain.js";
+import { PreferenceService } from "./preference-service.js";
 import { PromiseProofStore } from "./store.js";
 import {
   parseActivityPayload,
@@ -75,11 +76,19 @@ function route(handler: RequestHandler): RequestHandler {
   };
 }
 
-export function createApiRouter(store: PromiseProofStore): Router {
+export function createApiRouter(
+  store: PromiseProofStore,
+  demoMode: DemoMode,
+): Router {
   const router = Router();
+  const preferences = new PreferenceService(store, demoMode);
 
   router.get("/health", (_request, response) => {
-    response.json({ ok: true, demoMode: DEMO_MODE });
+    response.json({ ok: true, demoMode });
+  });
+
+  router.get("/configuration", (_request, response) => {
+    response.json({ demoMode });
   });
 
   router.get(
@@ -96,7 +105,7 @@ export function createApiRouter(store: PromiseProofStore): Router {
     route((request, response) => {
       const userId = parseUserId(request.params.userId);
       const { preference, runId } = parsePreferenceUpdate(request.body);
-      const stored = store.updatePreference(userId, preference, runId);
+      const stored = preferences.update(userId, preference, runId);
       response.json({ userId, ...stored });
     }),
   );

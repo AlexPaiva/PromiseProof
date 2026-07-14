@@ -4,6 +4,7 @@ import type {
   ActivityPayload,
   ActivityReceipt,
   ClientTimelineEntry,
+  DemoMode,
   PersonalizationPreference,
   RecommendationItem,
   RecommendationReceipt,
@@ -22,6 +23,10 @@ interface PreferenceResponse {
   userId: string;
   preference: PersonalizationPreference;
   updatedAt?: string;
+}
+
+interface ConfigurationResponse {
+  demoMode: DemoMode;
 }
 
 interface ActivityResponse {
@@ -45,8 +50,8 @@ const runId = safeIdentifier(query.get("runId"), DEFAULT_RUN_ID);
 const userId = safeIdentifier(query.get("userId"), DEFAULT_USER_ID);
 const storageKey = `promiseproof:personalization:${userId}`;
 
-// This unsafe default is deliberate: milestone 01 demonstrates an initialization
-// race in which collection happens before the saved preference is hydrated.
+// The race fixture deliberately uses this unsafe default before hydration. The
+// propagation fixture hydrates first, isolating its separate write-boundary fault.
 let inMemoryPreference: PersonalizationPreference = "on";
 let backendPreference: PersonalizationPreference | null = null;
 let recommendationSource: RecommendationSource | null = null;
@@ -58,10 +63,13 @@ const appRoot = required<HTMLElement>("#app-root");
 const toggle = required<HTMLInputElement>("#personalization-toggle");
 const preferenceState = required<HTMLElement>("#preference-state");
 const browserPreference = required<HTMLElement>("#browser-preference");
+const storedPreferenceElement = required<HTMLElement>("#stored-preference");
 const backendPreferenceElement = required<HTMLElement>("#backend-preference");
+const preferenceAgreement = required<HTMLElement>("#preference-agreement");
 const sourceBadge = required<HTMLElement>("#recommendation-source");
 const evidenceSource = required<HTMLElement>("#evidence-recommendation-source");
 const itemsContainer = required<HTMLElement>("#recommendation-items");
+const receiptLabel = required<HTMLElement>("#activity-receipt-label");
 const receiptCount = required<HTMLElement>("#activity-receipt-count");
 const timeline = required<HTMLOListElement>("#startup-timeline");
 const syncStatus = required<HTMLElement>("#sync-status");
@@ -78,19 +86,31 @@ void startApplication();
 
 async function startApplication(): Promise<void> {
   try {
-    setStatus("Collector starting with the in-memory default…", "working");
+    const { demoMode } = await fetchJson<ConfigurationResponse>(
+      "/api/configuration",
+      { referrerPolicy: "no-referrer" },
+    );
 
-    // The await is part of the seeded defect. Preference hydration must not start
-    // until the recommendation service has returned a real activity receipt.
-    await runStartupCollector();
-    await hydratePreference();
+    if (demoMode === "initialization-race") {
+      setStatus("Collector starting with the in-memory default…", "working");
+
+      // The await is the seeded race: hydration cannot begin until a real
+      // recommendation-service activity receipt has already returned.
+      await runStartupCollector();
+      await hydratePreference();
+    } else {
+      setStatus("Restoring the saved preference before collection…", "working");
+      await hydratePreference();
+      await runStartupCollector();
+    }
+
     await loadRecommendations();
     await refreshEvidence();
 
     appRoot.dataset.ready = "true";
     window.__PP_APP_READY__ = true;
     toggle.disabled = false;
-    setStatus("Preference synced. Evidence is current.", "synced");
+    renderPreferenceStatus();
   } catch (error) {
     appRoot.dataset.ready = "error";
     window.__PP_APP_READY__ = false;
@@ -105,6 +125,7 @@ async function runStartupCollector(): Promise<void> {
   });
 
   if (inMemoryPreference !== "on") {
+    recordTimeline("collector_suppressed", { inMemoryPreference });
     return;
   }
 
@@ -145,24 +166,38 @@ async function hydratePreference(): Promise<void> {
     { referrerPolicy: "no-referrer" },
   );
   let hydratedPreference = response.preference;
+  let authoritativePreference = response.preference;
   const storedPreference = readStoredPreference();
 
   // The browser value represents the user's last explicit choice. If a fresh
   // backend has no matching state, restore that choice before rendering a feed.
   if (storedPreference !== null && storedPreference !== response.preference) {
+    recordTimeline("preference_sync_dispatched", {
+      preference: storedPreference,
+    });
     const restored = await persistBackendPreference(storedPreference);
     hydratedPreference = restored.preference;
+    recordTimeline("preference_sync_acknowledged", {
+      preference: restored.preference,
+    });
+
+    const readback = await fetchBackendPreference();
+    authoritativePreference = readback.preference;
+    recordTimeline("backend_preference_observed", {
+      preference: readback.preference,
+    });
   } else {
     writeStoredPreference(hydratedPreference);
   }
 
   inMemoryPreference = hydratedPreference;
-  backendPreference = hydratedPreference;
+  backendPreference = authoritativePreference;
   renderPreference();
   renderBackendPreference();
 
   recordTimeline("preference_hydration_completed", {
     preference: hydratedPreference,
+    backendPreference: authoritativePreference,
     restoredFromBrowser:
       storedPreference !== null && storedPreference !== response.preference,
   });
@@ -188,10 +223,7 @@ async function updatePreference(
     renderBackendPreference();
     await loadRecommendations();
     await refreshEvidence();
-    setStatus(
-      `Personalization ${response.preference.toUpperCase()} and synced.`,
-      "synced",
-    );
+    renderPreferenceStatus();
   } catch (error) {
     inMemoryPreference = previousPreference;
     renderPreference();
@@ -212,6 +244,13 @@ async function persistBackendPreference(
       body: JSON.stringify({ preference, runId }),
       referrerPolicy: "no-referrer",
     },
+  );
+}
+
+async function fetchBackendPreference(): Promise<PreferenceResponse> {
+  return fetchJson<PreferenceResponse>(
+    `/api/preferences/${encodeURIComponent(userId)}`,
+    { referrerPolicy: "no-referrer" },
   );
 }
 
@@ -242,20 +281,32 @@ async function loadRecommendations(): Promise<void> {
 }
 
 async function refreshEvidence(): Promise<void> {
-  const ledger = await fetchJson<RunEvidenceLedger>(
-    `/api/evidence/${encodeURIComponent(runId)}`,
-    { referrerPolicy: "no-referrer" },
-  );
-  const activityTotal = ledger.activityReceipts.length;
+  const [ledger, authoritativePreference] = await Promise.all([
+    fetchJson<RunEvidenceLedger>(`/api/evidence/${encodeURIComponent(runId)}`, {
+      referrerPolicy: "no-referrer",
+    }),
+    fetchBackendPreference(),
+  ]);
+  const offBoundary =
+    inMemoryPreference === "off" && readStoredPreference() === "off"
+      ? [...ledger.preferenceReceipts]
+          .reverse()
+          .find((receipt) => receipt.preference === "off")?.sequence
+      : undefined;
+  const activityTotal =
+    offBoundary === undefined
+      ? ledger.activityReceipts.length
+      : ledger.activityReceipts.filter(
+          (receipt) => receipt.sequence > offBoundary,
+        ).length;
 
+  receiptLabel.textContent =
+    offBoundary === undefined ? "Activity receipts" : "Activity after OFF";
   receiptCount.textContent = String(activityTotal);
   receiptCount.dataset.count = String(activityTotal);
 
-  const latestPreference = ledger.preferenceReceipts.at(-1)?.preference;
-  if (latestPreference !== undefined) {
-    backendPreference = latestPreference;
-    renderBackendPreference();
-  }
+  backendPreference = authoritativePreference.preference;
+  renderBackendPreference();
 }
 
 function renderPreference(): void {
@@ -268,6 +319,20 @@ function renderPreference(): void {
   browserPreference.textContent = state.toUpperCase();
   browserPreference.dataset.state = state;
   appRoot.dataset.preference = state;
+  renderStoredPreference();
+  renderPreferenceAgreement();
+}
+
+function renderStoredPreference(): void {
+  const storedPreference = readStoredPreference();
+  if (storedPreference === null) {
+    storedPreferenceElement.textContent = "—";
+    storedPreferenceElement.dataset.state = "missing";
+    return;
+  }
+
+  storedPreferenceElement.textContent = storedPreference.toUpperCase();
+  storedPreferenceElement.dataset.state = storedPreference;
 }
 
 function renderBackendPreference(): void {
@@ -275,12 +340,47 @@ function renderBackendPreference(): void {
     backendPreferenceElement.textContent = "—";
     backendPreferenceElement.dataset.state = "loading";
     appRoot.dataset.backendPreference = "unknown";
+    renderPreferenceAgreement();
     return;
   }
 
   backendPreferenceElement.textContent = backendPreference.toUpperCase();
   backendPreferenceElement.dataset.state = backendPreference;
   appRoot.dataset.backendPreference = backendPreference;
+  renderPreferenceAgreement();
+}
+
+function renderPreferenceAgreement(): void {
+  const storedPreference = readStoredPreference();
+  if (storedPreference === null || backendPreference === null) {
+    preferenceAgreement.textContent = "CHECKING";
+    preferenceAgreement.dataset.state = "loading";
+    return;
+  }
+
+  const matches =
+    storedPreference === inMemoryPreference &&
+    backendPreference === inMemoryPreference;
+  preferenceAgreement.textContent = matches ? "MATCH" : "MISMATCH";
+  preferenceAgreement.dataset.state = matches ? "match" : "mismatch";
+}
+
+function renderPreferenceStatus(): void {
+  const storedPreference = readStoredPreference();
+  if (
+    storedPreference !== null &&
+    backendPreference !== null &&
+    storedPreference === inMemoryPreference &&
+    backendPreference === inMemoryPreference
+  ) {
+    setStatus("Preference synced. Evidence is current.", "synced");
+    return;
+  }
+
+  setStatus(
+    `State mismatch: UI ${inMemoryPreference.toUpperCase()}, stored ${String(storedPreference).toUpperCase()}, backend ${String(backendPreference).toUpperCase()}.`,
+    "error",
+  );
 }
 
 function renderRecommendations(items: RecommendationItem[]): void {

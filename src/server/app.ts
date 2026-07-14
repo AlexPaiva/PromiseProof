@@ -9,10 +9,13 @@ import express, {
 import { createServer as createViteServer } from "vite";
 
 import { createApiRouter } from "./api.js";
+import { readDemoMode } from "./domain.js";
 import { PromiseProofStore } from "./store.js";
 import { RequestValidationError } from "./validation.js";
+import type { DemoMode } from "../shared/types.js";
 
 export interface ApplicationOptions {
+  demoMode?: DemoMode;
   production?: boolean;
   store?: PromiseProofStore;
 }
@@ -36,6 +39,7 @@ export async function createApplication(
 ): Promise<ApplicationRuntime> {
   const application = express();
   const store = options.store ?? new PromiseProofStore();
+  const demoMode = options.demoMode ?? readDemoMode();
   const production = options.production ?? process.env.NODE_ENV === "production";
   let dispose = async (): Promise<void> => undefined;
 
@@ -51,7 +55,7 @@ export async function createApplication(
     response.setHeader("cache-control", "no-store");
     next();
   });
-  application.use("/api", createApiRouter(store));
+  application.use("/api", createApiRouter(store, demoMode));
   application.use("/api", apiNotFound);
 
   if (production) {

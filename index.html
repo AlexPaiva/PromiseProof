@@ -70,7 +70,8 @@
                 <h2 id="preference-title">Activity-based personalization</h2>
                 <p id="preference-description">
                   Use activity from this synthetic profile to shape the feed.
-                  Turn it off to use context-only recommendations.
+                  Turn it off to use context-only recommendations and keep that
+                  choice after reload.
                 </p>
               </div>
             </div>
@@ -127,12 +128,13 @@
 
           <p class="promise-copy">
             When personalization is off, activity should not reach the
-            recommendation service and the contextual feed should still work.
+            recommendation service, the contextual feed should still work, and
+            the choice should survive a reload.
           </p>
 
           <dl class="evidence-metrics">
             <div>
-              <dt>Browser preference</dt>
+              <dt>UI choice</dt>
               <dd
                 id="browser-preference"
                 data-testid="browser-preference"
@@ -140,7 +142,15 @@
               >ON</dd>
             </div>
             <div>
-              <dt>Backend preference</dt>
+              <dt>Stored choice</dt>
+              <dd
+                id="stored-preference"
+                data-testid="stored-preference"
+                data-state="loading"
+              >—</dd>
+            </div>
+            <div>
+              <dt>Backend choice</dt>
               <dd
                 id="backend-preference"
                 data-testid="backend-preference"
@@ -148,7 +158,15 @@
               >—</dd>
             </div>
             <div>
-              <dt>Activity receipts</dt>
+              <dt>State agreement</dt>
+              <dd
+                id="preference-agreement"
+                data-testid="preference-agreement"
+                data-state="loading"
+              >CHECKING</dd>
+            </div>
+            <div>
+              <dt id="activity-receipt-label">Activity receipts</dt>
               <dd
                 id="activity-receipt-count"
                 data-testid="activity-receipt-count"
@@ -166,14 +184,14 @@
           </dl>
 
           <div class="timeline-heading">
-            <h3>Startup timeline</h3>
+            <h3>Observed event order</h3>
             <span>client sequence</span>
           </div>
           <ol
             id="startup-timeline"
             class="timeline"
             data-testid="startup-timeline"
-            aria-label="Client startup events"
+            aria-label="Observed client events"
           ></ol>
 
           <p
@@ -188,7 +206,7 @@
 
       <footer>
         <span>Signal Shelf is a fixed synthetic product surface.</span>
-        <span>PromiseProof milestone 01</span>
+        <span>PromiseProof evidence lab</span>
       </footer>
     </div>
 

@@ -22,9 +22,24 @@ test('ON sends expected activity through the real service and serves a behaviora
   expect(result.evidence.recommendation.source).toBe('behavioral');
   expect(result.evidence.recommendation.itemIds.length).toBeGreaterThan(0);
   expect(result.evidence.ui.preference).toBe('on');
+  expect(result.evidence.ui.toggleChecked).toBe(true);
   expect(result.evidence.storage.preference).toBe('on');
   expect(result.evidence.backend.preference).toBe('on');
+  await expect(page.getByTestId('sync-status')).toHaveAttribute(
+    'data-state',
+    'synced',
+  );
   expect(result.evidence.backend.recommendationReceipts).toHaveLength(1);
+  expect(
+    result.renderedRecommendations.every(
+      (item) =>
+        item.visible &&
+        item.titleVisible &&
+        item.descriptionVisible &&
+        item.title.length > 0 &&
+        item.description.length > 0,
+    ),
+  ).toBe(true);
   expect(result.evidence.backend.recommendationReceipts[0]).toMatchObject({
     source: 'behavioral',
     userId: result.evidence.userId,

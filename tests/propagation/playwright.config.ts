@@ -5,18 +5,24 @@ import { defineConfig } from '@playwright/test';
 const baseURL = process.env.PROMISEPROOF_BASE_URL ?? 'http://127.0.0.1:4173';
 const projectRoot = fileURLToPath(new URL('../..', import.meta.url));
 
-// This configuration is intentionally separate: the seeded contract is expected
-// to fail until the later repair milestone, so it must never contaminate `npm test`.
 export default defineConfig({
-  testDir: '.',
-  testMatch: 'personalization-off.spec.ts',
+  testDir: '..',
+  testMatch: [
+    'propagation/health.spec.ts',
+    'propagation/manual-observation.spec.ts',
+    'control/personalization-on.spec.ts',
+    'propagation/detector.spec.ts',
+    'propagation/replays.spec.ts',
+  ],
   fullyParallel: false,
   workers: 1,
   retries: 0,
+  forbidOnly: Boolean(process.env.CI),
   reporter: [['list']],
   outputDir: fileURLToPath(
-    new URL('../../test-results/race-contract', import.meta.url),
+    new URL('../../test-results/propagation-green', import.meta.url),
   ),
+  expect: { timeout: 5_000 },
   use: {
     baseURL,
     trace: 'retain-on-failure',
@@ -24,7 +30,7 @@ export default defineConfig({
     video: 'retain-on-failure',
   },
   webServer: {
-    command: 'npm run dev:test:race',
+    command: 'npm run dev:test:propagation',
     cwd: projectRoot,
     url: `${baseURL}/api/health`,
     reuseExistingServer: false,
