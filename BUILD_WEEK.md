@@ -838,8 +838,10 @@ approved, no patch has been applied to `main`, and no repaired-state PASS is
 claimed in this infrastructure checkpoint. The production approval boundary
 will stop on the first unseen live diff for Alex's real human review.
 
-The infrastructure checkpoint currently passes `npm.cmd run build` and all
-87/87 repair tests. Those tests include the SDK event/provider boundary,
+The infrastructure checkpoint was committed as
+`8211db42dd111e0d8cb3d5998436532205800137` and pushed to `origin/main` before
+the complete offline journey ran. It passes `npm.cmd run build` and all 87/87
+repair tests. Those tests include the SDK event/provider boundary,
 eligibility, lifecycle and approval immutability, exact PASS-receipt anchoring,
 post-anchor tamper rejection, four interrupted preparation states, interrupted
 verification and cleanup recovery, absent/empty/materialized worktree intents,
@@ -847,7 +849,29 @@ nonempty/malformed/registered-intent rejection, repository-bound local state,
 repair-role-bound UUID paths, inherited Git-redirection rejection, fresh
 second-worktree verification, command-environment credential isolation,
 the TypeScript regression firewall, Git/ref/path boundaries, patch limits, and
-adversarial bypasses. The complete offline two-worktree browser journey remains
-the next gate and will run from the clean committed infrastructure checkpoint,
-because it deliberately clones committed `HEAD` rather than trusting this
-working tree.
+adversarial bypasses.
+
+The clean-HEAD checkpoint then passed the complete deterministic repair and
+regression matrix:
+
+| Command | Result |
+| --- | --- |
+| `npm.cmd run test:repair:offline` | PASS — 87/87 repair boundary tests plus one complete two-worktree browser journey; the deterministic test provider repaired only the race, the second fresh worktree passed every repaired-state gate, cleanup completed, and `main` remained unchanged |
+| `npm.cmd test` | PASS — 10/10 investigation units, 10/10 live-receipt verifier units, 87/87 repair tests, 6/6 race browser cases, and 6/6 propagation browser cases |
+| `npm.cmd run test:determinism` | PASS — 20/20 unchanged fresh-context cases: five OFF and five ON for each seeded defect |
+| `npm.cmd run test:expected-red` | PASS — 4/4 wrapper adversarial tests; race produced only `PP_IDENTIFIABLE_EVENT_LEAK`, propagation produced only `PP_PREFERENCE_NOT_PERSISTED`, and both retained complete expected-red evidence |
+| Frozen Milestone 03 `npm.cmd run verify:investigation:live-stability` | PASS — rerun at commit `65a5dd6` with the original retained synthetic evidence and a non-secret verification sentinel; the verifier reproduced the committed sanitized receipt exactly |
+| `npm.cmd run build` | PASS — strict typecheck, Vite client bundle, and production server bundle after the offline journey |
+| `npm.cmd audit --audit-level=moderate` | PASS — 0 vulnerabilities |
+| Repository integrity | PASS — clean `main`, local and remote at the same commit, one registered worktree, and `git fsck --no-dangling` clean |
+
+The original Milestone 03 stability command is a live-cohort finalizer, not a
+cross-milestone receipt checker. Invoking it directly at the Milestone 04 HEAD
+correctly failed closed with `PP_LIVE_STABILITY_INVALID: Execution sources
+changed after the live-stability preflight` because the snapshot deliberately
+covers every file below `src`, `tests`, and `scripts`. It removes the prior
+output receipt before recomputation, so the exact committed receipt was restored
+byte-for-byte from `HEAD`. The isolated frozen-commit rerun above is the valid
+receipt reproduction. Windows required explicit long-path cleanup for the
+copied Playwright evidence after Git deregistered that temporary checkout; no
+temporary worktree, source change, or receipt drift remains.
