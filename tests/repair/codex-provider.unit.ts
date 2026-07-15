@@ -11,9 +11,11 @@ import {
   validateCodexEventSequence,
 } from '../../src/repair/codex-provider.js';
 import {
+  CODEX_REPAIR_DEVELOPER_INSTRUCTIONS,
   CODEX_REPAIR_SUMMARY_VERSION,
   CODEX_REPAIR_LOGIN_SHELL_ALLOWED,
   CODEX_REPAIR_WINDOWS_SANDBOX,
+  REPAIR_AGENT_OUTPUT_SCHEMA,
   REPAIR_CONSTRAINT_CODES,
   REPAIR_INSPECTION_COMMANDS,
   RepairProviderError,
@@ -618,6 +620,28 @@ test('rejects shuffled top-level phases, early messages, and trailing items', ()
   assertRejected(trailingItem, 'PP_REPAIR_CODEX_EVENT_ORDER_INVALID');
 });
 
+test('rejects the incident-shaped schema-only completion before any tool event', () => {
+  const details = rejectedDetails(
+    [
+      { type: 'thread.started', thread_id: threadId },
+      { type: 'turn.started' },
+      {
+        type: 'item.completed',
+        item: {
+          id: 'item_0',
+          type: 'agent_message',
+          text: finalResponse(),
+        },
+      },
+    ],
+    'PP_REPAIR_CODEX_EVENT_ORDER_INVALID',
+  );
+
+  assert.equal(details.eventCount, 3);
+  assert.equal(details.commandFailure, undefined);
+  assert.match(details.message, /before inspection and patch completion/u);
+});
+
 test('rejects file events outside the exact two-path allowlist', () => {
   const events = validEvents();
   events[FILE_COMPLETED_INDEX] = {
@@ -906,6 +930,30 @@ test('builds a minimal trusted Windows command environment without metadata redi
 
   const config = codexRepairCliConfig(environment.commands);
   assert.equal(config.allow_login_shell, false);
+  assert.equal(
+    config.developer_instructions,
+    CODEX_REPAIR_DEVELOPER_INSTRUCTIONS,
+  );
+  assert.match(
+    config.developer_instructions,
+    /bounded code-editing task, not a summarization task/u,
+  );
+  assert.match(
+    config.developer_instructions,
+    /output schema constrains only the final handoff after completed tool work/u,
+  );
+  assert.match(
+    config.developer_instructions,
+    /do not fabricate or emit a success-shaped summary; let the turn fail closed/u,
+  );
+  assert.doesNotMatch(
+    config.developer_instructions,
+    /initialization-race|propagation-failure|DEMO_MODE|PP_IDENTIFIABLE_EVENT_LEAK/u,
+  );
+  assert.match(
+    REPAIR_AGENT_OUTPUT_SCHEMA.description,
+    /schema never authorizes a no-tool completion/u,
+  );
   assert.equal(config.windows.sandbox, 'elevated');
   assert.equal(config.sandbox_workspace_write.network_access, false);
   assert.equal(config.skills.bundled.enabled, false);

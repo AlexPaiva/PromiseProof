@@ -7,7 +7,7 @@ import {
   REPAIR_INSPECTION_COMMANDS,
 } from './provider.js';
 
-export interface RepairPromptEnvelopeV3 {
+export interface RepairPromptEnvelopeV4 {
   version: typeof CODEX_REPAIR_PROMPT_VERSION;
   evidence: {
     candidateId: string;
@@ -46,7 +46,7 @@ export interface RepairPromptEnvelopeV3 {
 export function buildRepairPromptEnvelope(
   candidate: RaceRepairCandidateV1,
   repairId: string,
-): RepairPromptEnvelopeV3 {
+): RepairPromptEnvelopeV4 {
   return deepFreeze({
     version: CODEX_REPAIR_PROMPT_VERSION,
     evidence: {
@@ -108,11 +108,12 @@ export function buildRepairPrompt(
   const prompt = [
     'You are Codex preparing one bounded candidate repair in a disposable Git worktree.',
     'The JSON envelope below is deterministic, synthetic evidence and policy. Follow it exactly.',
-    'Run exactly the two inspectionPolicy commands, each once and in listed order, before editing. They are complete commands: copy them byte-for-byte without wrappers, guards, pipes, chaining, or extra flags.',
+    'Use the shell execution tool exactly twice before editing. For each call, set its command payload to the corresponding inspectionPolicy.commands entry byte-for-byte, once and in listed order. The Codex tool and pinned PowerShell runtime may add their normal execution wrapper; that wrapper is expected and is not an extra command.',
     'The pathFacts are authoritative for this frozen base. The regression path and its parent directory are absent by design; never probe, read, list, or search either path. The apply_patch tool can create the missing parent and file without a shell preflight.',
     'After the two reads, prepare the smallest source change and focused regression test using apply_patch. Do not call update_plan or create a todo list. Run no other command: PromiseProof owns Git, tests, builds, package managers, Playwright, compilers, and verification.',
-    'Your final response must contain only the requested structured JSON summary. It is not a verification result.',
     canonicalJson(envelope),
+    'Begin work now. Your first action must be the shell execution call whose command payload is inspectionPolicy.commands[0]. After it completes, execute inspectionPolicy.commands[1]. After that completes, use apply_patch for the required two-file change.',
+    'Do not emit any agent_message or structured summary until both command executions and the required file-change event have completed. A summary without those tool events is invalid. Only then may your final response contain the requested structured JSON summary; it is not a verification result.',
   ].join('\n\n');
   return {
     prompt,

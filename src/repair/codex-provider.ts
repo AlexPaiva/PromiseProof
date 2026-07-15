@@ -13,6 +13,7 @@ import {
 import { deepFreeze } from '../investigation/immutable.js';
 import {
   CODEX_REPAIR_CLI_VERSION,
+  CODEX_REPAIR_DEVELOPER_INSTRUCTIONS,
   CODEX_REPAIR_LOGIN_SHELL_ALLOWED,
   CODEX_REPAIR_MODEL,
   CODEX_REPAIR_SDK_VERSION,
@@ -870,6 +871,7 @@ export function codexRepairCliConfig(
 ) {
   return {
     allow_login_shell: CODEX_REPAIR_LOGIN_SHELL_ALLOWED,
+    developer_instructions: CODEX_REPAIR_DEVELOPER_INSTRUCTIONS,
     history: { persistence: 'none' },
     include_apps_instructions: false,
     include_collaboration_mode_instructions: false,

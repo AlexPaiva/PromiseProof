@@ -1136,3 +1136,54 @@ passed; the deterministic receipt said PASS; both disposable worktrees were
 removed; and the cloned main source, commit, complete ref snapshot, and clean
 status remained byte-for-byte unchanged. This rehearsal used no OpenAI request
 and does not count as human approval or an authentic Codex repair.
+
+### Third authentic prepare failure and prompt v4 action gate — 2026-07-15
+
+Exactly one authentic preparation was run from clean, pushed commit
+`38f4cb016f3dd930597de62185d2b0a944f1a838`. Repair
+`914fb71c-71ea-4a76-82a6-78e89a27fa5c` passed the unchanged race
+expected-red baseline, frozen-foundation validation, and the real elevated
+Windows no-key preflight. The Codex stage then failed closed as
+`PP_REPAIR_CODEX_EVENT_ORDER_INVALID`: the model emitted its final message
+before inspection and patch completion. The retained safe projection contains
+exactly 3 events and 587 serialized bytes, no command diagnostic, no provider
+result, no patch, no approval, and no verification receipt. Failure evidence
+was saved, the disposable worktree and isolated runtime were removed, and the
+lifecycle reached `cleanup_completed`. No repaired-state PASS or human approval
+is claimed.
+
+The byte count makes this failure unusually diagnosable without retaining raw
+model output. Under the exact pinned `0.144.4` JSONL shapes, the canonical
+minified valid repair summary is 371 bytes; `thread.started` with the 36-character
+thread ID is 76 bytes, `turn.started` is 23 bytes, and an
+`item.completed(agent_message)` carrying that summary as `item_0` is 488 bytes.
+Those values total the retained 587 bytes exactly. This is near-conclusive
+evidence that the model returned the success-shaped output-schema answer
+immediately; it is not evidence of a hidden sandbox or shell failure. The
+unchanged event firewall correctly rejected it.
+
+Prompt v4 addresses both model-visible ambiguities without weakening any
+deterministic boundary. The prior instruction to copy complete commands
+"without wrappers" was corrected: the shell tool's command payload must equal
+each allowlisted literal, while the normal Codex/PowerShell execution wrapper
+is explicitly expected. The action gate now appears after the canonical
+evidence envelope and requires command 0, command 1, and `apply_patch` before
+any structured handoff. A fixed top-level `developer_instructions` value marks
+the turn as execution rather than summarization, states that the output schema
+governs only the final post-tool handoff, and tells the model to fail closed
+rather than fabricate a success-shaped summary. The output schema remains
+enabled, the turn remains single-use, model/reasoning settings are unchanged,
+and all event, diff, path, size, sandbox, human-review, and Playwright gates are
+unchanged.
+
+The pinned CLI's no-network `debug prompt-input` command independently showed
+the synthetic developer marker and user marker as separate model-visible
+`input_text` entries. This proves that `developer_instructions` is recognized
+and injected by the exact installed runtime; it made no model request and used
+no API credit. Targeted provider/eligibility tests pass 33/33. Production build
+and typecheck pass. The complete repair boundary passes 118/118, including a
+new incident-shaped three-event regression that rejects the schema-only
+completion before any tool event. The real elevated no-key sandbox integration
+passes 1/1. A clean-HEAD offline two-worktree rerun remains required after this
+v4 checkpoint is committed and pushed; no further authentic request will be
+made before that gate passes.

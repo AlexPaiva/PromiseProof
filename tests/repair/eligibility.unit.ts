@@ -2,7 +2,10 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 
-import { sha256CanonicalJson } from '../../src/investigation/canonical-json.js';
+import {
+  canonicalJson,
+  sha256CanonicalJson,
+} from '../../src/investigation/canonical-json.js';
 import {
   CANONICAL_PROMISE_AUTHORITY,
   REPAIR_CANDIDATE_SCHEMA_VERSION,
@@ -170,7 +173,7 @@ test('derives a frozen sanitized startup-order repair candidate from the committ
   }, TypeError);
 });
 
-test('binds the v3 repair prompt to exact ordered reads and absent path facts', () => {
+test('binds the v4 repair prompt to exact ordered reads and a post-envelope action gate', () => {
   const candidate = deriveRaceRepairCandidateV1(committedReceipt);
   const repairId = '2d696ef3-0352-407f-a543-ee4d92711a31';
   const envelope = buildRepairPromptEnvelope(candidate, repairId);
@@ -178,7 +181,7 @@ test('binds the v3 repair prompt to exact ordered reads and absent path facts', 
 
   assert.equal(
     CODEX_REPAIR_PROMPT_VERSION,
-    'promiseproof.codex-repair-prompt.v3',
+    'promiseproof.codex-repair-prompt.v4',
   );
   assert.equal(envelope.version, CODEX_REPAIR_PROMPT_VERSION);
   assert.deepEqual(envelope.inspectionPolicy, {
@@ -213,8 +216,25 @@ test('binds the v3 repair prompt to exact ordered reads and absent path facts', 
     assert.match(command, /-Raw -Encoding UTF8 -LiteralPath/u);
     assert.equal(built.prompt.split(command).length - 1, 1);
   }
-  assert.match(built.prompt, /each once and in listed order, before editing/u);
+  assert.match(built.prompt, /byte-for-byte, once and in listed order/u);
   assert.match(built.prompt, /using apply_patch/u);
+  assert.match(built.prompt, /normal execution wrapper; that wrapper is expected/u);
+  assert.doesNotMatch(
+    built.prompt,
+    /complete commands: copy them byte-for-byte without wrappers/u,
+  );
+  const envelopeIndex = built.prompt.indexOf(canonicalJson(envelope));
+  const actionGateIndex = built.prompt.indexOf('Begin work now.');
+  assert.ok(envelopeIndex >= 0);
+  assert.ok(actionGateIndex > envelopeIndex);
+  assert.match(
+    built.prompt.slice(actionGateIndex),
+    /first action must be the shell execution call/u,
+  );
+  assert.match(
+    built.prompt.slice(actionGateIndex),
+    /Do not emit any agent_message or structured summary until both command executions and the required file-change event have completed/u,
+  );
   assert.match(built.prompt, /Do not call update_plan or create a todo list/u);
   assert.match(built.prompt, /Do not run any Git command, test, build/u);
   assert.doesNotMatch(built.prompt, /npm\.cmd|npx\.cmd/u);

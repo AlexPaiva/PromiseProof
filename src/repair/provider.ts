@@ -6,9 +6,16 @@ export const CODEX_REPAIR_CLI_VERSION = '0.144.4' as const;
 export const CODEX_REPAIR_LOGIN_SHELL_ALLOWED = false as const;
 export const CODEX_REPAIR_WINDOWS_SANDBOX = 'elevated' as const;
 export const CODEX_REPAIR_PROMPT_VERSION =
-  'promiseproof.codex-repair-prompt.v3' as const;
+  'promiseproof.codex-repair-prompt.v4' as const;
 export const CODEX_REPAIR_SUMMARY_VERSION =
   'promiseproof.codex-repair-summary.v1' as const;
+
+export const CODEX_REPAIR_DEVELOPER_INSTRUCTIONS = [
+  'This is a bounded code-editing task, not a summarization task.',
+  'Complete the exact tool actions required by the user prompt before producing the final structured response: run the two inspection commands once each in listed order, then use apply_patch for the required allowlisted file changes.',
+  'The output schema constrains only the final handoff after completed tool work. It never authorizes claiming candidate_patch_prepared from the schema alone.',
+  'If a required tool action cannot complete, do not fabricate or emit a success-shaped summary; let the turn fail closed.',
+].join('\n');
 
 export const REPAIR_ALLOWED_PATHS = [
   'src/client/main.ts',
@@ -68,6 +75,8 @@ export type RepairAgentSummaryV1 = z.infer<typeof repairAgentSummarySchema>;
 
 export const REPAIR_AGENT_OUTPUT_SCHEMA = {
   type: 'object',
+  description:
+    'Final handoff only after both required inspection commands and the required apply_patch file change have completed; this schema never authorizes a no-tool completion.',
   properties: {
     schemaVersion: {
       type: 'string',
