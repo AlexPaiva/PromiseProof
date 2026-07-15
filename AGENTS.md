@@ -106,8 +106,14 @@ Milestone 04 invariants:
    or touch any other tracked/untracked source path.
 5. Enforce a 32 KiB patch limit and at most 160 added-plus-deleted lines. Reject
    missing source or regression-test changes, staged changes, changed HEAD,
-   attached branches, ref mutation, unexpected files, abnormal Git statuses,
-   malformed output, unsafe SDK events, timeout, or secret retention.
+   attached branches, unexpected files, abnormal Git statuses, malformed output,
+   unsafe SDK events, timeout, or secret retention. Within candidate execution,
+   worktree creation/materialization, and candidate auditing, compare complete
+   ref snapshots and reject every ref mutation, including an exact-looking Codex
+   capture ref. Across separate operator invocations only, exclude refs matching
+   exactly `refs/codex/turn-diffs/captures/<13-digit timestamp>/<lowercase
+   UUIDv4>/base` from source-integrity equality. Every branch, tag, remote,
+   symbolic target, namespace lookalike, and all other refs remain significant.
 6. Hash-protect at minimum the canonical evaluator, shared contract types,
    contract assertion, scenario/evidence collector, diagnostic replays, seeded
    propagation defect, and all repair orchestration/verification files. Codex
@@ -135,10 +141,21 @@ Milestone 04 invariants:
     and rejected evidence. Cleanup is explicit and permitted only after the
     review/verification artifacts and binary patch have been copied outside both
     worktrees and revalidated.
-12. Offline tests must exercise every boundary without a Codex call. The one
-    authentic live Codex repair is a separate explicit command. Do not add a
-    second repair target, another product promise, causal benchmark, hosted
-    deployment, or broad UI redesign until this red-to-green loop is proven.
+12. If verification never started and a human-approved candidate becomes
+    ineligible because the source commit or integrity refs changed, never relabel
+    that condition as a Playwright failure. Retirement requires the same
+    symbolic HEAD, a retained base that is still an ancestor when HEAD advanced,
+    an intact approved patch and candidate, no verification worktree or receipt,
+    no Playwright invocation, and a fresh real-TTY `RETIRE_UNVERIFIED <repair-id>
+    <patch-sha256>` decision. Retain digest-bound `not_run` evidence before
+    cleaning the historical candidate. Retirement cannot approve a patch,
+    manufacture verification evidence, or reclassify verification that started.
+13. Offline tests must exercise every boundary without a Codex call. Each
+    candidate permits one authentic live Codex repair turn; an explicitly
+    retained `not_run` retirement may be followed by one fresh candidate turn.
+    Do not add a second repair target, another product promise, causal benchmark,
+    hosted deployment, or broad UI redesign until this red-to-green loop is
+    proven.
 
 ## Quality requirements
 

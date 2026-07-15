@@ -78,6 +78,12 @@ export interface GitRefState {
   readonly refs: readonly GitRefEntry[];
 }
 
+const VOLATILE_CODEX_TURN_DIFF_CAPTURE_REF_PATTERN =
+  /^refs\/codex\/turn-diffs\/captures\/[1-9][0-9]{12}\/[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\/base$/u;
+
+export const INTEGRITY_REF_POLICY =
+  'exclude_exact_codex_turn_diff_capture_base_refs_v1' as const;
+
 export interface CleanRepositorySnapshot {
   readonly repoRoot: string;
   readonly gitCommonDir: string;
@@ -399,6 +405,27 @@ export function equalRefStates(left: GitRefState, right: GitRefState): boolean {
       entry.objectId === other.objectId &&
       entry.symbolicTarget === other.symbolicTarget
     );
+  });
+}
+
+export function isVolatileCodexTurnDiffCaptureRef(name: string): boolean {
+  return VOLATILE_CODEX_TURN_DIFF_CAPTURE_REF_PATTERN.test(name);
+}
+
+export function equalIntegrityRefStates(
+  left: GitRefState,
+  right: GitRefState,
+): boolean {
+  return equalRefStates(integrityRefState(left), integrityRefState(right));
+}
+
+export function integrityRefState(state: GitRefState): GitRefState {
+  return Object.freeze({
+    refs: Object.freeze(
+      state.refs.filter(
+        (entry) => !isVolatileCodexTurnDiffCaptureRef(entry.name),
+      ),
+    ),
   });
 }
 

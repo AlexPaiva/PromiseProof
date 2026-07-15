@@ -37,6 +37,14 @@ import {
   MILESTONE_03_COMMIT,
   MILESTONE_03_TAG,
 } from '../../src/repair/foundation.js';
+import {
+  REPAIR_RETIREMENT_REASON,
+  REPAIR_RETIREMENT_VERSION,
+  expectedRetirementPhrase,
+  humanRepairRetirementSchema,
+  parseRetirementPhrase,
+  readHumanRepairRetirement,
+} from '../../src/repair/retirement.js';
 
 const roots = new Set<string>();
 
@@ -539,4 +547,148 @@ test('human decision artifacts are schema-validated, immutable, and content-addr
     'utf8',
   );
   await assert.rejects(readHumanDecision(approvalPath));
+});
+
+test('accepts only the exact RETIRE_UNVERIFIED phrase for the approved patch', () => {
+  const repairId = randomUUID();
+  const patchSha256 = 'd'.repeat(64);
+  const exact = expectedRetirementPhrase(repairId, patchSha256);
+  assert.doesNotThrow(() =>
+    parseRetirementPhrase(exact, repairId, patchSha256),
+  );
+
+  for (const invalid of [
+    exact.toLowerCase(),
+    ` ${exact}`,
+    `${exact} `,
+    exact.replace('RETIRE_UNVERIFIED', 'RETIRE'),
+    exact.replace(repairId, randomUUID()),
+    exact.replace(patchSha256, 'e'.repeat(64)),
+    exact.replaceAll(' ', '\t'),
+    `${exact}\n`,
+  ]) {
+    assert.throws(
+      () => parseRetirementPhrase(invalid, repairId, patchSha256),
+      /PP_REPAIR_RETIREMENT_PHRASE_INVALID/u,
+    );
+  }
+});
+
+test('retirement decisions bind NOT RUN, real drift, the exact phrase, and immutable evidence', async () => {
+  const root = await temporaryRoot();
+  const retirementPath = join(root, 'retirement-decision.json');
+  const repairId = randomUUID();
+  const patchSha256 = '1'.repeat(64);
+  const phrase = expectedRetirementPhrase(repairId, patchSha256);
+  const record = humanRepairRetirementSchema.parse({
+    schemaVersion: REPAIR_RETIREMENT_VERSION,
+    repairId,
+    disposition: 'retired_without_verification',
+    verificationVerdict: 'not_run',
+    verificationStarted: false,
+    playwrightInvoked: false,
+    verificationWorktreeRetainedAtDecision: false,
+    verificationReceiptCreated: false,
+    patchSha256,
+    patchBytes: 2_374,
+    approvalSha256: '2'.repeat(64),
+    retainedBaseCommit: '3'.repeat(40),
+    retainedBaseTree: '4'.repeat(40),
+    retainedHeadRef: 'refs/heads/main',
+    observedCurrentCommit: '5'.repeat(40),
+    observedCurrentTree: '6'.repeat(40),
+    observedCurrentHeadRef: 'refs/heads/main',
+    retainedFullRefStateSha256: '7'.repeat(64),
+    retainedIntegrityRefStateSha256: '9'.repeat(64),
+    observedIntegrityRefStateSha256: 'a'.repeat(64),
+    integrityRefPolicy:
+      'exclude_exact_codex_turn_diff_capture_base_refs_v1',
+    drift: {
+      headChanged: true,
+      headRefChanged: false,
+      integrityRefsChanged: true,
+      securityRelevantRefsAdded: 0,
+      securityRelevantRefsRemoved: 0,
+      securityRelevantRefsChanged: 1,
+    },
+    candidateAudit: {
+      detached: true,
+      headMatchesRetainedBase: true,
+      diffMatchesApprovedPatch: true,
+      stagedChangeCount: 0,
+      changedPaths: [
+        'src/client/main.ts',
+        'tests/regression/initialization-order.spec.ts',
+      ],
+    },
+    reasonCode: REPAIR_RETIREMENT_REASON,
+    nextAction: 'prepare_fresh_candidate',
+    decidedAt: '2026-07-15T21:00:00.000Z',
+    reviewer: 'human_operator',
+    method: 'interactive_tty_exact_phrase',
+    confirmationSha256: sha256Bytes(phrase),
+  });
+  assert.throws(() =>
+    humanRepairRetirementSchema.parse({
+      ...record,
+      verificationVerdict: 'pass',
+    }),
+  );
+  assert.throws(() =>
+    humanRepairRetirementSchema.parse({
+      ...record,
+      drift: {
+        ...record.drift,
+        headChanged: false,
+        integrityRefsChanged: false,
+      },
+    }),
+  );
+  assert.throws(() =>
+    humanRepairRetirementSchema.parse({
+      ...record,
+      confirmationSha256: 'f'.repeat(64),
+    }),
+  );
+
+  await writeNewJson(retirementPath, record);
+  const retained = await readHumanRepairRetirement(retirementPath);
+  assert.deepEqual(retained, record);
+  assert.equal(Object.isFrozen(retained), true);
+  await writeFile(
+    retirementPath,
+    `${JSON.stringify({ ...record, verificationStarted: true })}\n`,
+    'utf8',
+  );
+  await assert.rejects(readHumanRepairRetirement(retirementPath));
+});
+
+test('permits only the explicit unverified-retirement lifecycle between approval and evidence', async () => {
+  const root = await temporaryRoot();
+  const lifecyclePath = join(root, 'lifecycle.json');
+  const repairId = randomUUID();
+  for (const state of [
+    'created',
+    'baseline_verified',
+    'codex_completed',
+    'candidate_policy_accepted',
+    'awaiting_human_review',
+    'human_approved',
+    'retired_without_verification',
+    'evidence_saved',
+    'cleanup_completed',
+  ] as const) {
+    await appendRepairLifecycle(lifecyclePath, repairId, state, { state });
+  }
+  const retained = validateRepairLifecycle(
+    JSON.parse(await readFile(lifecyclePath, 'utf8')) as unknown,
+  );
+  assert.deepEqual(
+    retained.events.slice(-3).map((event) => event.state),
+    [
+      'retired_without_verification',
+      'evidence_saved',
+      'cleanup_completed',
+    ],
+  );
 });

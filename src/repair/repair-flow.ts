@@ -1,5 +1,6 @@
 import { lstat, readFile, realpath } from 'node:fs/promises';
 import path from 'node:path';
+import { createInterface } from 'node:readline/promises';
 
 import {
   canonicalJson,
@@ -26,11 +27,25 @@ import {
   validateRepairDiff,
 } from './diff-validator.js';
 import {
-  equalRefStates,
+  equalIntegrityRefStates,
+  INTEGRITY_REF_POLICY,
+  integrityRefState,
+  isVolatileCodexTurnDiffCaptureRef,
   resolveCleanRepository,
   resolveRepositoryPath,
   runGit,
+  type GitRefEntry,
+  type GitRefState,
 } from './git.js';
+import {
+  expectedRetirementPhrase,
+  humanRepairRetirementSchema,
+  parseRetirementPhrase,
+  readHumanRepairRetirement,
+  REPAIR_RETIREMENT_REASON,
+  REPAIR_RETIREMENT_VERSION,
+  type HumanRepairRetirementV1,
+} from './retirement.js';
 import {
   acquireRepairLock,
   allocateLoopbackPort,
@@ -47,10 +62,13 @@ import { cleanupIsolatedProviderRuntime } from './windows-sandbox.js';
 import {
   cleanupDisposableWorktree,
   cleanupPersistedDisposableWorktreeIntent,
+  expectedDefaultRepairWorktreePath,
   materializeDisposableWorktree,
   planDisposableWorktree,
   repairWorktreeAllocationId,
   reopenDisposableWorktree,
+  reopenRetainedDisposableWorktree,
+  verifyDisposableWorktree,
   type DisposableWorktree,
 } from './worktree.js';
 
@@ -67,6 +85,13 @@ export interface RepairVerificationResult {
   readonly statePath: string;
   readonly receiptPath: string;
   readonly receipt: RepairVerificationReceiptV1;
+  readonly cleanupState: 'cleanup_completed' | 'cleanup_failed';
+}
+
+export interface RepairRetirementResult {
+  readonly statePath: string;
+  readonly retirementPath: string;
+  readonly decision: HumanRepairRetirementV1;
   readonly cleanupState: 'cleanup_completed' | 'cleanup_failed';
 }
 
@@ -225,24 +250,21 @@ export async function readBoundRepairState(
     'repair-runs',
     repairId,
   );
-  const candidateAllocationRoot = `repair-${repairWorktreeAllocationId(
-    repairId,
-    'candidate',
-  )}`;
-  const verificationAllocationRoot = `repair-${repairWorktreeAllocationId(
-    repairId,
-    'verification',
-  )}`;
+  const [expectedCandidatePath, expectedVerificationPath] = await Promise.all([
+    expectedDefaultRepairWorktreePath(repairId, 'candidate'),
+    expectedDefaultRepairWorktreePath(repairId, 'verification'),
+  ]);
   if (
     state.repairId !== repairId ||
     !sameFilesystemPath(state.projectRoot, repository.repoRoot) ||
     !sameFilesystemPath(state.artifactDirectory, expectedArtifactDirectory) ||
     !sameFilesystemPath(path.dirname(statePath), expectedArtifactDirectory) ||
-    path.basename(path.dirname(state.candidateWorktreePath)) !==
-      candidateAllocationRoot ||
+    !sameFilesystemPath(state.candidateWorktreePath, expectedCandidatePath) ||
     (state.verificationWorktreePath !== null &&
-      path.basename(path.dirname(state.verificationWorktreePath)) !==
-        verificationAllocationRoot)
+      !sameFilesystemPath(
+        state.verificationWorktreePath,
+        expectedVerificationPath,
+      ))
   ) {
     throw new Error(
       'PP_REPAIR_STATE_BINDING_INVALID: retained state is not bound to the requested repository and repair ID.',
@@ -266,9 +288,16 @@ async function cleanupCandidate(
     );
     return;
   }
-  const candidate = await reopenDisposableWorktree(
+  const candidate = await reopenRetainedDisposableWorktree(
     state.projectRoot,
     state.candidateWorktreePath,
+    {
+      expectedAllocationId: repairWorktreeAllocationId(
+        state.repairId,
+        'candidate',
+      ),
+      expectedBaseHead: state.baseCommit,
+    },
   );
   if (candidate.repository.baseHead !== state.baseCommit) {
     throw new Error(
@@ -361,6 +390,566 @@ async function assertCanonicalRepairArtifact(
       `retained ${kind} is not one real object at its canonical path.`,
     );
   }
+}
+
+function refEntryChanged(left: GitRefEntry, right: GitRefEntry): boolean {
+  return (
+    left.objectId !== right.objectId ||
+    left.symbolicTarget !== right.symbolicTarget
+  );
+}
+
+function summarizeRefDrift(
+  retained: GitRefState,
+  observed: GitRefState,
+): Pick<HumanRepairRetirementV1['drift'],
+  | 'securityRelevantRefsAdded'
+  | 'securityRelevantRefsRemoved'
+  | 'securityRelevantRefsChanged'
+> {
+  const retainedByName = new Map(
+    retained.refs.map((entry) => [entry.name, entry] as const),
+  );
+  const observedByName = new Map(
+    observed.refs.map((entry) => [entry.name, entry] as const),
+  );
+  let securityRelevantRefsAdded = 0;
+  let securityRelevantRefsRemoved = 0;
+  let securityRelevantRefsChanged = 0;
+
+  for (const name of new Set([
+    ...retainedByName.keys(),
+    ...observedByName.keys(),
+  ])) {
+    const before = retainedByName.get(name);
+    const after = observedByName.get(name);
+    const volatile = isVolatileCodexTurnDiffCaptureRef(name);
+    if (volatile) {
+      continue;
+    }
+    if (before === undefined) {
+      securityRelevantRefsAdded += 1;
+    } else if (after === undefined) {
+      securityRelevantRefsRemoved += 1;
+    } else if (refEntryChanged(before, after)) {
+      securityRelevantRefsChanged += 1;
+    }
+  }
+
+  return {
+    securityRelevantRefsAdded,
+    securityRelevantRefsRemoved,
+    securityRelevantRefsChanged,
+  };
+}
+
+function retirementFailure(
+  decision: HumanRepairRetirementV1,
+): NonNullable<LocalRepairStateV1['failure']> {
+  return {
+    stage: 'verification_precondition',
+    code: REPAIR_RETIREMENT_REASON,
+    message:
+      'Human-approved candidate retired after the source integrity base changed; verification never started, no verification worktree was retained at the decision, and Playwright was not invoked.',
+    recordedAt: decision.decidedAt,
+  };
+}
+
+function retirementDecisionPath(state: LocalRepairStateV1): string {
+  return path.join(state.artifactDirectory, 'retirement-decision.json');
+}
+
+function retirementLifecyclePayload(
+  decision: HumanRepairRetirementV1,
+  decisionSha256: string,
+): Readonly<Record<string, unknown>> {
+  return {
+    decision,
+    retirementDecisionSha256: decisionSha256,
+  };
+}
+
+function retirementEvidencePayload(
+  decision: HumanRepairRetirementV1,
+  decisionSha256: string,
+): Readonly<Record<string, unknown>> {
+  return {
+    disposition: decision.disposition,
+    verificationVerdict: decision.verificationVerdict,
+    verificationStarted: decision.verificationStarted,
+    playwrightInvoked: decision.playwrightInvoked,
+    retirementDecisionSha256: decisionSha256,
+    patchSha256: decision.patchSha256,
+    approvalSha256: decision.approvalSha256,
+    nextAction: decision.nextAction,
+  };
+}
+
+async function assertRetainedCandidateMatchesPatch(
+  state: LocalRepairStateV1,
+): Promise<DisposableWorktree> {
+  if (state.patch === null) {
+    throw new Error(
+      'PP_REPAIR_RETIREMENT_STATE_INVALID: retained patch record is missing.',
+    );
+  }
+  for (const [candidate, kind] of [
+    [state.artifactDirectory, 'directory'],
+    [state.lifecyclePath, 'file'],
+    [state.patchPath, 'file'],
+    [state.approvalPath, 'file'],
+  ] as const) {
+    await assertCanonicalRepairArtifact(candidate, kind);
+  }
+  const retainedPatchBytes = await readFile(state.patchPath);
+  if (
+    retainedPatchBytes.byteLength !== state.patch.bytes ||
+    sha256Bytes(retainedPatchBytes) !== state.patch.sha256
+  ) {
+    throw new Error(
+      'PP_REPAIR_RETIREMENT_PATCH_CHANGED: retained patch bytes no longer match state.',
+    );
+  }
+
+  const candidate = await reopenRetainedDisposableWorktree(
+    state.projectRoot,
+    state.candidateWorktreePath,
+    {
+      expectedAllocationId: repairWorktreeAllocationId(
+        state.repairId,
+        'candidate',
+      ),
+      expectedBaseHead: state.baseCommit,
+    },
+  );
+  const validated = await validateRepairDiff(candidate);
+  const sourcePath = resolveRepositoryPath(
+    candidate.worktreePath,
+    'src/client/main.ts',
+  );
+  const regressionPath = resolveRepositoryPath(
+    candidate.worktreePath,
+    'tests/regression/initialization-order.spec.ts',
+  );
+  const [baseSource, sourceAfterSha256, regressionAfterSha256] =
+    await Promise.all([
+      runGit(candidate.worktreePath, [
+        'show',
+        `${state.baseCommit}:src/client/main.ts`,
+      ]),
+      fileSha256(sourcePath),
+      fileSha256(regressionPath),
+    ]);
+  const expectedPatch = {
+    sha256: validated.patchSha256,
+    bytes: validated.patchBytes,
+    additions: validated.addedLines,
+    deletions: validated.deletedLines,
+    changedFiles: [
+      {
+        path: 'src/client/main.ts' as const,
+        status: 'modified' as const,
+        beforeSha256: sha256Bytes(baseSource.stdout),
+        afterSha256: sourceAfterSha256,
+      },
+      {
+        path: 'tests/regression/initialization-order.spec.ts' as const,
+        status: 'added' as const,
+        beforeSha256: null,
+        afterSha256: regressionAfterSha256,
+      },
+    ],
+  };
+  if (
+    !retainedPatchBytes.equals(Buffer.from(validated.patch, 'utf8')) ||
+    canonicalJson(expectedPatch) !== canonicalJson(state.patch)
+  ) {
+    throw new Error(
+      'PP_REPAIR_RETIREMENT_CANDIDATE_CHANGED: candidate no longer matches the approved retained patch.',
+    );
+  }
+  return candidate;
+}
+
+async function readValidatedRetirementDecision(
+  state: LocalRepairStateV1,
+): Promise<{
+  readonly decision: HumanRepairRetirementV1;
+  readonly decisionSha256: string;
+}> {
+  if (state.patch === null || state.approvalSha256 === null) {
+    throw new Error(
+      'PP_REPAIR_RETIREMENT_EVIDENCE_INVALID: retained patch or approval digest is missing.',
+    );
+  }
+  const decisionPath = retirementDecisionPath(state);
+  await Promise.all([
+    assertCanonicalRepairArtifact(decisionPath, 'file'),
+    assertCanonicalRepairArtifact(state.patchPath, 'file'),
+    assertCanonicalRepairArtifact(state.approvalPath, 'file'),
+  ]);
+  const [decision, decisionSha256, approval, approvalSha256, patchSha256] = await Promise.all([
+    readHumanRepairRetirement(decisionPath),
+    fileSha256(decisionPath),
+    readHumanDecision(state.approvalPath),
+    fileSha256(state.approvalPath),
+    fileSha256(state.patchPath),
+  ]);
+  if (
+    decision.repairId !== state.repairId ||
+    decision.patchSha256 !== state.patch.sha256 ||
+    decision.patchBytes !== state.patch.bytes ||
+    decision.approvalSha256 !== state.approvalSha256 ||
+    decision.retainedBaseCommit !== state.baseCommit ||
+    decision.retainedBaseTree !== state.baseTree ||
+    decision.retainedHeadRef !== state.baseHeadRef ||
+    decision.retainedFullRefStateSha256 !==
+      sha256CanonicalJson(state.baseRefState) ||
+    decision.retainedIntegrityRefStateSha256 !==
+      sha256CanonicalJson(integrityRefState(state.baseRefState)) ||
+    approval.decision !== 'approved' ||
+    approval.repairId !== state.repairId ||
+    approval.patchSha256 !== state.patch.sha256 ||
+    approval.patchBytes !== state.patch.bytes ||
+    approvalSha256 !== state.approvalSha256 ||
+    patchSha256 !== state.patch.sha256
+  ) {
+    throw new Error(
+      'PP_REPAIR_RETIREMENT_EVIDENCE_INVALID: retirement decision does not bind the retained candidate.',
+    );
+  }
+  return { decision, decisionSha256 };
+}
+
+interface DerivedRetirementContext {
+  readonly repository: Awaited<ReturnType<typeof resolveCleanRepository>>;
+  readonly observedCurrentTree: string;
+  readonly drift: HumanRepairRetirementV1['drift'];
+  readonly observedIntegrityRefStateSha256: string;
+}
+
+async function deriveRetirementContext(
+  state: LocalRepairStateV1,
+): Promise<DerivedRetirementContext> {
+  const repository = await resolveCleanRepository(state.projectRoot);
+  const headChanged = repository.baseHead !== state.baseCommit;
+  const headRefChanged = repository.headRef !== state.baseHeadRef;
+  const integrityRefsChanged = !equalIntegrityRefStates(
+    repository.refState,
+    state.baseRefState,
+  );
+  if (!headChanged && !headRefChanged && !integrityRefsChanged) {
+    throw new Error(
+      'PP_REPAIR_RETIREMENT_NOT_REQUIRED: the approved candidate still has an unchanged verification base.',
+    );
+  }
+  if (headRefChanged) {
+    throw new Error(
+      'PP_REPAIR_RETIREMENT_DRIFT_UNSAFE: source checkout branch or detached state changed.',
+    );
+  }
+  if (headChanged) {
+    const ancestry = await runGit(
+      repository.repoRoot,
+      ['merge-base', '--is-ancestor', state.baseCommit, repository.baseHead],
+      { acceptedExitCodes: [0, 1] },
+    );
+    if (ancestry.exitCode !== 0) {
+      throw new Error(
+        'PP_REPAIR_RETIREMENT_DRIFT_UNSAFE: current source commit is not a descendant of the retained base.',
+      );
+    }
+  }
+  const [retainedTreeResult, currentTreeResult] = await Promise.all([
+    runGit(repository.repoRoot, [
+      'rev-parse',
+      '--verify',
+      `${state.baseCommit}^{tree}`,
+    ]),
+    runGit(repository.repoRoot, [
+      'rev-parse',
+      '--verify',
+      `${repository.baseHead}^{tree}`,
+    ]),
+  ]);
+  if (retainedTreeResult.stdout.trim() !== state.baseTree) {
+    throw new Error(
+      'PP_REPAIR_RETIREMENT_BASE_INVALID: retained base tree no longer matches Git.',
+    );
+  }
+  return {
+    repository,
+    observedCurrentTree: currentTreeResult.stdout.trim(),
+    drift: {
+      headChanged,
+      headRefChanged,
+      integrityRefsChanged,
+      ...summarizeRefDrift(state.baseRefState, repository.refState),
+    },
+    observedIntegrityRefStateSha256: sha256CanonicalJson(
+      integrityRefState(repository.refState),
+    ),
+  };
+}
+
+async function assertRetirementObservedContext(
+  state: LocalRepairStateV1,
+  decision: HumanRepairRetirementV1,
+): Promise<void> {
+  const current = await deriveRetirementContext(state);
+  if (
+    current.repository.baseHead !== decision.observedCurrentCommit ||
+    current.observedCurrentTree !== decision.observedCurrentTree ||
+    current.repository.headRef !== decision.observedCurrentHeadRef ||
+    current.observedIntegrityRefStateSha256 !==
+      decision.observedIntegrityRefStateSha256 ||
+    current.drift.headChanged !== decision.drift.headChanged ||
+    current.drift.headRefChanged !== decision.drift.headRefChanged ||
+    current.drift.integrityRefsChanged !== decision.drift.integrityRefsChanged ||
+    current.drift.securityRelevantRefsAdded !==
+      decision.drift.securityRelevantRefsAdded ||
+    current.drift.securityRelevantRefsRemoved !==
+      decision.drift.securityRelevantRefsRemoved ||
+    current.drift.securityRelevantRefsChanged !==
+      decision.drift.securityRelevantRefsChanged
+  ) {
+    throw new Error(
+      'PP_REPAIR_RETIREMENT_CONTEXT_CHANGED: source integrity base differs from the retained human decision.',
+    );
+  }
+}
+
+async function assertNoRetainedVerificationForRetirement(
+  state: LocalRepairStateV1,
+): Promise<void> {
+  const expectedVerificationWorktree =
+    await expectedDefaultRepairWorktreePath(
+      state.repairId,
+      'verification',
+    );
+  const verificationAllocationRoot = path.dirname(
+    expectedVerificationWorktree,
+  );
+  const registeredWorktrees = await registeredWorktreePaths(state.projectRoot);
+  if (
+    ['verification_started', 'verification_passed', 'verification_failed'].includes(
+      state.state,
+    ) ||
+    state.verificationWorktreePath !== null ||
+    state.verificationReceiptPath !== null ||
+    state.verificationReceiptSha256 !== null ||
+    (await pathExists(path.join(state.artifactDirectory, 'verification'))) ||
+    (await pathExists(verificationAllocationRoot)) ||
+    registeredWorktrees.some((registered) =>
+      sameFilesystemPath(registered, expectedVerificationWorktree),
+    )
+  ) {
+    throw new Error(
+      'PP_REPAIR_RETIREMENT_VERIFICATION_PRESENT: an unverified retirement cannot retain verification state or artifacts.',
+    );
+  }
+}
+
+async function registeredWorktreePaths(
+  projectRoot: string,
+): Promise<readonly string[]> {
+  return (
+    await runGit(projectRoot, ['worktree', 'list', '--porcelain', '-z'])
+  ).stdout
+    .split('\0')
+    .filter((field) => field.startsWith('worktree '))
+    .map((field) => field.slice('worktree '.length));
+}
+
+async function assertCandidateAbsentAfterRetirementCleanup(
+  state: LocalRepairStateV1,
+): Promise<void> {
+  const expectedCandidateWorktree = await expectedDefaultRepairWorktreePath(
+    state.repairId,
+    'candidate',
+  );
+  const registeredWorktrees = await registeredWorktreePaths(state.projectRoot);
+  if (
+    (await pathExists(path.dirname(expectedCandidateWorktree))) ||
+    registeredWorktrees.some((registered) =>
+      sameFilesystemPath(registered, expectedCandidateWorktree),
+    )
+  ) {
+    throw new Error(
+      'PP_REPAIR_RETIREMENT_CANDIDATE_PRESENT: completed retirement cleanup cannot retain or recreate the candidate allocation.',
+    );
+  }
+}
+
+function assertRetirementReconciliationWindow(
+  lifecycleHead: RepairStateName,
+  retainedState: RepairStateName,
+): void {
+  const allowedRetainedStates: Partial<
+    Record<RepairStateName, readonly RepairStateName[]>
+  > = {
+    human_approved: ['human_approved'],
+    retired_without_verification: [
+      'human_approved',
+      'retired_without_verification',
+    ],
+    evidence_saved: [
+      'human_approved',
+      'retired_without_verification',
+      'evidence_saved',
+    ],
+    cleanup_failed: ['evidence_saved', 'cleanup_failed'],
+    cleanup_completed: [
+      'evidence_saved',
+      'cleanup_failed',
+      'cleanup_completed',
+    ],
+  };
+  if (!allowedRetainedStates[lifecycleHead]?.includes(retainedState)) {
+    throw new Error(
+      'PP_REPAIR_RETIREMENT_EVIDENCE_INVALID: retained state is not a valid lifecycle-first retirement crash window.',
+    );
+  }
+}
+
+async function reconcileRetirementEvidence(
+  statePath: string,
+  state: LocalRepairStateV1,
+): Promise<HumanRepairRetirementV1> {
+  await assertNoRetainedVerificationForRetirement(state);
+  const { decision, decisionSha256 } =
+    await readValidatedRetirementDecision(state);
+  const lifecycle = await readRepairLifecycle(state.lifecyclePath);
+  let head = lifecycle.events.at(-1)?.state;
+  if (head === undefined) {
+    throw new Error('PP_REPAIR_LIFECYCLE_INVALID: lifecycle is empty.');
+  }
+  assertRetirementReconciliationWindow(head, state.state);
+  const retirementEvent = lifecycle.events.find(
+    (event) => event.state === 'retired_without_verification',
+  );
+  if (
+    lifecycle.events.some((event) =>
+      [
+        'verification_started',
+        'verification_passed',
+        'verification_failed',
+      ].includes(event.state),
+    )
+  ) {
+    throw new Error(
+      'PP_REPAIR_RETIREMENT_EVIDENCE_INVALID: retirement lifecycle contains a verification state.',
+    );
+  }
+  if (retirementEvent === undefined && head !== 'human_approved') {
+    throw new Error(
+      'PP_REPAIR_RETIREMENT_EVIDENCE_INVALID: a later lifecycle has no retained retirement transition.',
+    );
+  }
+  if (
+    retirementEvent !== undefined &&
+    retirementEvent.payloadSha256 !==
+      sha256CanonicalJson(
+        retirementLifecyclePayload(decision, decisionSha256),
+      )
+  ) {
+    throw new Error(
+      'PP_REPAIR_RETIREMENT_EVIDENCE_INVALID: retirement lifecycle payload digest changed.',
+    );
+  }
+  if (head === 'human_approved') {
+    await appendRepairLifecycle(
+      state.lifecyclePath,
+      state.repairId,
+      'retired_without_verification',
+      retirementLifecyclePayload(decision, decisionSha256),
+    );
+    head = 'retired_without_verification';
+  }
+  if (head === 'retired_without_verification') {
+    await appendRepairLifecycle(
+      state.lifecyclePath,
+      state.repairId,
+      'evidence_saved',
+      retirementEvidencePayload(decision, decisionSha256),
+    );
+    head = 'evidence_saved';
+  }
+  if (!['evidence_saved', 'cleanup_failed', 'cleanup_completed'].includes(head)) {
+    throw new Error(
+      'PP_REPAIR_RETIREMENT_STATE_INVALID: lifecycle is not an unverified retirement.',
+    );
+  }
+  const finalizedLifecycle = await readRepairLifecycle(state.lifecyclePath);
+  const retirementIndex = finalizedLifecycle.events.findIndex(
+    (event) => event.state === 'retired_without_verification',
+  );
+  const evidenceEvent = finalizedLifecycle.events[retirementIndex + 1];
+  if (
+    retirementIndex < 0 ||
+    evidenceEvent?.state !== 'evidence_saved' ||
+    evidenceEvent.payloadSha256 !==
+      sha256CanonicalJson(retirementEvidencePayload(decision, decisionSha256))
+  ) {
+    throw new Error(
+      'PP_REPAIR_RETIREMENT_EVIDENCE_INVALID: retirement evidence payload digest changed.',
+    );
+  }
+  const cleanupEvent = finalizedLifecycle.events.find(
+    (event, index) =>
+      index > retirementIndex && event.state === 'cleanup_completed',
+  );
+  if (
+    cleanupEvent !== undefined &&
+    cleanupEvent.payloadSha256 !==
+      sha256CanonicalJson({
+        candidateRemoved: true,
+        verificationRemoved: false,
+      })
+  ) {
+    throw new Error(
+      'PP_REPAIR_RETIREMENT_EVIDENCE_INVALID: retirement cleanup payload digest changed.',
+    );
+  }
+  if (head === 'cleanup_completed') {
+    await assertCandidateAbsentAfterRetirementCleanup(state);
+  }
+  const expectedFailure = retirementFailure(decision);
+  const cleanupFailureEvent = finalizedLifecycle.events.find(
+    (event, index) =>
+      index > retirementIndex && event.state === 'cleanup_failed',
+  );
+  const retainedCleanupFailure =
+    ['cleanup_failed', 'cleanup_completed'].includes(head) &&
+    state.failure?.stage === 'cleanup';
+  if (
+    (cleanupFailureEvent === undefined && retainedCleanupFailure) ||
+    (cleanupFailureEvent !== undefined && !retainedCleanupFailure) ||
+    (retainedCleanupFailure &&
+      cleanupFailureEvent !== undefined &&
+      cleanupFailureEvent.payloadSha256 !==
+        sha256CanonicalJson(state.failure))
+  ) {
+    throw new Error(
+      'PP_REPAIR_RETIREMENT_EVIDENCE_INVALID: retained cleanup failure differs from its lifecycle payload.',
+    );
+  }
+  if (
+    state.failure !== null &&
+    !retainedCleanupFailure &&
+    canonicalJson(state.failure) !== canonicalJson(expectedFailure)
+  ) {
+    throw new Error(
+      'PP_REPAIR_RETIREMENT_EVIDENCE_INVALID: retained failure differs from the retirement decision.',
+    );
+  }
+  if (!retainedCleanupFailure) {
+    state.failure = expectedFailure;
+  }
+  state.state = head;
+  state.updatedAt = new Date().toISOString();
+  await writeLocalRepairState(statePath, state);
+  return decision;
 }
 
 /**
@@ -554,7 +1143,17 @@ async function cleanupVerificationWorktree(
     activeHandle !== null &&
     path.resolve(activeHandle.worktreePath) === path.resolve(verificationPath)
       ? activeHandle
-      : await reopenDisposableWorktree(state.projectRoot, verificationPath);
+      : await reopenRetainedDisposableWorktree(
+          state.projectRoot,
+          verificationPath,
+          {
+            expectedAllocationId: repairWorktreeAllocationId(
+              state.repairId,
+              'verification',
+            ),
+            expectedBaseHead: state.baseCommit,
+          },
+        );
   if (handle.repository.baseHead !== state.baseCommit) {
     throw new Error(
       'PP_REPAIR_CLEANUP_BASE_CHANGED: verification worktree base differs from retained state.',
@@ -571,6 +1170,19 @@ async function recordCleanup(
   verificationExpected: boolean,
 ): Promise<'cleanup_completed' | 'cleanup_failed'> {
   const retainedHead = await lifecycleHead(state);
+  if (retainedHead === 'cleanup_failed') {
+    const cleanupLifecycle = await readRepairLifecycle(state.lifecyclePath);
+    const cleanupEvent = cleanupLifecycle.events.at(-1);
+    if (
+      state.failure?.stage !== 'cleanup' ||
+      cleanupEvent?.state !== 'cleanup_failed' ||
+      cleanupEvent.payloadSha256 !== sha256CanonicalJson(state.failure)
+    ) {
+      throw new Error(
+        'PP_REPAIR_CLEANUP_FAILURE_EVIDENCE_MISSING: retained cleanup failure is not available for a safe retry.',
+      );
+    }
+  }
   if (retainedHead === 'cleanup_completed') {
     state.state = 'cleanup_completed';
     state.updatedAt = new Date().toISOString();
@@ -619,8 +1231,13 @@ async function recordCleanup(
         'cleanup_failed',
         failure,
       );
+      state.failure = failure;
+    } else if (state.failure?.stage !== 'cleanup') {
+      throw new Error(
+        'PP_REPAIR_CLEANUP_FAILURE_EVIDENCE_MISSING: retained cleanup failure is not available for a safe retry.',
+        { cause: error },
+      );
     }
-    state.failure = failure;
     state.state = 'cleanup_failed';
   }
   state.updatedAt = new Date().toISOString();
@@ -700,6 +1317,205 @@ export async function reviewRaceRepairInteractively(
   }
 }
 
+export async function retireHumanApprovedRaceRepairInteractively(
+  projectRoot: string,
+  repairId: string,
+): Promise<RepairRetirementResult> {
+  const lock = await acquireRepairLock(projectRoot);
+  try {
+    const bound = await readBoundRepairState(projectRoot, repairId);
+    const statePath = bound.statePath;
+    const state = structuredClone(bound.state);
+    let head = await lifecycleHead(state);
+    const decisionPath = retirementDecisionPath(state);
+
+    if (
+      [
+        'retired_without_verification',
+        'evidence_saved',
+        'cleanup_failed',
+        'cleanup_completed',
+      ].includes(head) &&
+      (await pathExists(decisionPath))
+    ) {
+      const decision = await reconcileRetirementEvidence(statePath, state);
+      head = await lifecycleHead(state);
+      const cleanupState =
+        head === 'cleanup_completed'
+          ? 'cleanup_completed'
+          : await recordCleanup(
+              statePath,
+              state,
+              () => cleanupCandidate(state),
+              false,
+            );
+      return deepFreeze({
+        statePath,
+        retirementPath: decisionPath,
+        decision,
+        cleanupState,
+      });
+    }
+
+    if (
+      head !== 'human_approved' ||
+      state.state !== 'human_approved' ||
+      state.failure !== null
+    ) {
+      throw new Error(
+        'PP_REPAIR_RETIREMENT_STATE_INVALID: only an approved candidate whose verification never started may be retired.',
+      );
+    }
+    await assertNoRetainedVerificationForRetirement(state);
+    const approval = await assertRetainedApproval(state);
+    const initialContext = await deriveRetirementContext(state);
+    await assertRetainedCandidateMatchesPatch(state);
+    const preexistingDecision = (await pathExists(decisionPath))
+      ? await readValidatedRetirementDecision(state)
+      : null;
+    if (preexistingDecision !== null) {
+      await assertRetirementObservedContext(
+        state,
+        preexistingDecision.decision,
+      );
+    }
+
+    if (!process.stdin.isTTY || !process.stdout.isTTY) {
+      throw new Error(
+        'PP_REPAIR_RETIREMENT_TTY_REQUIRED: retiring an approved candidate requires a human interactive terminal.',
+      );
+    }
+    process.stdout.write(
+      [
+        '',
+        '=== Retire approved candidate without verification ===',
+        `Repair ID: ${state.repairId}`,
+        `Approved patch SHA-256: ${approval.patchSha256}`,
+        `Retained base: ${state.baseCommit}`,
+        `Current source: ${initialContext.repository.baseHead}`,
+        'Verification verdict: NOT RUN',
+        'Verification never started; no verification worktree is retained, and Playwright was not invoked.',
+        'The approved patch and human decision will be preserved; only the disposable candidate checkout will be removed.',
+        'This action cannot count as PASS. A fresh candidate must be prepared.',
+        'To retire, type exactly:',
+        expectedRetirementPhrase(state.repairId, approval.patchSha256),
+        '',
+      ].join('\n'),
+    );
+    const readline = createInterface({
+      input: process.stdin,
+      output: process.stdout,
+    });
+    let confirmation: string;
+    try {
+      confirmation = await readline.question('Decision: ');
+    } finally {
+      readline.close();
+    }
+    parseRetirementPhrase(
+      confirmation,
+      state.repairId,
+      approval.patchSha256,
+    );
+
+    await assertRetainedApproval(state);
+    await assertRetainedCandidateMatchesPatch(state);
+    const finalContext = await deriveRetirementContext(state);
+    if (
+      finalContext.repository.baseHead !== initialContext.repository.baseHead ||
+      finalContext.repository.headRef !== initialContext.repository.headRef ||
+      finalContext.observedIntegrityRefStateSha256 !==
+        initialContext.observedIntegrityRefStateSha256
+    ) {
+      throw new Error(
+        'PP_REPAIR_RETIREMENT_CONTEXT_CHANGED: source integrity base changed while awaiting the human decision.',
+      );
+    }
+
+    let decision: HumanRepairRetirementV1;
+    let decisionSha256: string;
+    if (preexistingDecision !== null) {
+      await assertRetirementObservedContext(
+        state,
+        preexistingDecision.decision,
+      );
+      decision = preexistingDecision.decision;
+      decisionSha256 = preexistingDecision.decisionSha256;
+    } else {
+      decision = humanRepairRetirementSchema.parse({
+        schemaVersion: REPAIR_RETIREMENT_VERSION,
+        repairId: state.repairId,
+        disposition: 'retired_without_verification',
+        verificationVerdict: 'not_run',
+        verificationStarted: false,
+        playwrightInvoked: false,
+        verificationWorktreeRetainedAtDecision: false,
+        verificationReceiptCreated: false,
+        patchSha256: approval.patchSha256,
+        patchBytes: approval.patchBytes,
+        approvalSha256: state.approvalSha256,
+        retainedBaseCommit: state.baseCommit,
+        retainedBaseTree: state.baseTree,
+        retainedHeadRef: state.baseHeadRef,
+        observedCurrentCommit: finalContext.repository.baseHead,
+        observedCurrentTree: finalContext.observedCurrentTree,
+        observedCurrentHeadRef: finalContext.repository.headRef,
+        retainedFullRefStateSha256: sha256CanonicalJson(state.baseRefState),
+        retainedIntegrityRefStateSha256: sha256CanonicalJson(
+          integrityRefState(state.baseRefState),
+        ),
+        observedIntegrityRefStateSha256:
+          finalContext.observedIntegrityRefStateSha256,
+        integrityRefPolicy: INTEGRITY_REF_POLICY,
+        drift: finalContext.drift,
+        candidateAudit: {
+          detached: true,
+          headMatchesRetainedBase: true,
+          diffMatchesApprovedPatch: true,
+          stagedChangeCount: 0,
+          changedPaths: [
+            'src/client/main.ts',
+            'tests/regression/initialization-order.spec.ts',
+          ],
+        },
+        reasonCode: REPAIR_RETIREMENT_REASON,
+        nextAction: 'prepare_fresh_candidate',
+        decidedAt: new Date().toISOString(),
+        reviewer: 'human_operator',
+        method: 'interactive_tty_exact_phrase',
+        confirmationSha256: sha256Bytes(confirmation),
+      });
+      await writeNewJson(decisionPath, decision);
+      decisionSha256 = await fileSha256(decisionPath);
+    }
+    await appendRepairLifecycle(
+      state.lifecyclePath,
+      state.repairId,
+      'retired_without_verification',
+      retirementLifecyclePayload(decision, decisionSha256),
+    );
+    state.state = 'retired_without_verification';
+    state.failure = retirementFailure(decision);
+    state.updatedAt = new Date().toISOString();
+    await writeLocalRepairState(statePath, state);
+    await reconcileRetirementEvidence(statePath, state);
+    const cleanupState = await recordCleanup(
+      statePath,
+      state,
+      () => cleanupCandidate(state),
+      false,
+    );
+    return deepFreeze({
+      statePath,
+      retirementPath: decisionPath,
+      decision,
+      cleanupState,
+    });
+  } finally {
+    await lock.release();
+  }
+}
+
 async function assertRetainedApproval(
   state: LocalRepairStateV1,
 ): Promise<HumanRepairDecisionV1> {
@@ -737,7 +1553,7 @@ async function assertUnchangedBase(state: LocalRepairStateV1): Promise<void> {
   if (
     repository.baseHead !== state.baseCommit ||
     repository.headRef !== state.baseHeadRef ||
-    !equalRefStates(repository.refState, state.baseRefState)
+    !equalIntegrityRefStates(repository.refState, state.baseRefState)
   ) {
     throw new Error(
       'PP_REPAIR_BASE_CHANGED: main checkout or Git refs changed after candidate preparation.',
@@ -861,6 +1677,14 @@ async function recoverInterruptedVerification(
   const statePath = bound.statePath;
   const state = structuredClone(bound.state);
   let head = await lifecycleHead(state);
+  const retainedLifecycle = await readRepairLifecycle(state.lifecyclePath);
+  if (
+    retainedLifecycle.events.some(
+      (event) => event.state === 'retired_without_verification',
+    )
+  ) {
+    return 'not_started';
+  }
 
   if (head === 'human_approved') {
     if (
@@ -969,8 +1793,6 @@ async function recoverInterruptedVerification(
     state.failure = null;
   } else if (head === 'evidence_saved' && state.failure === null) {
     state.failure = stateFailure('verification_interrupted', cause);
-  } else if (head === 'cleanup_failed' && state.failure === null) {
-    state.failure = stateFailure('cleanup', cause);
   }
 
   if (head === 'verification_started') {
@@ -1054,11 +1876,32 @@ export async function verifyHumanApprovedRaceRepair(input: {
   const lock = await acquireRepairLock(input.projectRoot);
   let verification: DisposableWorktree | null = null;
   let statePath: string | null = null;
+  let skipVerificationRecovery = false;
   try {
     const bound = await readBoundRepairState(input.projectRoot, input.repairId);
     statePath = bound.statePath;
     const state = structuredClone(bound.state);
     const retainedHead = await lifecycleHead(state);
+    const retainedLifecycle = await readRepairLifecycle(state.lifecyclePath);
+    if (
+      retainedHead === 'human_approved' &&
+      (await pathExists(retirementDecisionPath(state)))
+    ) {
+      skipVerificationRecovery = true;
+      throw new Error(
+        'PP_REPAIR_RETIREMENT_PENDING: a retained human retirement decision must be reconciled before any verification can start.',
+      );
+    }
+    if (
+      retainedLifecycle.events.some(
+        (event) => event.state === 'retired_without_verification',
+      )
+    ) {
+      skipVerificationRecovery = true;
+      throw new Error(
+        'PP_REPAIR_RETIRED_UNVERIFIED: this approved candidate was explicitly retired without Playwright verification; prepare a fresh candidate.',
+      );
+    }
     if (
       [
         'verification_started',
@@ -1118,9 +1961,16 @@ export async function verifyHumanApprovedRaceRepair(input: {
     await writeLocalRepairState(statePath, state);
 
     verification = await materializeDisposableWorktree(verificationPlan);
-    if (verification.repository.baseHead !== state.baseCommit) {
+    if (
+      verification.repository.baseHead !== state.baseCommit ||
+      verification.repository.headRef !== state.baseHeadRef ||
+      !equalIntegrityRefStates(
+        verification.repository.refState,
+        state.baseRefState,
+      )
+    ) {
       throw new Error(
-        'PP_REPAIR_VERIFICATION_BASE_CHANGED: fresh worktree has the wrong base.',
+        'PP_REPAIR_VERIFICATION_BASE_CHANGED: fresh worktree was not captured from the retained source-integrity base.',
       );
     }
     await appendRepairLifecycle(
@@ -1156,6 +2006,7 @@ export async function verifyHumanApprovedRaceRepair(input: {
         ? {}
         : { commandRunner: input.commandRunner }),
     });
+    await verifyDisposableWorktree(verification);
 
     const receiptPath = path.join(
       verificationRoot,
@@ -1205,7 +2056,7 @@ export async function verifyHumanApprovedRaceRepair(input: {
       cleanupState,
     });
   } catch (error) {
-    if (statePath !== null) {
+    if (statePath !== null && !skipVerificationRecovery) {
       try {
         await recoverInterruptedVerification(
           input.projectRoot,
@@ -1241,6 +2092,15 @@ export async function retryRepairCleanup(
       (await reconcileAwaitingHumanReviewCrash(statePath, state))
     ) {
       return (await readBoundRepairState(projectRoot, repairId)).state;
+    }
+    const retirementLifecycle = await readRepairLifecycle(state.lifecyclePath);
+    if (
+      retirementLifecycle.events.some(
+        (event) => event.state === 'retired_without_verification',
+      )
+    ) {
+      await reconcileRetirementEvidence(statePath, state);
+      head = await lifecycleHead(state);
     }
     if (head === 'cleanup_completed') {
       state.state = 'cleanup_completed';

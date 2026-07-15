@@ -1200,3 +1200,49 @@ showed a clean tree, only the main worktree, local HEAD and `origin/main` both a
 `d98175867aebd611763ac8fe244ac90a3f6c5964`, and symbolic HEAD still at
 `refs/heads/main`. This rehearsal made no OpenAI request and is not an authentic
 candidate, human approval, or repaired-state production PASS.
+
+### Milestone 04 correction in progress — 2026-07-16
+
+An authentic preparation from pushed commit
+`daccc4125141c4c8b45e13b2df1360ad7cf27576` produced repair
+`84c31de0-090c-48af-8470-0b953fb01c29`. The pinned Codex turn returned
+`gpt-5.6-sol` and produced the policy-valid two-file candidate: a 2,374-byte
+patch with 22 additions, 4 deletions, and SHA-256
+`71cf08a1b6922969e79bdd08e2ee11f6d5db29adec6f499f4b28cfb0f0ed86ec`.
+
+Alex inspected the complete diff and entered the exact digest-bound approval;
+the approval SHA-256 is
+`a7a8bdb4120e0ba113589063d22cfa7209f4ae28e6cc28f4f93ed48ec3ec4e48`.
+The first verification command stopped before verification began with
+`PP_REPAIR_BASE_CHANGED`. No verification worktree was created, Playwright was
+not invoked, and no repaired-state PASS or verification receipt exists.
+
+The observed source delta was limited to Codex Desktop's transient
+`refs/codex/turn-diffs/captures/<13-digit timestamp>/<lowercase UUIDv4>/base`
+refs. Complete ref equality remains mandatory during candidate execution,
+worktree planning/materialization, and every live worktree firewall. Only this
+exact app-owned capture-ref shape is excluded from the cross-invocation source
+integrity view; branches, tags, remotes, symbolic targets, lookalikes, and all
+other refs remain significant.
+
+The correction adds a digest-bound `not_run` retirement command. It requires a
+fresh real-TTY phrase
+`RETIRE_UNVERIFIED <repair-id> <patch-sha256>`, revalidates the approved patch
+and source drift before and after the prompt, proves that verification never
+started, appends `retired_without_verification -> evidence_saved`, and cleans
+the historical candidate only after evidence is durable. Reconciliation now
+rejects hidden verification/candidate allocations, impossible lifecycle/state
+crash windows, tampered cleanup failures, and recreated worktrees after cleanup.
+
+Post-hardening verification now passes on the working tree: the complete
+`npm test` aggregate is green (investigation unit, live-stability unit, repair
+unit 131/131, race Playwright 6/6, and propagation Playwright 6/6). The
+elevated Windows no-key sandbox integration is 1/1. A production build and
+typecheck also pass. The clean committed offline integration remains the next
+source-checkout gate because it must clone the committed source rather than
+this dirty tree.
+
+Implementation is still uncommitted on `main`. The approved repair must be
+retired through Alex's real TTY before one fresh authentic candidate is
+prepared from the corrected base; no repaired-state production PASS is claimed
+for the old candidate.

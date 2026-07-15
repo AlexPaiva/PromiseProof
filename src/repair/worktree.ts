@@ -96,6 +96,8 @@ interface HandleState {
   readonly tempRoot: string;
   readonly worktreePath: string;
   readonly repository: CleanRepositorySnapshot;
+  /** The live source checkout snapshot captured when this handle was opened. */
+  readonly sourceRepository: CleanRepositorySnapshot;
   cleaned: boolean;
 }
 
@@ -151,6 +153,19 @@ export function repairWorktreeAllocationId(
     bytes[15] = bytes[15]! ^ 0x01;
   }
   return format();
+}
+
+export async function expectedDefaultRepairWorktreePath(
+  repairId: string,
+  role: 'candidate' | 'verification',
+): Promise<string> {
+  const osTempRoot = await realpath(tmpdir());
+  return join(
+    osTempRoot,
+    PROMISEPROOF_REPAIR_TEMP_DIRECTORY,
+    `${SESSION_PREFIX}${repairWorktreeAllocationId(repairId, role)}`,
+    CHECKOUT_DIRECTORY,
+  );
 }
 
 function samePath(left: string, right: string): boolean {
@@ -618,6 +633,7 @@ export async function materializeDisposableWorktree(
       tempRoot: state.tempRoot,
       worktreePath: resolvedWorktree,
       repository: state.repository,
+      sourceRepository: state.repository,
       cleaned: false,
     });
 
@@ -726,14 +742,59 @@ export async function cleanupPersistedDisposableWorktreeIntent(
  * process. Every path and Git boundary is revalidated; callers cannot forge a
  * cleanup handle from an arbitrary directory.
  */
-export async function reopenDisposableWorktree(
+async function reopenDisposableWorktreeAtBase(
   repositoryPath: string,
   worktreePath: string,
-  options: DisposableWorktreeOptions = {},
+  options: DisposableWorktreeOptions,
+  expectedBaseHead: string | null,
+  expectedAllocationId: string | null,
 ): Promise<DisposableWorktree> {
-  const repository = await resolveCleanRepository(repositoryPath);
+  const sourceRepository = await resolveCleanRepository(repositoryPath);
+  let repository = sourceRepository;
+  if (expectedBaseHead !== null) {
+    if (!/^[a-f0-9]{40,64}$/u.test(expectedBaseHead)) {
+      throw new WorktreeBoundaryError(
+        'invalid_retained_base',
+        'Retained disposable-worktree base must be an exact Git object ID.',
+      );
+    }
+    const resolvedBase = (
+      await runGit(sourceRepository.repoRoot, [
+        'rev-parse',
+        '--verify',
+        `${expectedBaseHead}^{commit}`,
+      ])
+    ).stdout.trim();
+    if (resolvedBase !== expectedBaseHead) {
+      throw new WorktreeBoundaryError(
+        'invalid_retained_base',
+        'Retained disposable-worktree base does not resolve to the exact expected commit.',
+      );
+    }
+    repository = Object.freeze({
+      ...sourceRepository,
+      baseHead: expectedBaseHead,
+    });
+  }
   const tempBase = await prepareTempBase(options.tempParent);
-  const resolvedWorktree = await realpath(worktreePath);
+  const lexicalWorktree = resolve(worktreePath);
+  const lexicalTempRoot = resolve(lexicalWorktree, '..');
+  const [lexicalRootInfo, lexicalWorktreeInfo] = await Promise.all([
+    lstat(lexicalTempRoot),
+    lstat(lexicalWorktree),
+  ]);
+  if (
+    !lexicalRootInfo.isDirectory() ||
+    lexicalRootInfo.isSymbolicLink() ||
+    !lexicalWorktreeInfo.isDirectory() ||
+    lexicalWorktreeInfo.isSymbolicLink()
+  ) {
+    throw new WorktreeBoundaryError(
+      'unsafe_reopened_path',
+      'Persisted worktree path must be one real allocation root and checkout.',
+    );
+  }
+  const resolvedWorktree = await realpath(lexicalWorktree);
   const resolvedTempRoot = await realpath(resolve(resolvedWorktree, '..'));
   const [rootInfo, worktreeInfo] = await Promise.all([
     lstat(resolvedTempRoot),
@@ -746,6 +807,9 @@ export async function reopenDisposableWorktree(
     !samePath(resolve(resolvedTempRoot, '..'), tempBase) ||
     !ALLOCATION_ID_PATTERN.test(reopenedAllocationId) ||
     reopenedRootName !== `${SESSION_PREFIX}${reopenedAllocationId}` ||
+    (expectedAllocationId !== null &&
+      (reopenedAllocationId !== expectedAllocationId ||
+        !samePath(resolvedTempRoot, lexicalTempRoot))) ||
     !isPathInside(tempBase, resolvedTempRoot) ||
     !rootInfo.isDirectory() ||
     rootInfo.isSymbolicLink() ||
@@ -769,6 +833,7 @@ export async function reopenDisposableWorktree(
     tempRoot: resolvedTempRoot,
     worktreePath: resolvedWorktree,
     repository,
+    sourceRepository,
     cleaned: false,
   });
   try {
@@ -778,6 +843,57 @@ export async function reopenDisposableWorktree(
     handleStates.delete(handle);
     throw error;
   }
+}
+
+export async function reopenDisposableWorktree(
+  repositoryPath: string,
+  worktreePath: string,
+  options: DisposableWorktreeOptions = {},
+): Promise<DisposableWorktree> {
+  return await reopenDisposableWorktreeAtBase(
+    repositoryPath,
+    worktreePath,
+    options,
+    null,
+    null,
+  );
+}
+
+/**
+ * Reopens a retained candidate after the source checkout has deliberately
+ * advanced. The old commit is accepted only as the detached worktree base;
+ * the live source checkout still receives a fresh clean snapshot and all
+ * ordinary HEAD, branch, ref, common-directory, and path checks.
+ */
+export async function reopenRetainedDisposableWorktree(
+  repositoryPath: string,
+  worktreePath: string,
+  input: {
+    readonly expectedAllocationId: string;
+    readonly expectedBaseHead: string;
+    readonly tempParent?: string;
+  },
+): Promise<DisposableWorktree> {
+  if (!ALLOCATION_ID_PATTERN.test(input.expectedAllocationId)) {
+    throw new WorktreeBoundaryError(
+      'invalid_allocation_id',
+      'Retained worktree binding requires an exact version-4 UUID.',
+    );
+  }
+  const expectedRootName = `${SESSION_PREFIX}${input.expectedAllocationId}`;
+  if (basename(resolve(worktreePath, '..')) !== expectedRootName) {
+    throw new WorktreeBoundaryError(
+      'retained_allocation_changed',
+      'Retained worktree path does not match its exact persisted allocation.',
+    );
+  }
+  return await reopenDisposableWorktreeAtBase(
+    repositoryPath,
+    worktreePath,
+    input.tempParent === undefined ? {} : { tempParent: input.tempParent },
+    input.expectedBaseHead,
+    input.expectedAllocationId,
+  );
 }
 
 export async function verifyDisposableWorktree(
@@ -830,31 +946,34 @@ export async function verifyDisposableWorktree(
     );
   }
 
-  const originalHeadResult = await runGit(state.repository.repoRoot, [
+  const originalHeadResult = await runGit(state.sourceRepository.repoRoot, [
     'rev-parse',
     '--verify',
     'HEAD^{commit}',
   ]);
-  if (originalHeadResult.stdout.trim() !== state.repository.baseHead) {
+  if (originalHeadResult.stdout.trim() !== state.sourceRepository.baseHead) {
     throw new WorktreeBoundaryError(
       'repository_head_changed',
       'The source checkout HEAD changed during repair preparation.',
     );
   }
-  if ((await captureHeadRef(state.repository.repoRoot)) !== state.repository.headRef) {
+  if (
+    (await captureHeadRef(state.sourceRepository.repoRoot)) !==
+    state.sourceRepository.headRef
+  ) {
     throw new WorktreeBoundaryError(
       'repository_head_ref_changed',
       'The source checkout branch/detached state changed during repair preparation.',
     );
   }
-  const currentRefs = await captureRefState(state.repository.repoRoot);
-  if (!equalRefStates(currentRefs, state.repository.refState)) {
+  const currentRefs = await captureRefState(state.sourceRepository.repoRoot);
+  if (!equalRefStates(currentRefs, state.sourceRepository.refState)) {
     throw new WorktreeBoundaryError(
       'repository_refs_changed',
       'Git references changed during repair preparation.',
     );
   }
-  await assertCleanRepository(state.repository.repoRoot);
+  await assertCleanRepository(state.sourceRepository.repoRoot);
 }
 
 function joinPatches(parts: readonly string[]): string {

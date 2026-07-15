@@ -14,6 +14,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, test } from 'node:test';
 
+import { sha256CanonicalJson } from '../../src/investigation/canonical-json.js';
 import {
   REPAIR_LOCAL_STATE_VERSION,
   appendRepairLifecycle,
@@ -22,10 +23,16 @@ import {
   readRepairLifecycle,
   sha256Bytes,
   writeLocalRepairState,
+  writeNewJson,
   type LocalRepairStateV1,
   type RepairStateName,
 } from '../../src/repair/artifact.js';
 import type { RaceRepairCandidateV1 } from '../../src/repair/contracts.js';
+import {
+  REPAIR_APPROVAL_VERSION,
+  expectedReviewPhrase,
+  humanRepairDecisionSchema,
+} from '../../src/repair/approval.js';
 import { validateRepairDiff } from '../../src/repair/diff-validator.js';
 import {
   FOUNDATION_POLICY_VERSION,
@@ -35,14 +42,24 @@ import {
 } from '../../src/repair/foundation.js';
 import {
   resolveCleanRepository,
+  isVolatileCodexTurnDiffCaptureRef,
   runGit,
   type CleanRepositorySnapshot,
 } from '../../src/repair/git.js';
 import type { RepairProviderResult } from '../../src/repair/provider.js';
 import {
   readBoundRepairState,
+  retireHumanApprovedRaceRepairInteractively,
   retryRepairCleanup,
+  verifyHumanApprovedRaceRepair,
 } from '../../src/repair/repair-flow.js';
+import {
+  REPAIR_RETIREMENT_REASON,
+  REPAIR_RETIREMENT_VERSION,
+  expectedRetirementPhrase,
+  humanRepairRetirementSchema,
+  type HumanRepairRetirementV1,
+} from '../../src/repair/retirement.js';
 import {
   RepairOrchestrationError,
   acquireRepairLock,
@@ -61,6 +78,7 @@ import {
   cleanupDisposableWorktree,
   cleanupPlannedDisposableWorktree,
   createDisposableWorktree,
+  expectedDefaultRepairWorktreePath,
   planDisposableWorktree,
   repairWorktreeAllocationId,
   type DisposableWorktree,
@@ -553,6 +571,853 @@ async function createAwaitingReviewCrashFixture(input: {
   };
 }
 
+async function approveAwaitingReviewFixture(
+  crash: AwaitingReviewCrashFixture,
+): Promise<LocalRepairStateV1> {
+  const reconciled = await retryRepairCleanup(
+    crash.fixture.repo,
+    crash.state.repairId,
+  );
+  assert.equal(reconciled.state, 'awaiting_human_review');
+  assert.notEqual(reconciled.patch, null);
+  const patch = reconciled.patch!;
+  const phrase = expectedReviewPhrase(
+    'APPROVE',
+    reconciled.repairId,
+    patch.sha256,
+  );
+  const decision = humanRepairDecisionSchema.parse({
+    schemaVersion: REPAIR_APPROVAL_VERSION,
+    repairId: reconciled.repairId,
+    decision: 'approved',
+    patchSha256: patch.sha256,
+    patchBytes: patch.bytes,
+    decidedAt: '2026-07-15T20:00:00.000Z',
+    reviewer: 'human_operator',
+    method: 'interactive_tty_exact_phrase',
+    confirmationSha256: sha256Bytes(phrase),
+  });
+  await writeNewJson(reconciled.approvalPath, decision);
+  await appendRepairLifecycle(
+    reconciled.lifecyclePath,
+    reconciled.repairId,
+    'human_approved',
+    decision,
+  );
+  const approved = structuredClone(reconciled);
+  approved.state = 'human_approved';
+  approved.approvalSha256 = await fileSha256(approved.approvalPath);
+  approved.updatedAt = '2026-07-15T20:00:00.001Z';
+  await writeLocalRepairState(crash.statePath, approved);
+  return approved;
+}
+
+async function retirementDecisionFixture(
+  repositoryPath: string,
+  approved: LocalRepairStateV1,
+  decidedAt: string,
+): Promise<HumanRepairRetirementV1> {
+  assert.notEqual(approved.patch, null);
+  assert.notEqual(approved.approvalSha256, null);
+  const current = await resolveCleanRepository(repositoryPath);
+  const currentTree = (
+    await runGit(repositoryPath, [
+      'rev-parse',
+      '--verify',
+      `${current.baseHead}^{tree}`,
+    ])
+  ).stdout.trim();
+  const integrityState = (state: CleanRepositorySnapshot['refState']) => ({
+    refs: state.refs.filter(
+      (entry) => !isVolatileCodexTurnDiffCaptureRef(entry.name),
+    ),
+  });
+  const retainedIntegrityState = integrityState(approved.baseRefState);
+  const observedIntegrityState = integrityState(current.refState);
+  const retainedRefs = new Map(
+    retainedIntegrityState.refs.map((entry) => [entry.name, entry]),
+  );
+  const observedRefs = new Map(
+    observedIntegrityState.refs.map((entry) => [entry.name, entry]),
+  );
+  const securityRelevantRefsAdded = [...observedRefs.keys()].filter(
+    (name) => !retainedRefs.has(name),
+  ).length;
+  const securityRelevantRefsRemoved = [...retainedRefs.keys()].filter(
+    (name) => !observedRefs.has(name),
+  ).length;
+  const securityRelevantRefsChanged = [...retainedRefs.entries()].filter(
+    ([name, retained]) => {
+      const observed = observedRefs.get(name);
+      return (
+        observed !== undefined &&
+        (observed.objectId !== retained.objectId ||
+          observed.symbolicTarget !== retained.symbolicTarget)
+      );
+    },
+  ).length;
+  const retirementPhrase = expectedRetirementPhrase(
+    approved.repairId,
+    approved.patch!.sha256,
+  );
+  return humanRepairRetirementSchema.parse({
+    schemaVersion: REPAIR_RETIREMENT_VERSION,
+    repairId: approved.repairId,
+    disposition: 'retired_without_verification',
+    verificationVerdict: 'not_run',
+    verificationStarted: false,
+    playwrightInvoked: false,
+    verificationWorktreeRetainedAtDecision: false,
+    verificationReceiptCreated: false,
+    patchSha256: approved.patch!.sha256,
+    patchBytes: approved.patch!.bytes,
+    approvalSha256: approved.approvalSha256,
+    retainedBaseCommit: approved.baseCommit,
+    retainedBaseTree: approved.baseTree,
+    retainedHeadRef: approved.baseHeadRef,
+    observedCurrentCommit: current.baseHead,
+    observedCurrentTree: currentTree,
+    observedCurrentHeadRef: current.headRef,
+    retainedFullRefStateSha256: sha256CanonicalJson(approved.baseRefState),
+    retainedIntegrityRefStateSha256: sha256CanonicalJson(
+      retainedIntegrityState,
+    ),
+    observedIntegrityRefStateSha256: sha256CanonicalJson(
+      observedIntegrityState,
+    ),
+    integrityRefPolicy:
+      'exclude_exact_codex_turn_diff_capture_base_refs_v1',
+    drift: {
+      headChanged: current.baseHead !== approved.baseCommit,
+      headRefChanged: current.headRef !== approved.baseHeadRef,
+      integrityRefsChanged:
+        sha256CanonicalJson(retainedIntegrityState) !==
+        sha256CanonicalJson(observedIntegrityState),
+      securityRelevantRefsAdded,
+      securityRelevantRefsRemoved,
+      securityRelevantRefsChanged,
+    },
+    candidateAudit: {
+      detached: true,
+      headMatchesRetainedBase: true,
+      diffMatchesApprovedPatch: true,
+      stagedChangeCount: 0,
+      changedPaths: [
+        'src/client/main.ts',
+        'tests/regression/initialization-order.spec.ts',
+      ],
+    },
+    reasonCode: REPAIR_RETIREMENT_REASON,
+    nextAction: 'prepare_fresh_candidate',
+    decidedAt,
+    reviewer: 'human_operator',
+    method: 'interactive_tty_exact_phrase',
+    confirmationSha256: sha256Bytes(retirementPhrase),
+  });
+}
+
+test('retires an old-base approved candidate only through retained NOT RUN evidence and cleanup', async () => {
+  const crash = await createAwaitingReviewCrashFixture();
+  const approved = await approveAwaitingReviewFixture(crash);
+  const lifecycleBeforeDrift = await readFile(approved.lifecyclePath, 'utf8');
+  const volatileCaptureRef =
+    'refs/codex/turn-diffs/captures/1784150000000/d0321504-ca0c-4dba-8735-d08a0ea8791d/base';
+  await runGit(crash.fixture.repo, [
+    'update-ref',
+    volatileCaptureRef,
+    approved.baseCommit,
+  ]);
+
+  await assert.rejects(
+    retireHumanApprovedRaceRepairInteractively(
+      crash.fixture.repo,
+      approved.repairId,
+    ),
+    /PP_REPAIR_RETIREMENT_NOT_REQUIRED/u,
+  );
+  assert.equal(await readFile(approved.lifecyclePath, 'utf8'), lifecycleBeforeDrift);
+  assert.equal(await pathExists(crash.candidate.worktreePath), true);
+  await runGit(crash.fixture.repo, ['update-ref', '-d', volatileCaptureRef]);
+
+  const originalBranch = approved.baseHeadRef?.replace(/^refs\/heads\//u, '');
+  assert.notEqual(originalBranch, undefined);
+  await runGit(crash.fixture.repo, [
+    'switch',
+    '--quiet',
+    '-c',
+    'unsafe-retirement-drift',
+  ]);
+  await assert.rejects(
+    retireHumanApprovedRaceRepairInteractively(
+      crash.fixture.repo,
+      approved.repairId,
+    ),
+    /PP_REPAIR_RETIREMENT_DRIFT_UNSAFE/u,
+  );
+  assert.equal(await readFile(approved.lifecyclePath, 'utf8'), lifecycleBeforeDrift);
+  assert.equal(await pathExists(crash.candidate.worktreePath), true);
+  await runGit(crash.fixture.repo, ['switch', '--quiet', originalBranch!]);
+  await runGit(crash.fixture.repo, [
+    'branch',
+    '--delete',
+    'unsafe-retirement-drift',
+  ]);
+  const unrelatedCommit = (
+    await runGit(crash.fixture.repo, [
+      'commit-tree',
+      approved.baseTree,
+      '-m',
+      'test: unrelated retirement base',
+    ])
+  ).stdout.trim();
+  await runGit(crash.fixture.repo, [
+    'update-ref',
+    approved.baseHeadRef!,
+    unrelatedCommit,
+    approved.baseCommit,
+  ]);
+  await assert.rejects(
+    retireHumanApprovedRaceRepairInteractively(
+      crash.fixture.repo,
+      approved.repairId,
+    ),
+    /PP_REPAIR_RETIREMENT_DRIFT_UNSAFE/u,
+  );
+  assert.equal(await readFile(approved.lifecyclePath, 'utf8'), lifecycleBeforeDrift);
+  assert.equal(await pathExists(crash.candidate.worktreePath), true);
+  await runGit(crash.fixture.repo, [
+    'update-ref',
+    approved.baseHeadRef!,
+    approved.baseCommit,
+    unrelatedCommit,
+  ]);
+
+  await writeFile(
+    join(crash.fixture.repo, 'orchestrator-policy.txt'),
+    'exact volatile ref boundary\n',
+    'utf8',
+  );
+  await runGit(crash.fixture.repo, ['add', 'orchestrator-policy.txt']);
+  await runGit(crash.fixture.repo, [
+    'commit',
+    '-m',
+    'test: advance orchestrator policy',
+  ]);
+  await assert.rejects(
+    retireHumanApprovedRaceRepairInteractively(
+      crash.fixture.repo,
+      approved.repairId,
+    ),
+    /PP_REPAIR_RETIREMENT_TTY_REQUIRED/u,
+  );
+  assert.equal(await readFile(approved.lifecyclePath, 'utf8'), lifecycleBeforeDrift);
+  assert.equal(await pathExists(crash.candidate.worktreePath), true);
+
+  const retirement = await retirementDecisionFixture(
+    crash.fixture.repo,
+    approved,
+    '2026-07-15T20:01:00.000Z',
+  );
+  const retirementPath = join(
+    approved.artifactDirectory,
+    'retirement-decision.json',
+  );
+  const forgedRetirement = humanRepairRetirementSchema.parse({
+    ...retirement,
+    drift: {
+      ...retirement.drift,
+      securityRelevantRefsChanged:
+        retirement.drift.securityRelevantRefsChanged + 1,
+    },
+  });
+  await writeNewJson(retirementPath, forgedRetirement);
+  await assert.rejects(
+    retireHumanApprovedRaceRepairInteractively(
+      crash.fixture.repo,
+      approved.repairId,
+    ),
+    /PP_REPAIR_RETIREMENT_CONTEXT_CHANGED/u,
+  );
+  assert.equal(await pathExists(crash.candidate.worktreePath), true);
+  await rm(retirementPath);
+  await writeNewJson(retirementPath, retirement);
+  const lifecycleWithPendingDecision = await readFile(
+    approved.lifecyclePath,
+    'utf8',
+  );
+  await assert.rejects(
+    verifyHumanApprovedRaceRepair({
+      projectRoot: crash.fixture.repo,
+      repairId: approved.repairId,
+    }),
+    /PP_REPAIR_RETIREMENT_PENDING/u,
+  );
+  assert.equal(
+    await readFile(approved.lifecyclePath, 'utf8'),
+    lifecycleWithPendingDecision,
+  );
+  await assert.rejects(
+    retireHumanApprovedRaceRepairInteractively(
+      crash.fixture.repo,
+      approved.repairId,
+    ),
+    /PP_REPAIR_RETIREMENT_TTY_REQUIRED/u,
+  );
+  assert.equal(await pathExists(crash.candidate.worktreePath), true);
+
+  const retirementDecisionSha256 = await fileSha256(retirementPath);
+  await appendRepairLifecycle(
+    approved.lifecyclePath,
+    approved.repairId,
+    'retired_without_verification',
+    {
+      decision: retirement,
+      retirementDecisionSha256,
+    },
+  );
+  const lifecycleAfterRetirementEvent = await readFile(
+    approved.lifecyclePath,
+    'utf8',
+  );
+  const unexpectedVerificationPath = join(
+    tmpdir(),
+    'promiseproof-repair-worktrees',
+    `repair-${repairWorktreeAllocationId(approved.repairId, 'verification')}`,
+    'checkout',
+  );
+  const retirementEntryPoints = [
+    () =>
+      retireHumanApprovedRaceRepairInteractively(
+        crash.fixture.repo,
+        approved.repairId,
+      ),
+    () => retryRepairCleanup(crash.fixture.repo, approved.repairId),
+  ] as const;
+  const contradictoryStates: LocalRepairStateV1[] = [
+    {
+      ...approved,
+      verificationWorktreePath: unexpectedVerificationPath,
+    },
+    ...(['verification_started', 'verification_passed', 'verification_failed'] as const).map(
+      (state) => ({ ...approved, state }),
+    ),
+  ];
+  for (const contradictoryState of contradictoryStates) {
+    await writeLocalRepairState(crash.statePath, contradictoryState);
+    const retainedStateBytes = await readFile(crash.statePath, 'utf8');
+    for (const invoke of retirementEntryPoints) {
+      await assert.rejects(
+        invoke(),
+        /PP_REPAIR_RETIREMENT_VERIFICATION_PRESENT/u,
+      );
+      assert.equal(await readFile(crash.statePath, 'utf8'), retainedStateBytes);
+      assert.equal(
+        await readFile(approved.lifecyclePath, 'utf8'),
+        lifecycleAfterRetirementEvent,
+      );
+      assert.equal(await pathExists(crash.candidate.worktreePath), true);
+    }
+  }
+  const impossibleAheadState: LocalRepairStateV1 = {
+    ...approved,
+    state: 'cleanup_completed',
+  };
+  await writeLocalRepairState(crash.statePath, impossibleAheadState);
+  const impossibleAheadStateBytes = await readFile(crash.statePath, 'utf8');
+  for (const invoke of retirementEntryPoints) {
+    await assert.rejects(
+      invoke(),
+      /PP_REPAIR_RETIREMENT_EVIDENCE_INVALID/u,
+    );
+    assert.equal(
+      await readFile(crash.statePath, 'utf8'),
+      impossibleAheadStateBytes,
+    );
+    assert.equal(
+      await readFile(approved.lifecyclePath, 'utf8'),
+      lifecycleAfterRetirementEvent,
+    );
+    assert.equal(await pathExists(crash.candidate.worktreePath), true);
+  }
+  await writeLocalRepairState(crash.statePath, approved);
+
+  const unexpectedVerificationDirectory = join(
+    approved.artifactDirectory,
+    'verification',
+  );
+  const unexpectedVerificationSentinel = join(
+    unexpectedVerificationDirectory,
+    'unexpected-sentinel.txt',
+  );
+  await mkdir(unexpectedVerificationDirectory, { recursive: true });
+  await writeFile(
+    unexpectedVerificationSentinel,
+    'verification must remain not run\n',
+    'utf8',
+  );
+  for (const invoke of retirementEntryPoints) {
+    await assert.rejects(
+      invoke(),
+      /PP_REPAIR_RETIREMENT_VERIFICATION_PRESENT/u,
+    );
+    assert.equal(
+      await readFile(approved.lifecyclePath, 'utf8'),
+      lifecycleAfterRetirementEvent,
+    );
+    assert.equal(await pathExists(crash.candidate.worktreePath), true);
+    assert.equal(
+      await readFile(unexpectedVerificationSentinel, 'utf8'),
+      'verification must remain not run\n',
+    );
+  }
+  await rm(unexpectedVerificationDirectory, { recursive: true });
+
+  const unexpectedVerificationWorktree = await createDisposableWorktree(
+    crash.fixture.repo,
+    {
+      allocationId: repairWorktreeAllocationId(
+        approved.repairId,
+        'verification',
+      ),
+    },
+  );
+  worktrees.add(unexpectedVerificationWorktree);
+  const alternateCandidateRoot = join(
+    tmpdir(),
+    'alternate-repair-parent',
+    `repair-${repairWorktreeAllocationId(approved.repairId, 'candidate')}`,
+  );
+  const parentTamperedState: LocalRepairStateV1 = {
+    ...approved,
+    candidateWorktreePath: join(alternateCandidateRoot, 'checkout'),
+    codexHomePath: join(alternateCandidateRoot, 'codex-home'),
+    toolTempPath: join(alternateCandidateRoot, 'tool-temp'),
+  };
+  await writeLocalRepairState(crash.statePath, parentTamperedState);
+  const parentTamperedStateBytes = await readFile(crash.statePath, 'utf8');
+  for (const invoke of retirementEntryPoints) {
+    await assert.rejects(invoke(), /PP_REPAIR_STATE_BINDING_INVALID/u);
+    assert.equal(
+      await readFile(crash.statePath, 'utf8'),
+      parentTamperedStateBytes,
+    );
+    assert.equal(
+      await readFile(approved.lifecyclePath, 'utf8'),
+      lifecycleAfterRetirementEvent,
+    );
+    assert.equal(await pathExists(crash.candidate.worktreePath), true);
+    assert.equal(
+      await pathExists(unexpectedVerificationWorktree.worktreePath),
+      true,
+    );
+  }
+  await writeLocalRepairState(crash.statePath, approved);
+  for (const invoke of retirementEntryPoints) {
+    await assert.rejects(
+      invoke(),
+      /PP_REPAIR_RETIREMENT_VERIFICATION_PRESENT/u,
+    );
+    assert.equal(
+      await readFile(approved.lifecyclePath, 'utf8'),
+      lifecycleAfterRetirementEvent,
+    );
+    assert.equal(await pathExists(crash.candidate.worktreePath), true);
+    assert.equal(
+      await pathExists(unexpectedVerificationWorktree.worktreePath),
+      true,
+    );
+  }
+  await cleanupDisposableWorktree(unexpectedVerificationWorktree);
+  worktrees.delete(unexpectedVerificationWorktree);
+
+  await appendRepairLifecycle(
+    approved.lifecyclePath,
+    approved.repairId,
+    'evidence_saved',
+    { tamperedRetirementEvidence: true },
+  );
+  await assert.rejects(
+    retireHumanApprovedRaceRepairInteractively(
+      crash.fixture.repo,
+      approved.repairId,
+    ),
+    /PP_REPAIR_RETIREMENT_EVIDENCE_INVALID/u,
+  );
+  assert.equal(await pathExists(crash.candidate.worktreePath), true);
+  await writeFile(
+    approved.lifecyclePath,
+    lifecycleAfterRetirementEvent,
+    'utf8',
+  );
+  await appendRepairLifecycle(
+    approved.lifecyclePath,
+    approved.repairId,
+    'evidence_saved',
+    {
+      disposition: retirement.disposition,
+      verificationVerdict: retirement.verificationVerdict,
+      verificationStarted: retirement.verificationStarted,
+      playwrightInvoked: retirement.playwrightInvoked,
+      retirementDecisionSha256,
+      patchSha256: retirement.patchSha256,
+      approvalSha256: retirement.approvalSha256,
+      nextAction: retirement.nextAction,
+    },
+  );
+  const lifecycleBeforeRetiredVerify = await readFile(
+    approved.lifecyclePath,
+    'utf8',
+  );
+  await assert.rejects(
+    verifyHumanApprovedRaceRepair({
+      projectRoot: crash.fixture.repo,
+      repairId: approved.repairId,
+    }),
+    /PP_REPAIR_RETIRED_UNVERIFIED/u,
+  );
+  assert.equal(
+    await readFile(approved.lifecyclePath, 'utf8'),
+    lifecycleBeforeRetiredVerify,
+  );
+  assert.equal(await pathExists(crash.candidate.worktreePath), true);
+
+  const retired = await retireHumanApprovedRaceRepairInteractively(
+    crash.fixture.repo,
+    approved.repairId,
+  );
+  await assert.rejects(
+    verifyHumanApprovedRaceRepair({
+      projectRoot: crash.fixture.repo,
+      repairId: approved.repairId,
+    }),
+    /PP_REPAIR_RETIRED_UNVERIFIED/u,
+  );
+  const postCleanupVerificationDirectory = join(
+    approved.artifactDirectory,
+    'verification',
+  );
+  const postCleanupVerificationSentinel = join(
+    postCleanupVerificationDirectory,
+    'post-cleanup-sentinel.txt',
+  );
+  await mkdir(postCleanupVerificationDirectory, { recursive: true });
+  await writeFile(
+    postCleanupVerificationSentinel,
+    'late verification evidence is forbidden\n',
+    'utf8',
+  );
+  const lifecycleBeforeLateArtifact = await readFile(
+    approved.lifecyclePath,
+    'utf8',
+  );
+  const stateBeforeLateArtifact = await readFile(crash.statePath, 'utf8');
+  for (const invoke of retirementEntryPoints) {
+    await assert.rejects(
+      invoke(),
+      /PP_REPAIR_RETIREMENT_VERIFICATION_PRESENT/u,
+    );
+    assert.equal(
+      await readFile(approved.lifecyclePath, 'utf8'),
+      lifecycleBeforeLateArtifact,
+    );
+    assert.equal(await readFile(crash.statePath, 'utf8'), stateBeforeLateArtifact);
+    assert.equal(
+      await readFile(postCleanupVerificationSentinel, 'utf8'),
+      'late verification evidence is forbidden\n',
+    );
+  }
+  await rm(postCleanupVerificationDirectory, { recursive: true });
+
+  const lateCandidateWorktree = await createDisposableWorktree(
+    crash.fixture.repo,
+    {
+      allocationId: repairWorktreeAllocationId(
+        approved.repairId,
+        'candidate',
+      ),
+    },
+  );
+  worktrees.add(lateCandidateWorktree);
+  const lifecycleBeforeLateCandidate = await readFile(
+    approved.lifecyclePath,
+    'utf8',
+  );
+  const stateBeforeLateCandidate = await readFile(crash.statePath, 'utf8');
+  for (const invoke of retirementEntryPoints) {
+    await assert.rejects(
+      invoke(),
+      /PP_REPAIR_RETIREMENT_CANDIDATE_PRESENT/u,
+    );
+    assert.equal(
+      await readFile(approved.lifecyclePath, 'utf8'),
+      lifecycleBeforeLateCandidate,
+    );
+    assert.equal(await readFile(crash.statePath, 'utf8'), stateBeforeLateCandidate);
+    assert.equal(await pathExists(lateCandidateWorktree.worktreePath), true);
+  }
+  await cleanupDisposableWorktree(lateCandidateWorktree);
+  worktrees.delete(lateCandidateWorktree);
+
+  const completedState = await readLocalRepairState(crash.statePath);
+  const injectedCleanupFailure: LocalRepairStateV1 = {
+    ...completedState,
+    failure: {
+      stage: 'cleanup',
+      code: 'PP_FORGED_CLEANUP_FAILURE',
+      message: 'a cleanup failure without a lifecycle event is invalid',
+      recordedAt: '2026-07-15T20:02:00.000Z',
+    },
+  };
+  await writeLocalRepairState(crash.statePath, injectedCleanupFailure);
+  const injectedCleanupFailureBytes = await readFile(crash.statePath, 'utf8');
+  for (const invoke of retirementEntryPoints) {
+    await assert.rejects(
+      invoke(),
+      /PP_REPAIR_RETIREMENT_EVIDENCE_INVALID/u,
+    );
+    assert.equal(
+      await readFile(crash.statePath, 'utf8'),
+      injectedCleanupFailureBytes,
+    );
+    assert.equal(
+      await readFile(approved.lifecyclePath, 'utf8'),
+      lifecycleBeforeLateCandidate,
+    );
+  }
+  await writeLocalRepairState(crash.statePath, completedState);
+  const repeated = await retireHumanApprovedRaceRepairInteractively(
+    crash.fixture.repo,
+    approved.repairId,
+  );
+  const lifecycle = await readRepairLifecycle(approved.lifecyclePath);
+  assert.equal(retired.decision.verificationVerdict, 'not_run');
+  assert.equal(retired.cleanupState, 'cleanup_completed');
+  assert.equal(repeated.cleanupState, 'cleanup_completed');
+  assert.deepEqual(
+    lifecycle.events.slice(-3).map((event) => event.state),
+    [
+      'retired_without_verification',
+      'evidence_saved',
+      'cleanup_completed',
+    ],
+  );
+  assert.equal(
+    lifecycle.events.some((event) => event.state === 'verification_started'),
+    false,
+  );
+  assert.equal(await pathExists(crash.candidate.worktreePath), false);
+  assert.equal(await pathExists(approved.patchPath), true);
+  assert.equal(await pathExists(approved.approvalPath), true);
+  assert.equal(await pathExists(retirementPath), true);
+  assert.equal(
+    await pathExists(join(approved.artifactDirectory, 'verification')),
+    false,
+  );
+  assert.equal(
+    (await readLocalRepairState(crash.statePath)).state,
+    'cleanup_completed',
+  );
+  assert.equal(
+    await readFile(crash.fixture.sentinelPath, 'utf8'),
+    'retained sentinel\n',
+  );
+});
+
+test('binds a retained retirement cleanup failure to its lifecycle payload before retrying cleanup', async () => {
+  const crash = await createAwaitingReviewCrashFixture();
+  const approved = await approveAwaitingReviewFixture(crash);
+  await writeFile(
+    join(crash.fixture.repo, 'cleanup-recovery-policy.txt'),
+    'retain exact cleanup failure evidence\n',
+    'utf8',
+  );
+  await runGit(crash.fixture.repo, ['add', 'cleanup-recovery-policy.txt']);
+  await runGit(crash.fixture.repo, [
+    'commit',
+    '-m',
+    'test: advance cleanup recovery policy',
+  ]);
+  const retirement = await retirementDecisionFixture(
+    crash.fixture.repo,
+    approved,
+    '2026-07-15T20:03:00.000Z',
+  );
+  const retirementPath = join(
+    approved.artifactDirectory,
+    'retirement-decision.json',
+  );
+  await writeNewJson(retirementPath, retirement);
+  const retirementDecisionSha256 = await fileSha256(retirementPath);
+  await appendRepairLifecycle(
+    approved.lifecyclePath,
+    approved.repairId,
+    'retired_without_verification',
+    {
+      decision: retirement,
+      retirementDecisionSha256,
+    },
+  );
+  await appendRepairLifecycle(
+    approved.lifecyclePath,
+    approved.repairId,
+    'evidence_saved',
+    {
+      disposition: retirement.disposition,
+      verificationVerdict: retirement.verificationVerdict,
+      verificationStarted: retirement.verificationStarted,
+      playwrightInvoked: retirement.playwrightInvoked,
+      retirementDecisionSha256,
+      patchSha256: retirement.patchSha256,
+      approvalSha256: retirement.approvalSha256,
+      nextAction: retirement.nextAction,
+    },
+  );
+  const cleanupFailure = {
+    stage: 'cleanup',
+    code: 'PP_REPAIR_TEST_CLEANUP_INTERRUPTED',
+    message: 'simulated retained cleanup failure',
+    recordedAt: '2026-07-15T20:03:01.000Z',
+  } as const;
+  await appendRepairLifecycle(
+    approved.lifecyclePath,
+    approved.repairId,
+    'cleanup_failed',
+    cleanupFailure,
+  );
+  const lifecycleFirstCleanupFailureState: LocalRepairStateV1 = {
+    ...approved,
+    state: 'evidence_saved',
+    failure: {
+      stage: 'verification_precondition',
+      code: REPAIR_RETIREMENT_REASON,
+      message:
+        'Human-approved candidate retired after the source integrity base changed; verification never started, no verification worktree was retained at the decision, and Playwright was not invoked.',
+      recordedAt: retirement.decidedAt,
+    },
+  };
+  await writeLocalRepairState(
+    crash.statePath,
+    lifecycleFirstCleanupFailureState,
+  );
+  const lifecycleFirstStateBytes = await readFile(crash.statePath, 'utf8');
+  const lifecycleAfterCleanupFailure = await readFile(
+    approved.lifecyclePath,
+    'utf8',
+  );
+  for (const invoke of [
+    () =>
+      retireHumanApprovedRaceRepairInteractively(
+        crash.fixture.repo,
+        approved.repairId,
+      ),
+    () => retryRepairCleanup(crash.fixture.repo, approved.repairId),
+  ]) {
+    await assert.rejects(
+      invoke(),
+      /PP_REPAIR_RETIREMENT_EVIDENCE_INVALID/u,
+    );
+    assert.equal(await readFile(crash.statePath, 'utf8'), lifecycleFirstStateBytes);
+    assert.equal(
+      await readFile(approved.lifecyclePath, 'utf8'),
+      lifecycleAfterCleanupFailure,
+    );
+    assert.equal(await pathExists(crash.candidate.worktreePath), true);
+  }
+  const validCleanupFailureState: LocalRepairStateV1 = {
+    ...approved,
+    state: 'cleanup_failed',
+    failure: cleanupFailure,
+  };
+  const tamperedCleanupFailureState: LocalRepairStateV1 = {
+    ...validCleanupFailureState,
+    failure: {
+      ...cleanupFailure,
+      message: 'edited cleanup failure must not survive reconciliation',
+    },
+  };
+  await writeLocalRepairState(crash.statePath, tamperedCleanupFailureState);
+  const lifecycleBeforeTamperChecks = await readFile(
+    approved.lifecyclePath,
+    'utf8',
+  );
+  const tamperedStateBytes = await readFile(crash.statePath, 'utf8');
+  for (const invoke of [
+    () =>
+      retireHumanApprovedRaceRepairInteractively(
+        crash.fixture.repo,
+        approved.repairId,
+      ),
+    () => retryRepairCleanup(crash.fixture.repo, approved.repairId),
+  ]) {
+    await assert.rejects(
+      invoke(),
+      /PP_REPAIR_RETIREMENT_EVIDENCE_INVALID/u,
+    );
+    assert.equal(
+      await readFile(approved.lifecyclePath, 'utf8'),
+      lifecycleBeforeTamperChecks,
+    );
+    assert.equal(await readFile(crash.statePath, 'utf8'), tamperedStateBytes);
+    assert.equal(await pathExists(crash.candidate.worktreePath), true);
+  }
+
+  await writeLocalRepairState(crash.statePath, validCleanupFailureState);
+  await runGit(crash.candidate.worktreePath, [
+    'update-ref',
+    'HEAD',
+    retirement.observedCurrentCommit,
+    approved.baseCommit,
+  ]);
+  const lifecycleBeforeRepeatedCleanupFailures = await readFile(
+    approved.lifecyclePath,
+    'utf8',
+  );
+  const firstRepeatedFailure =
+    await retireHumanApprovedRaceRepairInteractively(
+      crash.fixture.repo,
+      approved.repairId,
+    );
+  const secondRepeatedFailure = await retryRepairCleanup(
+    crash.fixture.repo,
+    approved.repairId,
+  );
+  assert.equal(firstRepeatedFailure.cleanupState, 'cleanup_failed');
+  assert.equal(secondRepeatedFailure.state, 'cleanup_failed');
+  assert.deepEqual(secondRepeatedFailure.failure, cleanupFailure);
+  assert.equal(
+    await readFile(approved.lifecyclePath, 'utf8'),
+    lifecycleBeforeRepeatedCleanupFailures,
+  );
+  assert.equal(await pathExists(crash.candidate.worktreePath), true);
+  await runGit(crash.candidate.worktreePath, [
+    'update-ref',
+    'HEAD',
+    approved.baseCommit,
+    retirement.observedCurrentCommit,
+  ]);
+  const recovered = await retireHumanApprovedRaceRepairInteractively(
+    crash.fixture.repo,
+    approved.repairId,
+  );
+  const repeated = await retryRepairCleanup(
+    crash.fixture.repo,
+    approved.repairId,
+  );
+  const lifecycle = await readRepairLifecycle(approved.lifecyclePath);
+  assert.equal(recovered.cleanupState, 'cleanup_completed');
+  assert.equal(repeated.state, 'cleanup_completed');
+  assert.deepEqual(repeated.failure, cleanupFailure);
+  assert.deepEqual(
+    lifecycle.events.slice(-2).map((event) => event.state),
+    ['cleanup_failed', 'cleanup_completed'],
+  );
+  assert.equal(await pathExists(crash.candidate.worktreePath), false);
+  assert.equal(
+    await readFile(crash.fixture.sentinelPath, 'utf8'),
+    'retained sentinel\n',
+  );
+});
+
 test('reconciles the lifecycle-first awaiting-review crash without changing evidence or cleaning the candidate', async () => {
   const crash = await createAwaitingReviewCrashFixture();
   const lifecycleBefore = await readFile(crash.state.lifecyclePath, 'utf8');
@@ -582,6 +1447,59 @@ test('reconciles the lifecycle-first awaiting-review crash without changing evid
   );
   assert.equal(await readFile(crash.state.lifecyclePath, 'utf8'), lifecycleBefore);
   assert.equal(await pathExists(crash.candidate.worktreePath), true);
+});
+
+test('fails closed when generic cleanup lost the lifecycle-first failure payload', async () => {
+  const fixture = await createRepositoryFixture();
+  const repairId = randomUUID();
+  const candidate = await createDisposableWorktree(fixture.repo, {
+    allocationId: repairWorktreeAllocationId(repairId, 'candidate'),
+  });
+  const verification = await createDisposableWorktree(fixture.repo, {
+    allocationId: repairWorktreeAllocationId(repairId, 'verification'),
+  });
+  worktrees.add(candidate);
+  worktrees.add(verification);
+  const state = stateFixture({
+    fixture,
+    repairId,
+    state: 'evidence_saved',
+    candidateWorktreePath: candidate.worktreePath,
+    verificationWorktreePath: verification.worktreePath,
+  });
+  const statePath = await persistStateAndLifecycle(state, [
+    'created',
+    'baseline_verified',
+    'codex_completed',
+    'candidate_policy_accepted',
+    'awaiting_human_review',
+    'human_approved',
+    'verification_started',
+    'verification_failed',
+    'evidence_saved',
+  ]);
+  const cleanupFailure = {
+    stage: 'cleanup',
+    code: 'PP_REPAIR_TEST_GENERIC_CLEANUP_FAILURE',
+    message: 'failure payload was anchored before local state persisted',
+    recordedAt: '2026-07-16T09:00:00.000Z',
+  } as const;
+  await appendRepairLifecycle(
+    state.lifecyclePath,
+    repairId,
+    'cleanup_failed',
+    cleanupFailure,
+  );
+  const lifecycleBefore = await readFile(state.lifecyclePath, 'utf8');
+  const stateBefore = await readFile(statePath, 'utf8');
+  await assert.rejects(
+    retryRepairCleanup(fixture.repo, repairId),
+    /PP_REPAIR_CLEANUP_FAILURE_EVIDENCE_MISSING/u,
+  );
+  assert.equal(await readFile(state.lifecyclePath, 'utf8'), lifecycleBefore);
+  assert.equal(await readFile(statePath, 'utf8'), stateBefore);
+  assert.equal(await pathExists(candidate.worktreePath), true);
+  assert.equal(await pathExists(verification.worktreePath), true);
 });
 
 test('does not reconcile when the lifecycle has advanced beyond awaiting review', async () => {
@@ -1055,7 +1973,10 @@ test('explicitly recovers a dead stale lock without touching neighboring files',
 test('reconciles an already completed cleanup without appending a duplicate event', async () => {
   const fixture = await createRepositoryFixture();
   const repairId = randomUUID();
-  const absentCandidate = join(fixture.root, `repair-${repairId}`, 'checkout');
+  const absentCandidate = await expectedDefaultRepairWorktreePath(
+    repairId,
+    'candidate',
+  );
   const state = stateFixture({
     fixture,
     repairId,

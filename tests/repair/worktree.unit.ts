@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { randomUUID } from 'node:crypto';
 import {
   access,
   link,
@@ -22,16 +23,23 @@ import {
 } from '../../src/repair/diff-validator.js';
 import {
   captureRefState,
+  equalIntegrityRefStates,
   equalRefStates,
+  isVolatileCodexTurnDiffCaptureRef,
   resolveRepositoryPath,
   runGit,
+  type GitRefEntry,
+  type GitRefState,
 } from '../../src/repair/git.js';
 import {
   WorktreeBoundaryError,
   cleanupDisposableWorktree,
   createDisposableWorktree,
   inspectDisposableWorktree,
+  materializeDisposableWorktree,
+  planDisposableWorktree,
   reopenDisposableWorktree,
+  reopenRetainedDisposableWorktree,
   verifyDisposableWorktree,
   type DisposableWorktree,
 } from '../../src/repair/worktree.js';
@@ -100,6 +108,25 @@ interface Fixture {
 
 const roots = new Set<string>();
 const handles = new Set<DisposableWorktree>();
+
+const REF_OBJECT_A = 'a'.repeat(40);
+const REF_OBJECT_B = 'b'.repeat(40);
+const VOLATILE_CAPTURE_REF_A =
+  'refs/codex/turn-diffs/captures/1784147335196/5d4f7161-4325-4563-a255-738b885c878d/base';
+const VOLATILE_CAPTURE_REF_B =
+  'refs/codex/turn-diffs/captures/1784150000000/d0321504-ca0c-4dba-8735-d08a0ea8791d/base';
+
+function refEntry(
+  name: string,
+  objectId = REF_OBJECT_A,
+  symbolicTarget: string | null = null,
+): GitRefEntry {
+  return Object.freeze({ name, objectId, symbolicTarget });
+}
+
+function refState(...refs: readonly GitRefEntry[]): GitRefState {
+  return Object.freeze({ refs: Object.freeze([...refs]) });
+}
 
 afterEach(async () => {
   for (const handle of [...handles]) {
@@ -176,6 +203,127 @@ async function expectErrorCode(
   });
 }
 
+test('classifies only exact lowercase Codex turn-diff capture base refs as volatile', () => {
+  assert.equal(
+    isVolatileCodexTurnDiffCaptureRef(VOLATILE_CAPTURE_REF_A),
+    true,
+  );
+  assert.equal(
+    isVolatileCodexTurnDiffCaptureRef(VOLATILE_CAPTURE_REF_B),
+    true,
+  );
+
+  const lookalikes = [
+    'refs/codex/turn-diffs/captures/0784147335196/5d4f7161-4325-4563-a255-738b885c878d/base',
+    'refs/codex/turn-diffs/captures/784147335196/5d4f7161-4325-4563-a255-738b885c878d/base',
+    'refs/codex/turn-diffs/captures/17841473351960/5d4f7161-4325-4563-a255-738b885c878d/base',
+    'refs/codex/turn-diffs/captures/178414733519x/5d4f7161-4325-4563-a255-738b885c878d/base',
+    'refs/codex/turn-diffs/captures/1784147335196/5D4F7161-4325-4563-A255-738B885C878D/base',
+    'refs/codex/turn-diffs/captures/1784147335196/5d4f7161-4325-5563-a255-738b885c878d/base',
+    'refs/codex/turn-diffs/captures/1784147335196/5d4f7161-4325-4563-7255-738b885c878d/base',
+    'refs/codex/turn-diffs/captures/1784147335196/5d4f7161-4325-4563-a255-738b885c878d',
+    'refs/codex/turn-diffs/captures/1784147335196/5d4f7161-4325-4563-a255-738b885c878d/head',
+    'refs/codex/turn-diffs/captures/1784147335196/5d4f7161-4325-4563-a255-738b885c878d/base/extra',
+    'refs/codex/turn-diffs/capture/1784147335196/5d4f7161-4325-4563-a255-738b885c878d/base',
+    'refs/codex/turn-diffs/captures/1784147335196/5d4f7161-4325-4563-a255-738b885c878d/Base',
+    'refs/heads/codex/turn-diffs/captures/1784147335196/5d4f7161-4325-4563-a255-738b885c878d/base',
+  ] as const;
+  for (const name of lookalikes) {
+    assert.equal(
+      isVolatileCodexTurnDiffCaptureRef(name),
+      false,
+      `lookalike must remain integrity-significant: ${name}`,
+    );
+  }
+});
+
+test('ignores exact volatile capture additions, removals, and rotations only for integrity comparison', () => {
+  const main = refEntry('refs/heads/main');
+  const before = refState(refEntry(VOLATILE_CAPTURE_REF_A), main);
+  const rotated = refState(
+    refEntry(VOLATILE_CAPTURE_REF_B, REF_OBJECT_B),
+    main,
+  );
+  const captureRemoved = refState(main);
+  const captureAdded = refState(refEntry(VOLATILE_CAPTURE_REF_B), main);
+
+  assert.equal(equalRefStates(before, rotated), false);
+  assert.equal(equalIntegrityRefStates(before, rotated), true);
+  assert.equal(equalIntegrityRefStates(before, captureRemoved), true);
+  assert.equal(equalIntegrityRefStates(captureRemoved, captureAdded), true);
+});
+
+test('keeps every ordinary or lookalike ref mutation integrity-significant', () => {
+  const protectedRefs = [
+    'refs/heads/main',
+    'refs/heads/codex/turn-diffs/captures/1784147335196/5d4f7161-4325-4563-a255-738b885c878d/base',
+    'refs/tags/milestone-04',
+    'refs/remotes/origin/main',
+    'refs/notes/commits',
+    'refs/stash',
+    'refs/replace/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+    'refs/codex/turn-diffs/captures/1784147335196/5d4f7161-4325-4563-a255-738b885c878d/head',
+    'refs/codex/turn-diffs/captures/0784147335196/5d4f7161-4325-4563-a255-738b885c878d/base',
+    'refs/codex/turn-diffs/captures/1784147335196/5d4f7161-4325-5563-a255-738b885c878d/base',
+  ] as const;
+
+  for (const name of protectedRefs) {
+    const before = refState(refEntry(name, REF_OBJECT_A));
+    const after = refState(refEntry(name, REF_OBJECT_B));
+    assert.equal(
+      equalIntegrityRefStates(before, after),
+      false,
+      `mutation must remain protected: ${name}`,
+    );
+  }
+
+  assert.equal(
+    equalIntegrityRefStates(
+      refState(refEntry('refs/heads/main')),
+      refState(
+        refEntry('refs/heads/main'),
+        refEntry('refs/heads/new-branch'),
+      ),
+    ),
+    false,
+  );
+  assert.equal(
+    equalIntegrityRefStates(
+      refState(refEntry('refs/heads/alias', REF_OBJECT_A, 'refs/heads/main')),
+      refState(refEntry('refs/heads/alias', REF_OBJECT_A, 'refs/heads/other')),
+    ),
+    false,
+  );
+});
+
+test('rejects an exact-shaped Codex turn-diff capture mutation inside the live worktree firewall', async () => {
+  const { repo, handle } = await createFixture();
+  await runGit(repo, [
+    'update-ref',
+    VOLATILE_CAPTURE_REF_A,
+    handle.repository.baseHead,
+  ]);
+  await expectErrorCode(
+    verifyDisposableWorktree(handle),
+    'repository_refs_changed',
+  );
+});
+
+test('rejects an exact volatile capture addition between worktree planning and materialization', async () => {
+  const { root, repo, handle } = await createFixture();
+  const plan = await planDisposableWorktree(repo, { tempParent: root });
+  await runGit(repo, [
+    'update-ref',
+    VOLATILE_CAPTURE_REF_A,
+    handle.repository.baseHead,
+  ]);
+
+  await expectErrorCode(
+    materializeDisposableWorktree(plan),
+    'repository_snapshot_changed',
+  );
+});
+
 test('accepts only the two-file unstaged repair and includes the untracked diff', async () => {
   const { repo, handle } = await createFixture();
   const refsBefore = await captureRefState(repo);
@@ -239,6 +387,87 @@ test('reopens a persisted worktree handle only inside its registered temp bounda
   await cleanupDisposableWorktree(reopened);
   handles.delete(reopened);
 });
+
+test('reopens an exact retained old-base candidate after main advances without weakening ordinary reopening', async () => {
+  const { repo, handle } = await createFixture();
+  const retainedBase = handle.repository.baseHead;
+  const allocationId = handle.tempRoot.split(/[\\/]/u).at(-1)!.slice('repair-'.length);
+  await writeFile(
+    join(repo, 'orchestrator-policy.txt'),
+    'narrow volatile ref classification\n',
+    'utf8',
+  );
+  await runGit(repo, ['add', 'orchestrator-policy.txt']);
+  await runGit(repo, ['commit', '-m', 'test: advance orchestration policy']);
+
+  await expectErrorCode(
+    reopenDisposableWorktree(repo, handle.worktreePath, {
+      tempParent: resolve(handle.tempBase, '..'),
+    }),
+    'worktree_head_changed',
+  );
+  await expectErrorCode(
+    reopenRetainedDisposableWorktree(repo, handle.worktreePath, {
+      expectedAllocationId: '00000000-0000-4000-8000-000000000000',
+      expectedBaseHead: retainedBase,
+      tempParent: resolve(handle.tempBase, '..'),
+    }),
+    'retained_allocation_changed',
+  );
+
+  const reopened = await reopenRetainedDisposableWorktree(
+    repo,
+    handle.worktreePath,
+    {
+      expectedAllocationId: allocationId,
+      expectedBaseHead: retainedBase,
+      tempParent: resolve(handle.tempBase, '..'),
+    },
+  );
+  handles.delete(handle);
+  handles.add(reopened);
+  assert.equal(reopened.repository.baseHead, retainedBase);
+  await verifyDisposableWorktree(reopened);
+  await cleanupDisposableWorktree(reopened);
+  handles.delete(reopened);
+  assert.equal(
+    (await runGit(repo, ['worktree', 'list', '--porcelain'])).stdout.includes(
+      handle.worktreePath,
+    ),
+    false,
+  );
+});
+
+test(
+  'rejects a cross-allocation checkout junction before retained cleanup can follow it',
+  { skip: process.platform !== 'win32' },
+  async () => {
+    const { root, repo, handle } = await createFixture();
+    const foreignAllocationId = randomUUID();
+    const foreignRoot = join(
+      handle.tempBase,
+      `repair-${foreignAllocationId}`,
+    );
+    const foreignCheckout = join(foreignRoot, 'checkout');
+    await mkdir(foreignRoot);
+    await symlink(handle.worktreePath, foreignCheckout, 'junction');
+    try {
+      await expectErrorCode(
+        reopenRetainedDisposableWorktree(repo, foreignCheckout, {
+          expectedAllocationId: foreignAllocationId,
+          expectedBaseHead: handle.repository.baseHead,
+          tempParent: root,
+        }),
+        'unsafe_reopened_path',
+      );
+      await verifyDisposableWorktree(handle);
+      assert.equal(await readFile(join(repo, 'src', 'client', 'main.ts'), 'utf8'), BASE_SOURCE);
+    } finally {
+      await unlink(foreignCheckout);
+      await rm(foreignRoot, { force: true, recursive: true });
+    }
+  },
+);
 
 test('refuses to reopen a registered repair-prefixed checkout without an exact UUID root', async () => {
   const { root, repo, handle } = await createFixture();

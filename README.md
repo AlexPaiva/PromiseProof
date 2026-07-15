@@ -8,7 +8,7 @@ The intended users are product, QA, privacy, and platform engineers responsible 
 
 The Milestone 03 investigation layer is implemented and verified both offline and with live GPT-5.6. It gives GPT-5.6 a versioned, allowlisted dossier, accepts one strictly structured request for one registered diagnostic replay, executes that existing replay through deterministic code, and asks GPT-5.6 for one strictly structured hypothesis update. GPT-5.6 proposes the initial ranked hypothesis titles and evidence, while deterministic code prescribes opaque identity slots (`h1` through `h4`), validates them, and recursively freezes the accepted identities and titles. The final model schema returns only ID-linked updates and has no free-form cause or overall-verdict field. GPT-5.6 never receives the selected fixture; deterministic TypeScript and Playwright alone decide whether the promise passed.
 
-Milestone 04's bounded repair infrastructure is implemented and passes its offline two-worktree journey. Three authentic Codex preparations have failed closed before a candidate was accepted: two during command inspection and one after the model returned the ready-made structured summary without using tools. Prompt v4 retains the two exact ordered literal reads and adds a fixed developer-role execution gate, explicit runtime-wrapper semantics, and a post-evidence tool-first instruction before the final structured handoff. The provider still fails closed on every observed command, file-change, or premature-message lifecycle that diverges from the pinned sequence. Candidate commands run under the native elevated Windows sandbox only after a no-key boundary preflight. No candidate has been approved and no repaired-state PASS is claimed yet.
+Milestone 04's bounded repair infrastructure is implemented, with its final hardening checkpoint still being verified. Three authentic Codex preparations failed closed before a candidate was accepted; a fourth authentic turn produced a policy-valid two-file candidate. Alex approved repair `84c31de0-090c-48af-8470-0b953fb01c29` with patch SHA-256 `71cf08a1b6922969e79bdd08e2ee11f6d5db29adec6f499f4b28cfb0f0ed86ec`. Its first verification invocation stopped before verification began because Codex Desktop rotated only transient turn-capture refs between operator commands; no verification worktree was created, Playwright was not invoked, and no repaired-state PASS exists. The hardening preserves complete-ref equality inside live worktree boundaries, excludes only the exact app-owned capture-ref shape across invocations, and adds explicit human-authorized `not_run` retirement.
 
 ## Current evidence matrix
 
@@ -29,7 +29,7 @@ PromiseProof is one small TypeScript workspace:
 - `src/server` — Express API, fixed recommendation data, in-memory state, and isolated fixture injection.
 - `src/shared` — evidence schema, canonical evaluator, and whitelisted replay selection.
 - `src/investigation` — versioned dossier and result contracts, strict runtime schemas, GPT-5.6 Responses API provider, deterministic validation, closed replay dispatcher, bounded runner, and sanitized audit artifact.
-- `src/repair` — frozen live-receipt eligibility, pinned Codex SDK boundary, exact inspection policy, disposable-worktree orchestration, semantic diff firewall, real-TTY approval, fresh-worktree verification, recovery, and deterministic receipts.
+- `src/repair` — frozen live-receipt eligibility, pinned Codex SDK boundary, exact inspection policy, disposable-worktree orchestration, semantic diff firewall, real-TTY approval, fresh-worktree verification, digest-bound `not_run` retirement, recovery, and deterministic receipts.
 - `tests` — Playwright journeys, independent network capture, contract tests, existing diagnostic replays, deterministic providers, leakage checks, live smoke paths, repair boundary tests, and the offline two-worktree journey.
 
 The browser and service communicate over real HTTP. Contextual requests contain no user ID and suppress the referrer. Feed assertions require rendered DOM item IDs to match backend recommendation receipts; missing DOM evidence cannot be replaced with server data.
@@ -230,6 +230,19 @@ combine that review command with another command. A model, test adapter, or
 non-interactive stream cannot approve the patch. Verification starts only after
 that immutable decision exists.
 
+If an approved candidate can no longer start verification because its retained
+base changed, retire it separately:
+
+```bash
+npm run repair:race:retire -- <repair-id>
+```
+
+Retirement requires a real interactive terminal and the exact displayed
+`RETIRE_UNVERIFIED` phrase. It preserves the patch, approval, candidate audit,
+source-integrity hashes, and lifecycle evidence while recording that verification
+was not run. It cannot approve a candidate, invoke Playwright, create a
+verification receipt, or relabel verification that already started.
+
 Live GPT-5.6 runs are intentionally separate. Copy `.env.example` to the ignored `.env.local`, set `OPENAI_API_KEY` there, then run one smoke per defect:
 
 ```bash
@@ -259,6 +272,6 @@ Each scenario writes normalized JSON evidence to its Playwright output directory
 
 Milestone 02 remains the frozen deterministic foundation: both seeded defects, both ON controls, the unchanged expected-red contract, two factual diagnostic replays, and five OFF plus five ON repetitions per fixture are implemented and recorded. Milestone 03 now adds a live-verified bounded GPT-5.6 investigation: 10/10 provider-boundary groups, 10/10 live-receipt-verifier groups, both real-browser offline investigations, both manually inspected live smokes, and the strict 3+3 live receipt all pass. The broader build, 6/6 race and 6/6 propagation ordinary browser cases, 20/20 deterministic contexts, exact expected-red wrapper, zero-vulnerability audit, production smokes, and seven-file frozen-foundation comparison also pass.
 
-Milestone 04 now includes live-receipt eligibility, a pinned one-turn Codex provider, two disposable worktrees, an elevated Windows offline-user sandbox, semantic source/test firewalls, digest-bound real-TTY review, deterministic fresh-worktree verification, crash recovery, and tamper-evident receipts. Its repair boundary passes 118/118 tests, and the complete clean-HEAD offline two-worktree journey passes from pushed prompt-v4 commit `d981758`: exact patch reapplication, five repaired OFF runs, five ON controls, startup regression, propagation-specific expected-red, deterministic PASS receipt, safe cleanup, and unchanged main commit/refs/source/status. The recovery layer can reconcile the single lifecycle-first crash window immediately before human review only after revalidating the exact candidate, patch, hashes, payload digests, absent runtime, retained symbolic HEAD and complete shared-ref snapshot, and unchanged base. No-cost real-runtime proofs exercise the exact reads, real file-change lifecycle, production event validation, developer-role instruction injection, offline sandbox identity, protected control and credential files, and the exact access-denied raw-egress signal. Three authentic preparations stopped safely before candidate acceptance; their failures are recorded in `BUILD_WEEK.md`. No production approval or repaired-state PASS is claimed.
+Milestone 04 now includes live-receipt eligibility, a pinned one-turn Codex provider, two disposable worktrees, an elevated Windows offline-user sandbox, semantic source/test firewalls, digest-bound real-TTY review, deterministic fresh-worktree verification, explicit `not_run` retirement, crash recovery, and tamper-evident receipts. The final correction is still being checked after an app-owned transient ref rotation exposed an over-strict cross-invocation comparison. The current approved candidate is not a production repaired-state PASS: it must be retired through Alex's real TTY, then replaced by one fresh candidate from the corrected base. Final test counts and the clean offline two-worktree result will be recorded only from fresh terminal runs after this checkpoint is committed.
 
-The canonical evaluator, contract assertion, seeded defects, and evidence capture remain outside model authority and must stay unchanged. The repository is not yet a complete Build Week submission. The immediate gate is one authentic candidate, Alex's real human review, and a fresh-worktree Playwright PASS. Cross-platform CI, a no-rebuild judge path, licensing, hosting, narrated demo packaging, screenshots, and the Devpost submission remain subsequent readiness work.
+The canonical evaluator, contract assertion, seeded defects, and evidence capture remain outside model authority and must stay unchanged. The repository is not yet a complete Build Week submission. The immediate gates are the corrected no-cost test matrix, commit/push, TTY retirement of the old unverified candidate, one fresh authentic candidate, and a fresh-worktree Playwright PASS. Cross-platform CI, a no-rebuild judge path, licensing, hosting, narrated demo packaging, screenshots, and the Devpost submission remain subsequent readiness work.

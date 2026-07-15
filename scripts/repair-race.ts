@@ -6,6 +6,7 @@ import { validateRepairLifecycle } from '../src/repair/artifact.js';
 import { OpenAICodexRepairProvider } from '../src/repair/codex-provider.js';
 import {
   readBoundRepairState,
+  retireHumanApprovedRaceRepairInteractively,
   retryRepairCleanup,
   reviewRaceRepairInteractively,
   verifyHumanApprovedRaceRepair,
@@ -27,11 +28,12 @@ function usage(): never {
       '  repair-race.ts prepare',
       '  repair-race.ts status <repair-id>',
       '  repair-race.ts review <repair-id>',
+      '  repair-race.ts retire <repair-id>',
       '  repair-race.ts verify <repair-id>',
       '  repair-race.ts cleanup <repair-id>',
       '  repair-race.ts recover-lock',
       '',
-      'There is intentionally no --yes, automatic approval, or piped-review mode.',
+      'There is intentionally no --yes, automatic approval, or piped review/retirement mode.',
     ].join('\n'),
   );
 }
@@ -171,6 +173,31 @@ async function main(): Promise<void> {
           authority: 'unchanged_playwright_and_deterministic_evaluator',
           receiptPath: result.receiptPath,
           cleanupState: result.cleanupState,
+        },
+        null,
+        2,
+      )}\n`,
+    );
+    return;
+  }
+  if (command === 'retire') {
+    const result = await retireHumanApprovedRaceRepairInteractively(
+      projectRoot,
+      repairId,
+    );
+    process.stdout.write(
+      `${JSON.stringify(
+        {
+          repairId,
+          disposition: result.decision.disposition,
+          verificationVerdict: result.decision.verificationVerdict,
+          reasonCode: result.decision.reasonCode,
+          retirementPath: result.retirementPath,
+          cleanupState: result.cleanupState,
+          nextCommand:
+            result.cleanupState === 'cleanup_completed'
+              ? 'npm run repair:race:prepare'
+              : `npm run repair:race:cleanup -- ${repairId}`,
         },
         null,
         2,

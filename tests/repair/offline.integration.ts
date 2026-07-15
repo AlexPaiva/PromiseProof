@@ -144,9 +144,26 @@ test(
       state.updatedAt = new Date().toISOString();
       await writeLocalRepairState(statePath, state);
 
+      // Codex Desktop legitimately rotates this exact app-owned ref between
+      // human review and a later command. It is excluded only from the
+      // cross-turn source-integrity comparison; every live worktree firewall
+      // still requires exact ref equality for the duration of its operation.
+      const rotatedCaptureRef =
+        'refs/codex/turn-diffs/captures/1784150000000/d0321504-ca0c-4dba-8735-d08a0ea8791d/base';
+      assert.equal(
+        state.baseRefState.refs.some((entry) => entry.name === rotatedCaptureRef),
+        false,
+      );
+      await runGit(repository, [
+        'update-ref',
+        rotatedCaptureRef,
+        state.baseCommit,
+      ]);
       const verified = await verifyHumanApprovedRaceRepair({
         projectRoot: repository,
         repairId: state.repairId,
+      }).finally(async () => {
+        await runGit(repository, ['update-ref', '-d', rotatedCaptureRef]);
       });
       assert.equal(verified.receipt.verdict, 'pass');
       assert.equal(verified.cleanupState, 'cleanup_completed');

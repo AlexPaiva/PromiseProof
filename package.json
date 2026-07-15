@@ -48,6 +48,7 @@
     "repair:race:prepare": "node --env-file-if-exists=.env.local ./node_modules/tsx/dist/cli.mjs scripts/repair-race.ts prepare",
     "repair:race:status": "node ./node_modules/tsx/dist/cli.mjs scripts/repair-race.ts status",
     "repair:race:review": "node ./node_modules/tsx/dist/cli.mjs scripts/repair-race.ts review",
+    "repair:race:retire": "node ./node_modules/tsx/dist/cli.mjs scripts/repair-race.ts retire",
     "repair:race:verify": "node ./node_modules/tsx/dist/cli.mjs scripts/repair-race.ts verify",
     "repair:race:cleanup": "node ./node_modules/tsx/dist/cli.mjs scripts/repair-race.ts cleanup",
     "repair:race:recover-lock": "node ./node_modules/tsx/dist/cli.mjs scripts/repair-race.ts recover-lock"
