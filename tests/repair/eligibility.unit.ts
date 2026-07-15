@@ -13,6 +13,11 @@ import {
   RepairEligibilityError,
 } from '../../src/repair/eligibility.js';
 import {
+  FROZEN_CRITICAL_PATHS,
+  validateFrozenFoundation,
+} from '../../src/repair/foundation.js';
+import { runGit } from '../../src/repair/git.js';
+import {
   buildRepairPrompt,
   buildRepairPromptEnvelope,
 } from '../../src/repair/prompt.js';
@@ -77,6 +82,34 @@ function assertIneligible(receipt: unknown): void {
       error.message.startsWith(`${REPAIR_INELIGIBLE_CODE}:`),
   );
 }
+
+test('frozen foundation accepts the committed M04 README delta while preserving critical blobs', async () => {
+  const projectRoot = process.cwd();
+  const baseCommit = (
+    await runGit(projectRoot, ['rev-parse', '--verify', 'HEAD'])
+  ).stdout.trim();
+  const baseTree = (
+    await runGit(projectRoot, ['rev-parse', '--verify', 'HEAD^{tree}'])
+  ).stdout.trim();
+
+  const frozen = await validateFrozenFoundation({
+    projectRoot,
+    baseCommit,
+    baseTree,
+  });
+
+  assert.equal(frozen.changedPathsFromCheckpoint.includes('README.md'), true);
+  assert.equal(
+    frozen.criticalFiles.length,
+    FROZEN_CRITICAL_PATHS.length,
+  );
+  assert.equal(
+    frozen.criticalFiles.every(
+      (entry) => entry.checkpointBlobId === entry.baseBlobId,
+    ),
+    true,
+  );
+});
 
 function assertRecursivelyFrozen(value: unknown): void {
   if (value === null || typeof value !== 'object') {

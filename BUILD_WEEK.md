@@ -1079,7 +1079,7 @@ raw TCP probe originally treated every exception or timeout as a block. It now
 accepts only `SocketError.AccessDenied`; timeout, refusal, routing failure, and
 all other outcomes fail closed.
 
-The combined repair boundary suite now passes 116/116 tests, including every
+The combined repair boundary suite now passes 117/117 tests, including every
 interrupted preparation/verification state, retained PASS tamper detection, the
 fresh second-worktree verifier, exact pinned SDK lifecycles, ACL/junction/hard-
 link defenses, and the new pre-Git external-target regression. A subsequent
@@ -1099,7 +1099,7 @@ more tests now cover both a symbolic-HEAD switch and an added shared ref. The
 separate real elevated-sandbox integration passes with no key.
 
 The final pre-commit checkpoint on 2026-07-15 is green: production build and
-typecheck pass; the complete repair boundary passes 116/116; all 12 focused
+typecheck pass; the complete repair boundary passes 117/117; all 12 focused
 crash-reconciliation cases pass; the real elevated no-key sandbox integration
 passes 1/1; the ordinary race and propagation suites pass 6/6 each; five OFF
 plus five ON fresh contexts for each defect pass 20/20; and the expected-red
@@ -1111,3 +1111,14 @@ zero vulnerabilities, `git diff --check` reports no whitespace defect (only the
 known AGENTS.md line-ending notice), and only the main worktree is registered.
 An independent final adversarial re-review reports no remaining P0/P1/P2
 finding. No repaired-state PASS or human approval is claimed by this checkpoint.
+
+The first clean-HEAD offline rehearsal from pushed commit `dc368b7` correctly
+failed before candidate creation with `PP_REPAIR_FOUNDATION_CHANGED` because
+`README.md` had changed since Milestone 03 but was accidentally omitted from the
+explicit Milestone 04 delta allowlist. The critical runtime/evaluator blob list
+was unchanged; the error was in the infrastructure-documentation policy, not a
+contract assertion. `README.md` is now explicitly allowed alongside
+`AGENTS.md` and `BUILD_WEEK.md`, while every evaluator, contract, defect,
+evidence, replay, and investigation file remains blob-frozen. A repository-level
+unit test now executes the real foundation validator against `HEAD`, requires
+the README delta, and rechecks all critical checkpoint/base blob identities.

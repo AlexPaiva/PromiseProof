@@ -104,6 +104,7 @@ function isAllowedMilestone04Delta(path: string): boolean {
     [
       'AGENTS.md',
       'BUILD_WEEK.md',
+      'README.md',
       'package.json',
       'package-lock.json',
       'scripts/repair-race.ts',
