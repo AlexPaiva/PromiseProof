@@ -389,6 +389,57 @@ test('local state writes atomically, round-trips, replaces, and rejects bad head
   }
 });
 
+test('local state accepts optional coarse command diagnostics and rejects raw fields', async () => {
+  const root = await temporaryRoot();
+  const statePath = join(root, 'state.json');
+  const base = stateFixture(root);
+  const legacyFailure: LocalRepairStateV1 = {
+    ...base,
+    state: 'baseline_verified',
+    providerFailure: {
+      code: 'PP_REPAIR_CODEX_COMMAND_FAILED',
+      message: 'A command failed.',
+      eventCount: 5,
+      serializedBytesObserved: 1_839,
+    },
+  };
+  await writeLocalRepairState(statePath, legacyFailure);
+  assert.deepEqual(await readLocalRepairState(statePath), legacyFailure);
+
+  const sanitizedFailure: LocalRepairStateV1 = {
+    ...legacyFailure,
+    providerFailure: {
+      ...legacyFailure.providerFailure!,
+      commandFailure: {
+        commandClass: 'git_metadata_read',
+        exitDisposition: 'positive_nonzero',
+        exitCode: 1,
+        outputBytes: 48,
+        reason: 'status_not_completed',
+      },
+    },
+  };
+  await writeLocalRepairState(statePath, sanitizedFailure);
+  assert.deepEqual(await readLocalRepairState(statePath), sanitizedFailure);
+
+  const forged = structuredClone(sanitizedFailure) as unknown as Record<
+    string,
+    unknown
+  >;
+  const providerFailure = forged.providerFailure as Record<string, unknown>;
+  const commandFailure = providerFailure.commandFailure as Record<
+    string,
+    unknown
+  >;
+  commandFailure.command = 'git status --short';
+  commandFailure.aggregatedOutput = 'fatal: index.lock denied';
+  await writeFile(statePath, `${JSON.stringify(forged)}\n`, 'utf8');
+  await assert.rejects(
+    readLocalRepairState(statePath),
+    /PP_REPAIR_LOCAL_STATE_INVALID/u,
+  );
+});
+
 test('accepts only the exact APPROVE or REJECT phrase for the current digest', () => {
   const repairId = randomUUID();
   const patchSha256 = 'a'.repeat(64);

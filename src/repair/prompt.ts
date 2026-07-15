@@ -6,7 +6,7 @@ import {
   REPAIR_ALLOWED_PATHS,
 } from './provider.js';
 
-export interface RepairPromptEnvelopeV1 {
+export interface RepairPromptEnvelopeV2 {
   version: typeof CODEX_REPAIR_PROMPT_VERSION;
   evidence: {
     candidateId: string;
@@ -22,6 +22,15 @@ export interface RepairPromptEnvelopeV1 {
     (typeof REPAIR_ALLOWED_PATHS)[0],
     (typeof REPAIR_ALLOWED_PATHS)[1],
   ];
+  pathFacts: readonly [
+    { path: 'src/client/main.ts'; state: 'existing_file' },
+    { path: 'tests/support/scenario.ts'; state: 'existing_file' },
+    { path: 'tests/regression'; state: 'absent' },
+    {
+      path: 'tests/regression/initialization-order.spec.ts';
+      state: 'absent';
+    },
+  ];
   requiredOutcome: {
     sourceRepair: string;
     regressionTest: string;
@@ -32,7 +41,7 @@ export interface RepairPromptEnvelopeV1 {
 export function buildRepairPromptEnvelope(
   candidate: RaceRepairCandidateV1,
   repairId: string,
-): RepairPromptEnvelopeV1 {
+): RepairPromptEnvelopeV2 {
   return deepFreeze({
     version: CODEX_REPAIR_PROMPT_VERSION,
     evidence: {
@@ -50,6 +59,15 @@ export function buildRepairPromptEnvelope(
         candidate.evidence.facts.identifiableActivityReceipts,
     },
     allowedPaths: [REPAIR_ALLOWED_PATHS[0], REPAIR_ALLOWED_PATHS[1]],
+    pathFacts: [
+      { path: 'src/client/main.ts', state: 'existing_file' },
+      { path: 'tests/support/scenario.ts', state: 'existing_file' },
+      { path: 'tests/regression', state: 'absent' },
+      {
+        path: 'tests/regression/initialization-order.spec.ts',
+        state: 'absent',
+      },
+    ],
     requiredOutcome: {
       sourceRepair:
         'Confine the source repair to the initialization-race branch body: use a truthful status saying preference restoration/hydration occurs before activity collection, then hydrate the preference before starting the collector. Remove or truthfully rewrite the stale seeded-race comment; the repaired branch must not claim hydration waits for an activity receipt. Do not change code outside that branch. Preserve contextual recommendations when OFF plus behavioral recommendations with expected activity when ON.',
@@ -60,7 +78,9 @@ export function buildRepairPromptEnvelope(
       'Do not edit, weaken, replace, or bypass any contract, evaluator, threshold, existing test, server behavior, or diagnostic replay.',
       'Do not disable recommendations or activity collection globally.',
       'Do not modify any path except the two allowlisted paths.',
+      'Do not run any Git command, test, build, package-manager command, Playwright command, or compiler command.',
       'Do not stage, commit, switch branches, rewrite refs, install dependencies, use the network, inspect environment variables, or access credentials.',
+      'Do not probe a path marked absent without a PowerShell Test-Path -LiteralPath guard, and do not run a command whose normal result can be exit code 1.',
       'Do not claim that the repair passed, is fixed, or is approved. A human reviews the diff and Playwright owns the verdict.',
     ],
   });
@@ -77,9 +97,10 @@ export function buildRepairPrompt(
   const prompt = [
     'You are Codex preparing one bounded candidate repair in a disposable Git worktree.',
     'The JSON envelope below is deterministic, synthetic evidence and policy. Follow it exactly.',
-    'Inspect only the repository files needed to understand the two allowlisted edits. Prepare the smallest source change and a focused regression test.',
-    'You may run read-only inspection commands and focused tests, but every completed command must exit zero.',
-    'On Windows invoke npm and npx as npm.cmd and npx.cmd. Do not run the known-red canonical OFF verifier; use only focused commands expected to be green.',
+    'Inspect only existing repository files needed to understand the two allowlisted edits. Prepare the smallest source change and a focused regression test.',
+    'The pathFacts are exact for this frozen base. The regression path and its parent directory are absent by design; do not try to read or list either as an existing path.',
+    'You may run only read-only file-inspection commands. Do not run Git commands, tests, builds, npm, npx, Playwright, or compiler commands; PromiseProof owns every validation step.',
+    'Every completed command must exit zero. On Windows, guard any optional path with Test-Path -LiteralPath before reading or listing it. Do not run searches, path reads, or diff checks whose normal no-match, missing-path, or changed result is exit code 1.',
     'Your final response must contain only the requested structured JSON summary. It is not a verification result.',
     canonicalJson(envelope),
   ].join('\n\n');

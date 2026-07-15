@@ -15,11 +15,13 @@ import {
   CODEX_REPAIR_CLI_VERSION,
   CODEX_REPAIR_MODEL,
   CODEX_REPAIR_SDK_VERSION,
+  REPAIR_COMMAND_CLASSES,
   REPAIR_AGENT_OUTPUT_SCHEMA,
   REPAIR_ALLOWED_PATHS,
   RepairProviderError,
   repairAgentSummarySchema,
   type RepairProvider,
+  type SafeRepairCommandFailureDiagnostic,
   type RepairProviderEventSummary,
   type RepairProviderInput,
   type RepairProviderResult,
@@ -91,12 +93,14 @@ function fail(
   code: string,
   message: string,
   state: MutableEventState,
+  commandFailure?: SafeRepairCommandFailureDiagnostic,
 ): never {
   throw new RepairProviderError({
     code,
     message,
     eventCount: state.eventCount,
     serializedBytesObserved: state.serializedBytesObserved,
+    ...(commandFailure === undefined ? {} : { commandFailure }),
   });
 }
 
@@ -134,6 +138,59 @@ function normalizeObservedPath(worktreePath: string, candidate: string): string 
   return relative;
 }
 
+function classifyCommand(
+  command: string,
+): (typeof REPAIR_COMMAND_CLASSES)[number] {
+  if (
+    /\bgit(?:\.exe)?\s+(?:(?:-c|--config-env)\s+\S+\s+)*(?:status|diff|show|log|ls-files|rev-parse)\b/iu.test(
+      command,
+    )
+  ) {
+    return 'git_metadata_read';
+  }
+  if (/\b(?:Test-Path|Get-ChildItem|Get-Content)\b/iu.test(command)) {
+    return 'path_probe';
+  }
+  if (/\b(?:rg|Select-String|findstr)(?:\.exe)?\b/iu.test(command)) {
+    return 'repository_search';
+  }
+  if (
+    /\b(?:npm|npx|node|playwright|tsc|vite)(?:\.cmd|\.exe)?\b/iu.test(command)
+  ) {
+    return 'test_or_build';
+  }
+  return 'other';
+}
+
+function commandFailureDiagnostic(
+  item: Extract<ThreadItem, { type: 'command_execution' }>,
+): SafeRepairCommandFailureDiagnostic {
+  const exitCode = Number.isSafeInteger(item.exit_code)
+    ? (item.exit_code ?? null)
+    : null;
+  const exitDisposition =
+    exitCode === null
+      ? 'missing'
+      : exitCode === 0
+        ? 'zero'
+        : exitCode > 0
+          ? 'positive_nonzero'
+          : 'negative_nonzero';
+  const reason =
+    item.status !== 'completed'
+      ? 'status_not_completed'
+      : exitCode === null
+        ? 'exit_code_missing'
+        : 'exit_code_nonzero';
+  return {
+    commandClass: classifyCommand(item.command),
+    exitDisposition,
+    exitCode,
+    outputBytes: Buffer.byteLength(item.aggregated_output, 'utf8'),
+    reason,
+  };
+}
+
 function validateCompletedItem(
   item: ThreadItem,
   worktreePath: string,
@@ -169,6 +226,7 @@ function validateCompletedItem(
         'PP_REPAIR_CODEX_COMMAND_FAILED',
         'Codex completed a command with a non-zero or missing success status.',
         state,
+        commandFailureDiagnostic(item),
       );
     }
   } else if (item.type === 'file_change') {
@@ -323,9 +381,10 @@ async function packageVersion(packageName: string): Promise<string> {
   }
 }
 
-function controlledEnvironment(
+export function controlledEnvironment(
   codexHomePath: string,
   toolTempPath: string,
+  sourceEnvironment: Readonly<NodeJS.ProcessEnv> = process.env,
 ): { cli: Record<string, string>; commands: Record<string, string> } {
   const cli: Record<string, string> = {
     CODEX_HOME: codexHomePath,
@@ -335,6 +394,9 @@ function controlledEnvironment(
   const commands: Record<string, string> = {
     TEMP: toolTempPath,
     TMP: toolTempPath,
+    GIT_OPTIONAL_LOCKS: '0',
+    GIT_PAGER: 'cat',
+    GIT_TERMINAL_PROMPT: '0',
   };
   for (const key of [
     'Path',
@@ -347,7 +409,7 @@ function controlledEnvironment(
     'LOCALAPPDATA',
     'HOME',
   ]) {
-    const value = process.env[key];
+    const value = sourceEnvironment[key];
     if (value !== undefined) {
       cli[key] = value;
       if (!['USERPROFILE', 'APPDATA', 'LOCALAPPDATA', 'HOME'].includes(key)) {

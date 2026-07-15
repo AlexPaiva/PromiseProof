@@ -25,6 +25,9 @@ import {
   CODEX_REPAIR_CLI_VERSION,
   CODEX_REPAIR_MODEL,
   CODEX_REPAIR_SDK_VERSION,
+  REPAIR_COMMAND_CLASSES,
+  REPAIR_COMMAND_EXIT_DISPOSITIONS,
+  REPAIR_COMMAND_FAILURE_REASONS,
   repairAgentSummarySchema,
   type RepairProviderResult,
   type SafeRepairProviderFailure,
@@ -248,12 +251,23 @@ const providerResultSchema = z
     }
   });
 
+const commandFailureDiagnosticSchema = z
+  .object({
+    commandClass: z.enum(REPAIR_COMMAND_CLASSES),
+    exitDisposition: z.enum(REPAIR_COMMAND_EXIT_DISPOSITIONS),
+    exitCode: z.number().int().safe().nullable(),
+    outputBytes: z.number().int().nonnegative().max(2 * 1024 * 1024),
+    reason: z.enum(REPAIR_COMMAND_FAILURE_REASONS),
+  })
+  .strict();
+
 const providerFailureSchema = z
   .object({
     code: z.string().regex(PP_CODE),
     message: z.string().min(1).max(1_000),
     eventCount: z.number().int().nonnegative().max(2_000),
     serializedBytesObserved: z.number().int().nonnegative().max(2 * 1024 * 1024),
+    commandFailure: commandFailureDiagnosticSchema.optional(),
   })
   .strict();
 

@@ -4,7 +4,7 @@ export const CODEX_REPAIR_MODEL = 'gpt-5.6-sol' as const;
 export const CODEX_REPAIR_SDK_VERSION = '0.144.4' as const;
 export const CODEX_REPAIR_CLI_VERSION = '0.144.4' as const;
 export const CODEX_REPAIR_PROMPT_VERSION =
-  'promiseproof.codex-repair-prompt.v1' as const;
+  'promiseproof.codex-repair-prompt.v2' as const;
 export const CODEX_REPAIR_SUMMARY_VERSION =
   'promiseproof.codex-repair-summary.v1' as const;
 
@@ -146,11 +146,41 @@ export interface RepairProvider {
   prepareRepair(input: RepairProviderInput): Promise<RepairProviderResult>;
 }
 
+export const REPAIR_COMMAND_CLASSES = [
+  'git_metadata_read',
+  'path_probe',
+  'repository_search',
+  'test_or_build',
+  'other',
+] as const;
+
+export const REPAIR_COMMAND_EXIT_DISPOSITIONS = [
+  'zero',
+  'positive_nonzero',
+  'negative_nonzero',
+  'missing',
+] as const;
+
+export const REPAIR_COMMAND_FAILURE_REASONS = [
+  'status_not_completed',
+  'exit_code_nonzero',
+  'exit_code_missing',
+] as const;
+
+export interface SafeRepairCommandFailureDiagnostic {
+  commandClass: (typeof REPAIR_COMMAND_CLASSES)[number];
+  exitDisposition: (typeof REPAIR_COMMAND_EXIT_DISPOSITIONS)[number];
+  exitCode: number | null;
+  outputBytes: number;
+  reason: (typeof REPAIR_COMMAND_FAILURE_REASONS)[number];
+}
+
 export interface SafeRepairProviderFailure {
   code: string;
   message: string;
   eventCount: number;
   serializedBytesObserved: number;
+  commandFailure?: SafeRepairCommandFailureDiagnostic;
 }
 
 export class RepairProviderError extends Error {

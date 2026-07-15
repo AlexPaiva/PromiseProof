@@ -4,11 +4,15 @@ import { test } from 'node:test';
 
 import type { ThreadEvent } from '@openai/codex-sdk';
 
-import { validateCodexEventSequence } from '../../src/repair/codex-provider.js';
+import {
+  controlledEnvironment,
+  validateCodexEventSequence,
+} from '../../src/repair/codex-provider.js';
 import {
   CODEX_REPAIR_SUMMARY_VERSION,
   REPAIR_CONSTRAINT_CODES,
   RepairProviderError,
+  type SafeRepairProviderFailure,
 } from '../../src/repair/provider.js';
 
 const worktreePath = path.resolve('C:/promiseproof-test-worktree');
@@ -88,11 +92,27 @@ function accept(events = validEvents(), sensitiveValues: string[] = []) {
 }
 
 function assertRejected(events: ThreadEvent[], code: string): void {
+  rejectedDetails(events, code);
+}
+
+function rejectedDetails(
+  events: ThreadEvent[],
+  code: string,
+  sensitiveValues: string[] = [],
+): SafeRepairProviderFailure {
+  let details: SafeRepairProviderFailure | null = null;
   assert.throws(
-    () => accept(events),
-    (error: unknown) =>
-      error instanceof RepairProviderError && error.details.code === code,
+    () => accept(events, sensitiveValues),
+    (error: unknown) => {
+      if (error instanceof RepairProviderError && error.details.code === code) {
+        details = error.details;
+        return true;
+      }
+      return false;
+    },
   );
+  assert.notEqual(details, null);
+  return details as unknown as SafeRepairProviderFailure;
 }
 
 test('accepts and freezes one bounded schema-valid Codex turn', () => {
@@ -201,12 +221,12 @@ test('rejects protected values anywhere in transient event data', () => {
       status: 'completed',
     },
   };
-  assert.throws(
-    () => accept(events, [secret]),
-    (error: unknown) =>
-      error instanceof RepairProviderError &&
-      error.details.code === 'PP_REPAIR_CODEX_SECRET_OBSERVED',
+  const details = rejectedDetails(
+    events,
+    'PP_REPAIR_CODEX_SECRET_OBSERVED',
+    [secret],
   );
+  assert.equal(details.commandFailure, undefined);
 });
 
 test('rejects failed commands and invalid or authoritative final output', () => {
@@ -222,7 +242,17 @@ test('rejects failed commands and invalid or authoritative final output', () => 
       status: 'failed',
     },
   };
-  assertRejected(failedCommand, 'PP_REPAIR_CODEX_COMMAND_FAILED');
+  const details = rejectedDetails(
+    failedCommand,
+    'PP_REPAIR_CODEX_COMMAND_FAILED',
+  );
+  assert.deepEqual(details.commandFailure, {
+    commandClass: 'other',
+    exitDisposition: 'positive_nonzero',
+    exitCode: 1,
+    outputBytes: 6,
+    reason: 'status_not_completed',
+  });
 
   const verdictOutput = validEvents();
   verdictOutput[4] = {
@@ -237,6 +267,131 @@ test('rejects failed commands and invalid or authoritative final output', () => 
     },
   };
   assertRejected(verdictOutput, 'PP_REPAIR_CODEX_SUMMARY_INVALID');
+});
+
+test('projects failed Git metadata reads without retaining command or output', () => {
+  const events = validEvents();
+  const rawCommand = 'git status --short';
+  const rawOutput = 'fatal: cannot create linked-worktree index.lock';
+  events[3] = {
+    type: 'item.completed',
+    item: {
+      id: 'git-status-failed',
+      type: 'command_execution',
+      command: rawCommand,
+      aggregated_output: rawOutput,
+      exit_code: 1,
+      status: 'failed',
+    },
+  };
+
+  const details = rejectedDetails(events, 'PP_REPAIR_CODEX_COMMAND_FAILED');
+  assert.deepEqual(details.commandFailure, {
+    commandClass: 'git_metadata_read',
+    exitDisposition: 'positive_nonzero',
+    exitCode: 1,
+    outputBytes: Buffer.byteLength(rawOutput, 'utf8'),
+    reason: 'status_not_completed',
+  });
+  const serialized = JSON.stringify(details);
+  assert.doesNotMatch(serialized, new RegExp(rawCommand, 'u'));
+  assert.doesNotMatch(serialized, /index\.lock/u);
+  assert.deepEqual(Object.keys(details.commandFailure ?? {}).sort(), [
+    'commandClass',
+    'exitCode',
+    'exitDisposition',
+    'outputBytes',
+    'reason',
+  ]);
+});
+
+test('projects missing-path and missing-exit failures into strict coarse diagnostics', () => {
+  const missingPath = validEvents();
+  missingPath[3] = {
+    type: 'item.completed',
+    item: {
+      id: 'missing-path',
+      type: 'command_execution',
+      command:
+        "Get-Content -LiteralPath 'tests/regression/initialization-order.spec.ts'",
+      aggregated_output: 'path does not exist',
+      exit_code: 1,
+      status: 'failed',
+    },
+  };
+  assert.deepEqual(
+    rejectedDetails(missingPath, 'PP_REPAIR_CODEX_COMMAND_FAILED')
+      .commandFailure,
+    {
+      commandClass: 'path_probe',
+      exitDisposition: 'positive_nonzero',
+      exitCode: 1,
+      outputBytes: Buffer.byteLength('path does not exist', 'utf8'),
+      reason: 'status_not_completed',
+    },
+  );
+
+  const completedNonzero = validEvents();
+  completedNonzero[3] = {
+    type: 'item.completed',
+    item: {
+      id: 'completed-nonzero',
+      type: 'command_execution',
+      command: "Test-Path -LiteralPath 'optional-path'",
+      aggregated_output: 'False',
+      exit_code: 1,
+      status: 'completed',
+    },
+  };
+  assert.equal(
+    rejectedDetails(completedNonzero, 'PP_REPAIR_CODEX_COMMAND_FAILED')
+      .commandFailure?.reason,
+    'exit_code_nonzero',
+  );
+
+  const missingExit = validEvents();
+  missingExit[3] = {
+    type: 'item.completed',
+    item: {
+      id: 'missing-exit',
+      type: 'command_execution',
+      command: "Test-Path -LiteralPath 'optional-path'",
+      aggregated_output: 'False',
+      status: 'completed',
+    },
+  };
+  assert.deepEqual(
+    rejectedDetails(missingExit, 'PP_REPAIR_CODEX_COMMAND_FAILED')
+      .commandFailure,
+    {
+      commandClass: 'path_probe',
+      exitDisposition: 'missing',
+      exitCode: null,
+      outputBytes: 5,
+      reason: 'exit_code_missing',
+    },
+  );
+});
+
+test('builds a read-only Git shell environment without metadata redirection', () => {
+  const environment = controlledEnvironment('C:/isolated-codex', 'C:/tool-temp', {
+    Path: 'C:/safe-bin',
+    SystemRoot: 'C:/Windows',
+    COMSPEC: 'C:/Windows/System32/cmd.exe',
+    PATHEXT: '.EXE;.CMD',
+    GIT_DIR: 'C:/attacker/git-dir',
+    GIT_WORK_TREE: 'C:/attacker/work-tree',
+    GIT_INDEX_FILE: 'C:/attacker/index',
+  });
+
+  assert.equal(environment.commands.GIT_OPTIONAL_LOCKS, '0');
+  assert.equal(environment.commands.GIT_PAGER, 'cat');
+  assert.equal(environment.commands.GIT_TERMINAL_PROMPT, '0');
+  assert.equal('GIT_DIR' in environment.commands, false);
+  assert.equal('GIT_WORK_TREE' in environment.commands, false);
+  assert.equal('GIT_INDEX_FILE' in environment.commands, false);
+  assert.equal('GIT_DIR' in environment.cli, false);
+  assert.equal('GIT_WORK_TREE' in environment.cli, false);
 });
 
 test('rejects multiple threads, turns, final messages, and invalid usage', () => {

@@ -761,6 +761,13 @@ claims fail closed. The model's final JSON is a bounded activity summary, never
 a pass result. Immediately after that sanitized result is accepted, the isolated
 Codex home and tool-temporary directories are safely removed; raw session,
 prompt, reasoning, and CLI-log state is not retained through human review.
+The command environment disables optional Git locks and interactive Git paging
+or prompts without supplying `GIT_DIR`, `GIT_WORK_TREE`, or another metadata
+redirection. Prompt v2 binds the existing source/helper paths and the absent new
+regression path/directory into the canonical envelope. Codex may inspect only
+existing files; it is explicitly prohibited from running Git, tests, builds,
+package managers, Playwright, or compilers, and optional path probes must be
+guarded so every completed command exits zero.
 Candidate baseline and repaired-state commands also use fresh empty npm user and
 global configuration files, a disposable npm cache, a fixed public registry,
 and an environment that does not inherit API keys, auth tokens, npm credentials,
@@ -833,10 +840,11 @@ while Git still registers their worktrees.
 
 ### Current checkpoint
 
-No live Codex repair candidate has been requested, no candidate diff has been
-approved, no patch has been applied to `main`, and no repaired-state PASS is
-claimed in this infrastructure checkpoint. The production approval boundary
-will stop on the first unseen live diff for Alex's real human review.
+One authentic Codex repair request has been made, but it failed closed before a
+candidate was accepted. No candidate diff has been approved, no patch has been
+applied to `main`, and no repaired-state PASS is claimed. The production
+approval boundary will still stop on the first unseen valid live diff for
+Alex's real human review.
 
 The infrastructure checkpoint was committed as
 `8211db42dd111e0d8cb3d5998436532205800137` and pushed to `origin/main` before
@@ -864,6 +872,42 @@ regression matrix:
 | `npm.cmd run build` | PASS — strict typecheck, Vite client bundle, and production server bundle after the offline journey |
 | `npm.cmd audit --audit-level=moderate` | PASS — 0 vulnerabilities |
 | Repository integrity | PASS — clean `main`, local and remote at the same commit, one registered worktree, and `git fsck --no-dangling` clean |
+
+### First authentic prepare failure and retry hardening — 2026-07-15
+
+Repair `2d696ef3-0352-407f-a543-ee4d92711a31` passed its exact expected-red
+baseline, then the live Codex stream was rejected as
+`PP_REPAIR_CODEX_COMMAND_FAILED` at event 5 after 1,839 serialized event bytes.
+The provider result and patch remained null. Failure evidence was saved before
+the candidate worktree and isolated runtime were removed, and the lifecycle
+reached `cleanup_completed`. This is a correct fail-closed outcome, not a failed
+repair candidate and not a product verdict.
+
+The deliberately minimal v1 failure projection did not retain command text,
+output, status, or exit code, so the precise command cannot be reconstructed.
+Two causes remain plausible: an initial read-only `git status` may have attempted
+an optional index lock in the linked worktree's out-of-sandbox Git metadata, or
+an inspection command may have treated the intentionally absent
+`tests/regression` directory or new test path as existing. Neither hypothesis is
+claimed as proven.
+
+Before another paid attempt, the shell boundary gained
+`GIT_OPTIONAL_LOCKS=0`, `GIT_PAGER=cat`, and `GIT_TERMINAL_PROMPT=0`; inherited
+Git redirections remain excluded. The canonical prompt advanced to v2 and now
+records exact existing/absent path facts, prohibits all Git/test/build commands,
+requires `Test-Path -LiteralPath` guards for optional Windows paths, and forbids
+commands whose normal no-match or missing-path result is exit 1. Future provider
+failures may retain only a strict coarse command class, exit disposition,
+nullable exit code, output byte count, and coarse reason. Raw commands,
+arguments, paths, hashes, and output remain excluded; the secret scan still
+runs before classification. The old failure shape remains valid so retained v1
+evidence is readable unchanged.
+
+Retry-hardening verification passed the production build, all 33/33 directly
+affected provider/prompt/artifact tests, and the complete 92/92 repair boundary
+suite including recovery, verification, worktree, diff-firewall, and cleanup
+tests. `git diff --check` also passed. No second live request was made during
+this hardening checkpoint.
 
 The original Milestone 03 stability command is a live-cohort finalizer, not a
 cross-milestone receipt checker. Invoking it directly at the Milestone 04 HEAD

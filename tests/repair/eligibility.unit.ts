@@ -13,6 +13,11 @@ import {
   RepairEligibilityError,
 } from '../../src/repair/eligibility.js';
 import {
+  buildRepairPrompt,
+  buildRepairPromptEnvelope,
+} from '../../src/repair/prompt.js';
+import { CODEX_REPAIR_PROMPT_VERSION } from '../../src/repair/provider.js';
+import {
   liveStabilityReceiptV1Schema,
   raceRepairCandidateV1Schema,
 } from '../../src/repair/schemas.js';
@@ -127,6 +132,38 @@ test('derives a frozen sanitized startup-order repair candidate from the committ
       value: 'a'.repeat(64),
     });
   }, TypeError);
+});
+
+test('binds the v2 repair prompt to exact existing and absent path facts', () => {
+  const candidate = deriveRaceRepairCandidateV1(committedReceipt);
+  const repairId = '2d696ef3-0352-407f-a543-ee4d92711a31';
+  const envelope = buildRepairPromptEnvelope(candidate, repairId);
+  const built = buildRepairPrompt(candidate, repairId);
+
+  assert.equal(
+    CODEX_REPAIR_PROMPT_VERSION,
+    'promiseproof.codex-repair-prompt.v2',
+  );
+  assert.equal(envelope.version, CODEX_REPAIR_PROMPT_VERSION);
+  assert.deepEqual(envelope.pathFacts, [
+    { path: 'src/client/main.ts', state: 'existing_file' },
+    { path: 'tests/support/scenario.ts', state: 'existing_file' },
+    { path: 'tests/regression', state: 'absent' },
+    {
+      path: 'tests/regression/initialization-order.spec.ts',
+      state: 'absent',
+    },
+  ]);
+  assert.equal(
+    built.promptEnvelopeSha256,
+    sha256CanonicalJson(envelope),
+  );
+  assert.match(built.prompt, /absent by design/u);
+  assert.match(built.prompt, /Test-Path -LiteralPath/u);
+  assert.match(built.prompt, /Do not run Git commands, tests, builds/u);
+  assert.match(built.prompt, /normal no-match, missing-path, or changed result/u);
+  assert.doesNotMatch(built.prompt, /npm\.cmd|npx\.cmd/u);
+  assertRecursivelyFrozen(envelope);
 });
 
 test('candidate schema rejects extra output fields', () => {
