@@ -422,7 +422,23 @@ test('local state accepts optional coarse command diagnostics and rejects raw fi
   await writeLocalRepairState(statePath, sanitizedFailure);
   assert.deepEqual(await readLocalRepairState(statePath), sanitizedFailure);
 
-  const forged = structuredClone(sanitizedFailure) as unknown as Record<
+  const policyDecline: LocalRepairStateV1 = {
+    ...sanitizedFailure,
+    providerFailure: {
+      ...sanitizedFailure.providerFailure!,
+      commandFailure: {
+        commandClass: 'path_probe',
+        exitDisposition: 'negative_nonzero',
+        exitCode: -1,
+        outputBytes: 615,
+        reason: 'approval_policy_declined',
+      },
+    },
+  };
+  await writeLocalRepairState(statePath, policyDecline);
+  assert.deepEqual(await readLocalRepairState(statePath), policyDecline);
+
+  const forged = structuredClone(policyDecline) as unknown as Record<
     string,
     unknown
   >;
@@ -433,6 +449,7 @@ test('local state accepts optional coarse command diagnostics and rejects raw fi
   >;
   commandFailure.command = 'git status --short';
   commandFailure.aggregatedOutput = 'fatal: index.lock denied';
+  commandFailure.rawStatus = 'declined';
   await writeFile(statePath, `${JSON.stringify(forged)}\n`, 'utf8');
   await assert.rejects(
     readLocalRepairState(statePath),

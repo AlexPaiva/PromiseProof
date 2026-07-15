@@ -26,6 +26,7 @@ import {
   type RepairStateName,
 } from '../../src/repair/artifact.js';
 import type { RaceRepairCandidateV1 } from '../../src/repair/contracts.js';
+import { validateRepairDiff } from '../../src/repair/diff-validator.js';
 import {
   FOUNDATION_POLICY_VERSION,
   FROZEN_CRITICAL_PATHS,
@@ -75,6 +76,9 @@ interface RepositoryFixture {
 
 const roots = new Set<string>();
 const worktrees = new Set<DisposableWorktree>();
+let cachedValidatedCandidate:
+  | Awaited<ReturnType<typeof validateRepairDiff>>
+  | null = null;
 const VERIFICATION_STAGE_IDS = [
   'install_dependencies',
   'build',
@@ -86,6 +90,62 @@ const VERIFICATION_STAGE_IDS = [
   'propagation_green',
   'startup_regression',
 ] as const satisfies readonly VerificationStageId[];
+
+const BASE_SOURCE = `export async function boot(demoMode: string): Promise<void> {
+    if (demoMode === "initialization-race") {
+      setStatus("Collector starting first", "working");
+      await runStartupCollector();
+      await hydratePreference();
+    } else {
+      await hydratePreference();
+      await runStartupCollector();
+    }
+}
+
+declare function setStatus(message: string, state: string): void;
+declare function runStartupCollector(): Promise<void>;
+declare function hydratePreference(): Promise<void>;
+`;
+
+const REPAIRED_SOURCE = `export async function boot(demoMode: string): Promise<void> {
+    if (demoMode === "initialization-race") {
+      setStatus("Restoring preference before activity collection", "working");
+      await hydratePreference();
+      await runStartupCollector();
+    } else {
+      await hydratePreference();
+      await runStartupCollector();
+    }
+}
+
+declare function setStatus(message: string, state: string): void;
+declare function runStartupCollector(): Promise<void>;
+declare function hydratePreference(): Promise<void>;
+`;
+
+const REGRESSION_TEST = `import { expect, test } from '@playwright/test';
+
+import { runPromiseScenario } from '../support/scenario.js';
+
+test('hydrates preference before collector startup', async ({ page, request }, testInfo) => {
+  const result = await runPromiseScenario(page, request, testInfo, 'off', {
+    runId: 'regression-off-001',
+    userId: 'demo-user-regression-off',
+  });
+  const events = result.evidence.timestamps.clientTimeline.map((entry) => entry.event);
+  const hydrationCompleted = events.indexOf('preference_hydration_completed');
+  const collectorStarted = events.indexOf('collector_started');
+  expect(hydrationCompleted).toBeGreaterThanOrEqual(0);
+  expect(collectorStarted).toBeGreaterThanOrEqual(0);
+  expect(hydrationCompleted).toBeLessThan(collectorStarted);
+  expect(result.browserErrors).toEqual([]);
+  expect(result.evidence.request.activityPayloads).toEqual([]);
+  expect(result.evidence.backend.activityReceipts).toEqual([]);
+  expect(result.evaluation.violations).toEqual([]);
+  expect(result.evidence.journey.reloadObserved).toBe(true);
+  expect(result.evidence.recommendation.source).toBe('contextual');
+});
+`;
 
 async function pathExists(candidate: string): Promise<boolean> {
   try {
@@ -132,13 +192,21 @@ async function createRepositoryFixture(): Promise<RepositoryFixture> {
   roots.add(root);
   const repo = join(root, 'repository');
   const sentinelPath = join(repo, 'must-survive.txt');
-  await mkdir(repo, { recursive: true });
+  await mkdir(join(repo, 'src', 'client'), { recursive: true });
   await runGit(repo, ['init', '--initial-branch=main']);
   await runGit(repo, ['config', 'user.name', 'PromiseProof Recovery Tests']);
   await runGit(repo, ['config', 'user.email', 'tests@promiseproof.invalid']);
   await writeFile(join(repo, '.gitignore'), 'test-results/\n', 'utf8');
+  await writeFile(join(repo, '.gitattributes'), '* text=auto eol=lf\n', 'utf8');
+  await writeFile(join(repo, 'src', 'client', 'main.ts'), BASE_SOURCE, 'utf8');
   await writeFile(sentinelPath, 'retained sentinel\n', 'utf8');
-  await runGit(repo, ['add', '.gitignore', 'must-survive.txt']);
+  await runGit(repo, [
+    'add',
+    '.gitattributes',
+    '.gitignore',
+    'must-survive.txt',
+    'src/client/main.ts',
+  ]);
   await runGit(repo, ['commit', '-m', 'test: seed recovery repository']);
   const repository = await resolveCleanRepository(repo);
   const baseTree = (
@@ -363,6 +431,273 @@ async function persistStateAndLifecycle(
   const statePath = join(state.artifactDirectory, 'state.json');
   await writeLocalRepairState(statePath, state);
   return statePath;
+}
+
+interface AwaitingReviewCrashFixture {
+  readonly fixture: RepositoryFixture;
+  readonly candidate: DisposableWorktree;
+  readonly state: LocalRepairStateV1;
+  readonly statePath: string;
+  readonly retainedPatch: string;
+}
+
+async function createAwaitingReviewCrashFixture(input: {
+  readonly candidatePayloadMatches?: boolean;
+  readonly awaitingPayloadMatches?: boolean;
+} = {}): Promise<AwaitingReviewCrashFixture> {
+  const fixture = await createRepositoryFixture();
+  const repairId = randomUUID();
+  const candidate = await createDisposableWorktree(fixture.repo, {
+    allocationId: repairWorktreeAllocationId(repairId, 'candidate'),
+  });
+  worktrees.add(candidate);
+  await writeFile(
+    join(candidate.worktreePath, 'src', 'client', 'main.ts'),
+    REPAIRED_SOURCE,
+    'utf8',
+  );
+  await mkdir(join(candidate.worktreePath, 'tests', 'regression'), {
+    recursive: true,
+  });
+  await writeFile(
+    join(
+      candidate.worktreePath,
+      'tests',
+      'regression',
+      'initialization-order.spec.ts',
+    ),
+    REGRESSION_TEST,
+    'utf8',
+  );
+  const validated =
+    cachedValidatedCandidate ?? (await validateRepairDiff(candidate));
+  cachedValidatedCandidate ??= validated;
+  const patch: NonNullable<LocalRepairStateV1['patch']> = {
+    sha256: validated.patchSha256,
+    bytes: validated.patchBytes,
+    additions: validated.addedLines,
+    deletions: validated.deletedLines,
+    changedFiles: [
+      {
+        path: 'src/client/main.ts',
+        status: 'modified',
+        beforeSha256: sha256Bytes(BASE_SOURCE),
+        afterSha256: await fileSha256(
+          join(candidate.worktreePath, 'src', 'client', 'main.ts'),
+        ),
+      },
+      {
+        path: 'tests/regression/initialization-order.spec.ts',
+        status: 'added',
+        beforeSha256: null,
+        afterSha256: await fileSha256(
+          join(
+            candidate.worktreePath,
+            'tests',
+            'regression',
+            'initialization-order.spec.ts',
+          ),
+        ),
+      },
+    ],
+  };
+  const state = stateFixture({
+    fixture,
+    repairId,
+    state: 'candidate_policy_accepted',
+    candidateWorktreePath: candidate.worktreePath,
+    patch,
+    approvalSha256: null,
+  });
+  await mkdir(state.artifactDirectory, { recursive: true });
+  await writeFile(state.patchPath, validated.patch, { encoding: 'utf8', flag: 'wx' });
+  for (const lifecycleState of [
+    'created',
+    'baseline_verified',
+    'codex_completed',
+  ] as const) {
+    await appendRepairLifecycle(
+      state.lifecyclePath,
+      repairId,
+      lifecycleState,
+      { crashFixture: true, lifecycleState },
+    );
+  }
+  await appendRepairLifecycle(
+    state.lifecyclePath,
+    repairId,
+    'candidate_policy_accepted',
+    input.candidatePayloadMatches === false
+      ? { ...patch, bytes: patch.bytes + 1 }
+      : patch,
+  );
+  await appendRepairLifecycle(
+    state.lifecyclePath,
+    repairId,
+    'awaiting_human_review',
+    {
+      patchSha256: patch.sha256,
+      patchBytes:
+        input.awaitingPayloadMatches === false ? patch.bytes + 1 : patch.bytes,
+      automaticApproval: false,
+    },
+  );
+  const statePath = join(state.artifactDirectory, 'state.json');
+  await writeLocalRepairState(statePath, state);
+  return {
+    fixture,
+    candidate,
+    state,
+    statePath,
+    retainedPatch: validated.patch,
+  };
+}
+
+test('reconciles the lifecycle-first awaiting-review crash without changing evidence or cleaning the candidate', async () => {
+  const crash = await createAwaitingReviewCrashFixture();
+  const lifecycleBefore = await readFile(crash.state.lifecyclePath, 'utf8');
+  const patchBefore = await readFile(crash.state.patchPath, 'utf8');
+
+  const reconciled = await retryRepairCleanup(
+    crash.fixture.repo,
+    crash.state.repairId,
+  );
+
+  assert.equal(reconciled.state, 'awaiting_human_review');
+  assert.equal((await readLocalRepairState(crash.statePath)).state, 'awaiting_human_review');
+  assert.equal(await readFile(crash.state.lifecyclePath, 'utf8'), lifecycleBefore);
+  assert.equal(await readFile(crash.state.patchPath, 'utf8'), patchBefore);
+  assert.equal(patchBefore, crash.retainedPatch);
+  assert.equal(await pathExists(crash.candidate.worktreePath), true);
+  assert.equal(
+    (await runGit(crash.fixture.repo, ['worktree', 'list', '--porcelain'])).stdout
+      .replaceAll('\\', '/')
+      .includes(crash.candidate.worktreePath.replaceAll('\\', '/')),
+    true,
+  );
+
+  await assert.rejects(
+    retryRepairCleanup(crash.fixture.repo, crash.state.repairId),
+    /PP_REPAIR_CLEANUP_STATE_INVALID/u,
+  );
+  assert.equal(await readFile(crash.state.lifecyclePath, 'utf8'), lifecycleBefore);
+  assert.equal(await pathExists(crash.candidate.worktreePath), true);
+});
+
+test('does not reconcile when the lifecycle has advanced beyond awaiting review', async () => {
+  const crash = await createAwaitingReviewCrashFixture();
+  await appendRepairLifecycle(
+    crash.state.lifecyclePath,
+    crash.state.repairId,
+    'human_approved',
+    { impossibleCrashFixtureDecision: true },
+  );
+  const lifecycleBefore = await readFile(crash.state.lifecyclePath, 'utf8');
+
+  await assert.rejects(
+    retryRepairCleanup(crash.fixture.repo, crash.state.repairId),
+    /PP_REPAIR_CLEANUP_STATE_INVALID/u,
+  );
+
+  assert.equal(
+    (await readLocalRepairState(crash.statePath)).state,
+    'candidate_policy_accepted',
+  );
+  assert.equal(await readFile(crash.state.lifecyclePath, 'utf8'), lifecycleBefore);
+  assert.equal(await pathExists(crash.candidate.worktreePath), true);
+});
+
+for (const mismatch of ['candidate_payload', 'awaiting_payload'] as const) {
+  test(`refuses awaiting-review reconciliation when the ${mismatch.replaceAll('_', ' ')} digest differs`, async () => {
+    const crash = await createAwaitingReviewCrashFixture({
+      candidatePayloadMatches: mismatch !== 'candidate_payload',
+      awaitingPayloadMatches: mismatch !== 'awaiting_payload',
+    });
+    const lifecycleBefore = await readFile(crash.state.lifecyclePath, 'utf8');
+
+    await assert.rejects(
+      retryRepairCleanup(crash.fixture.repo, crash.state.repairId),
+      /PP_REPAIR_REVIEW_RECONCILIATION_INVALID/u,
+    );
+
+    assert.equal(
+      (await readLocalRepairState(crash.statePath)).state,
+      'candidate_policy_accepted',
+    );
+    assert.equal(await readFile(crash.state.lifecyclePath, 'utf8'), lifecycleBefore);
+    assert.equal(await pathExists(crash.candidate.worktreePath), true);
+  });
+}
+
+for (const tamper of [
+  'patch_changed',
+  'patch_missing',
+  'decision_present',
+  'runtime_present',
+  'candidate_changed',
+  'candidate_base_changed',
+  'shared_ref_changed',
+  'head_ref_changed',
+] as const) {
+  test(`refuses awaiting-review reconciliation when ${tamper.replaceAll('_', ' ')}`, async () => {
+    const crash = await createAwaitingReviewCrashFixture();
+    const lifecycleBefore = await readFile(crash.state.lifecyclePath, 'utf8');
+    if (tamper === 'patch_changed') {
+      await writeFile(crash.state.patchPath, `${crash.retainedPatch}\n# changed\n`, 'utf8');
+    } else if (tamper === 'patch_missing') {
+      await rm(crash.state.patchPath);
+    } else if (tamper === 'decision_present') {
+      await writeFile(crash.state.approvalPath, '{}\n', { encoding: 'utf8', flag: 'wx' });
+    } else if (tamper === 'runtime_present') {
+      await mkdir(crash.state.codexHomePath);
+    } else if (tamper === 'candidate_changed') {
+      await writeFile(
+        join(crash.candidate.worktreePath, 'src', 'client', 'main.ts'),
+        `${REPAIRED_SOURCE}\n// changed after validation\n`,
+        'utf8',
+      );
+    } else if (tamper === 'candidate_base_changed') {
+      await runGit(crash.candidate.worktreePath, [
+        'add',
+        'src/client/main.ts',
+        'tests/regression/initialization-order.spec.ts',
+      ]);
+      await runGit(crash.candidate.worktreePath, [
+        '-c',
+        'user.name=PromiseProof Recovery Tests',
+        '-c',
+        'user.email=tests@promiseproof.invalid',
+        'commit',
+        '-m',
+        'test: move candidate base',
+      ]);
+    } else if (tamper === 'shared_ref_changed') {
+      await runGit(crash.fixture.repo, [
+        'branch',
+        'unexpected-shared-ref',
+        crash.state.baseCommit,
+      ]);
+    } else {
+      await runGit(crash.fixture.repo, [
+        'switch',
+        '-c',
+        'alternate-main-same-commit',
+        crash.state.baseCommit,
+      ]);
+    }
+
+    await assert.rejects(
+      retryRepairCleanup(crash.fixture.repo, crash.state.repairId),
+      /PP_REPAIR_REVIEW_RECONCILIATION_INVALID/u,
+    );
+
+    assert.equal(
+      (await readLocalRepairState(crash.statePath)).state,
+      'candidate_policy_accepted',
+    );
+    assert.equal(await readFile(crash.state.lifecyclePath, 'utf8'), lifecycleBefore);
+    assert.equal(await pathExists(crash.candidate.worktreePath), true);
+  });
 }
 
 function commandReceipt(id: VerificationStageId): SafeCommandReceipt {

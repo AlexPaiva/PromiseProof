@@ -6,7 +6,9 @@ The synthetic product, Signal Shelf, has two independently selectable defects. B
 
 The intended users are product, QA, privacy, and platform engineers responsible for user-facing controls that cross browser and service boundaries. PromiseProof turns an ambiguous report such as “OFF did not behave like OFF” into reproducible evidence and a bounded diagnostic action, helping a team find the responsible subsystem sooner without claiming legal or regulatory compliance.
 
-The Milestone 03 investigation layer is implemented and verified both offline and with live GPT-5.6. It gives GPT-5.6 a versioned, allowlisted dossier, accepts one strictly structured request for one registered diagnostic replay, executes that existing replay through deterministic code, and asks GPT-5.6 for one strictly structured hypothesis update. GPT-5.6 proposes the initial ranked hypothesis titles and evidence, while deterministic code prescribes opaque identity slots (`h1` through `h4`), validates them, and recursively freezes the accepted identities and titles. The final model schema returns only ID-linked updates and has no free-form cause or overall-verdict field. GPT-5.6 never receives the selected fixture; deterministic TypeScript and Playwright alone decide whether the promise passed. Codex repair automation remains deferred.
+The Milestone 03 investigation layer is implemented and verified both offline and with live GPT-5.6. It gives GPT-5.6 a versioned, allowlisted dossier, accepts one strictly structured request for one registered diagnostic replay, executes that existing replay through deterministic code, and asks GPT-5.6 for one strictly structured hypothesis update. GPT-5.6 proposes the initial ranked hypothesis titles and evidence, while deterministic code prescribes opaque identity slots (`h1` through `h4`), validates them, and recursively freezes the accepted identities and titles. The final model schema returns only ID-linked updates and has no free-form cause or overall-verdict field. GPT-5.6 never receives the selected fixture; deterministic TypeScript and Playwright alone decide whether the promise passed.
+
+Milestone 04's bounded repair infrastructure is implemented and passes its offline two-worktree journey. Two authentic Codex preparations failed closed during command inspection before a candidate was accepted. Prompt v3 now permits only two exact ordered literal reads before the patch operation; the provider fails closed on every observed command or file-change lifecycle that diverges from the pinned sequence. Candidate commands run under the native elevated Windows sandbox only after a no-key boundary preflight. No candidate has been approved and no repaired-state PASS is claimed yet.
 
 ## Current evidence matrix
 
@@ -27,7 +29,8 @@ PromiseProof is one small TypeScript workspace:
 - `src/server` — Express API, fixed recommendation data, in-memory state, and isolated fixture injection.
 - `src/shared` — evidence schema, canonical evaluator, and whitelisted replay selection.
 - `src/investigation` — versioned dossier and result contracts, strict runtime schemas, GPT-5.6 Responses API provider, deterministic validation, closed replay dispatcher, bounded runner, and sanitized audit artifact.
-- `tests` — Playwright journeys, independent network capture, contract tests, existing diagnostic replays, deterministic investigation provider, leakage checks, and live smoke paths.
+- `src/repair` — frozen live-receipt eligibility, pinned Codex SDK boundary, exact inspection policy, disposable-worktree orchestration, semantic diff firewall, real-TTY approval, fresh-worktree verification, recovery, and deterministic receipts.
+- `tests` — Playwright journeys, independent network capture, contract tests, existing diagnostic replays, deterministic providers, leakage checks, live smoke paths, repair boundary tests, and the offline two-worktree journey.
 
 The browser and service communicate over real HTTP. Contextual requests contain no user ID and suppress the referrer. Feed assertions require rendered DOM item IDs to match backend recommendation receipts; missing DOM evidence cannot be replaced with server data.
 
@@ -62,16 +65,30 @@ npx playwright install chromium
 
 On Windows systems that block PowerShell's `npm.ps1`, use `npm.cmd` and `npx.cmd`.
 
-No product account, login, GitHub authorization, or imported project is required for the built-in synthetic sample and offline verification path. PromiseProof does not upload, import, or crawl customer applications or data. Only the explicitly invoked live investigation commands require a separately configured OpenAI Platform API key.
+No product account, login, GitHub authorization, or imported project is required for the built-in synthetic sample and offline verification path. PromiseProof does not upload, import, or crawl customer applications or data. Only explicitly invoked live GPT-5.6 investigations and authentic Codex repair preparation require a separately configured OpenAI Platform API key.
 
 ## Supported platforms
 
 The current checkpoint is directly verified on Windows 10 x64 with Node.js 22
 and Playwright Chromium. The implementation uses cross-platform Node.js,
 Playwright, and Git primitives, but macOS and Linux are not yet claimed as
-verified until the post-canonical-loop CI milestone runs them. The judge path
-is not yet packaged; the current local no-key verification path is
-`npm run test:investigation:offline` after the reproducible installation above.
+verified until the post-canonical-loop CI milestone runs them. The authentic
+Codex repair provider is intentionally restricted to the trusted native Windows
+PowerShell boundary and the pinned CLI's elevated backend. It requires an
+administrator-approved Codex sandbox setup to exist already and fails closed;
+it never falls back to the weaker unelevated backend. For every candidate it
+creates a blank disposable `CODEX_HOME`, copies only the validated setup marker
+and byte-matched pinned command runner with protected ACLs, and links only the
+host's protected sandbox-user credential directory. A no-key preflight proves
+the command runs as `CodexSandboxOffline`, can read the candidate source, cannot
+read the setup marker or provisioning credential, cannot open the command
+runner for writing, and receives the Windows access-denied signal on the raw TCP
+probe. The setup source
+defaults to `%USERPROFILE%\.codex`; an alternate already-provisioned source may
+be selected with the absolute `PROMISEPROOF_ELEVATED_SANDBOX_HOME` path. The
+judge path is not yet packaged; the current local
+no-key verification paths are `npm run test:investigation:offline` and
+`npm run test:repair:offline` after the reproducible installation above.
 
 ## OpenAI model and Codex contributions
 
@@ -95,11 +112,17 @@ retained artifacts, Git diffs, and protected-file hashes—not a model claim—a
 used to verify that work. Alex retained final product, scope, sequencing, and
 engineering decisions throughout the collaboration.
 
-The next Codex product integration is deliberately not claimed as complete. It
-will prepare one minimal patch and regression test in a disposable Git worktree
-only after the live-verified Milestone 03 checkpoint is committed and tagged. A
-human must review the diff, and the unchanged Playwright contracts alone will
-accept or reject the repair.
+The Codex product integration is implemented but deliberately not claimed as a
+completed repair. It can prepare one minimal patch and regression test in a
+disposable Git worktree only from the live-verified Milestone 03 foundation.
+One shared prompt/provider policy permits exactly two ordered source reads and
+changes to exactly two paths. Pinned SDK lifecycle events are audited after
+dispatch and fail closed on broader command or patch behavior; they are not
+misrepresented as a pre-execution interceptor. The separate elevated Windows
+sandbox supplies the OS-enforced filesystem and network boundary. A human must
+review the exact diff and digest in a real terminal; the
+unchanged Playwright contracts alone accept or reject the repair in a second
+fresh worktree.
 
 Key decisions made during the Codex collaboration are:
 
@@ -172,6 +195,41 @@ npm test
 
 The provider unit suite serializes the exact first and second requests, checks the model-input exclusion boundary, and exercises strict-schema, zero-call, multiple-call, second-call, refusal/incomplete/error, output-item status/content, unexpected-output-kind, invalid-tool, invalid-replay, dispatcher-limit, safe provider-error projection, bounded provider identifiers, exact token accounting, opaque hypothesis identity, evidence-reference uniqueness/disjointness, hypothesis-continuity, immutable accepted-object, replay-report consistency, status-specific replay citation, material-update, deterministic-limitation, exact-model-identity, and verdict-boundary rejection paths. The separate live-stability unit suite constructs synthetic completed artifacts without network access and adversarially tests the retained-proof verifier. Citation placement is validated structurally; it is not a deterministic claim that model-authored hypothesis prose is semantically true. The offline Playwright command runs both real evidence signatures and their existing replays through a deterministic provider; it requires neither network access nor OpenAI credits. Both offline and live browser paths explicitly require zero observed browser errors, and the startup-order replay rejects browser errors before normalizing its report.
 
+Verify the bounded repair system without an API key:
+
+```bash
+npm run test:repair:unit
+npm run test:repair:offline
+npm run test:repair:elevated-sandbox
+```
+
+The offline integration requires a clean committed runner checkout. It prepares
+the deterministic candidate in one disposable worktree, records an offline-only
+approval, applies the exact retained patch in a second fresh worktree, runs the
+complete repaired-state Playwright matrix, cleans both worktrees, and proves
+that `main` never changed. Offline approval is test infrastructure only and
+cannot satisfy the production human gate.
+
+The elevated-sandbox integration is Windows-only, uses no API key, and performs
+the same real offline-identity, filesystem, control-file, credential, and raw
+network preflight required immediately before an authentic Codex turn. It
+requires the administrator-approved native Codex sandbox setup described above.
+
+After an authentic preparation reaches human review, the production sequence is:
+
+```bash
+npm run repair:race:prepare
+npm run repair:race:status -- <repair-id>
+npm run repair:race:review -- <repair-id>
+npm run repair:race:verify -- <repair-id>
+```
+
+`repair:race:review` requires Alex to inspect the complete diff and type the
+exact digest-bound decision in a real terminal. Never pipe, script, prefill, or
+combine that review command with another command. A model, test adapter, or
+non-interactive stream cannot approve the patch. Verification starts only after
+that immutable decision exists.
+
 Live GPT-5.6 runs are intentionally separate. Copy `.env.example` to the ignored `.env.local`, set `OPENAI_API_KEY` there, then run one smoke per defect:
 
 ```bash
@@ -201,4 +259,6 @@ Each scenario writes normalized JSON evidence to its Playwright output directory
 
 Milestone 02 remains the frozen deterministic foundation: both seeded defects, both ON controls, the unchanged expected-red contract, two factual diagnostic replays, and five OFF plus five ON repetitions per fixture are implemented and recorded. Milestone 03 now adds a live-verified bounded GPT-5.6 investigation: 10/10 provider-boundary groups, 10/10 live-receipt-verifier groups, both real-browser offline investigations, both manually inspected live smokes, and the strict 3+3 live receipt all pass. The broader build, 6/6 race and 6/6 propagation ordinary browser cases, 20/20 deterministic contexts, exact expected-red wrapper, zero-vulnerability audit, production smokes, and seven-file frozen-foundation comparison also pass.
 
-The canonical evaluator, contract assertion, seeded defects, and evidence capture remain outside model authority and must stay unchanged. The repository is not yet a complete Build Week submission. Codex repair in a disposable worktree, regression-test preparation, human diff approval, repaired-state Playwright verification, cross-platform CI, hosting, and demo packaging remain outstanding.
+Milestone 04 now includes live-receipt eligibility, a pinned one-turn Codex provider, two disposable worktrees, an elevated Windows offline-user sandbox, semantic source/test firewalls, digest-bound real-TTY review, deterministic fresh-worktree verification, crash recovery, and tamper-evident receipts. Its repair boundary passes 116/116 tests. The recovery layer can also reconcile the single lifecycle-first crash window immediately before human review, but only after revalidating the exact candidate, patch, hashes, payload digests, absent runtime, retained symbolic HEAD and complete shared-ref snapshot, and unchanged base. No-cost real-runtime proofs exercise the exact reads, real file-change lifecycle, production event validation, offline sandbox identity, protected control and credential files, and the exact access-denied raw-egress signal. Two authentic preparations stopped safely before candidate acceptance; their failures are recorded in `BUILD_WEEK.md`. No approval or repaired-state PASS is claimed.
+
+The canonical evaluator, contract assertion, seeded defects, and evidence capture remain outside model authority and must stay unchanged. The repository is not yet a complete Build Week submission. The immediate gate is one authentic candidate, Alex's real human review, and a fresh-worktree Playwright PASS. Cross-platform CI, a no-rebuild judge path, licensing, hosting, narrated demo packaging, screenshots, and the Devpost submission remain subsequent readiness work.

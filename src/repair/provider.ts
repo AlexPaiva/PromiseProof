@@ -3,8 +3,10 @@ import { z } from 'zod';
 export const CODEX_REPAIR_MODEL = 'gpt-5.6-sol' as const;
 export const CODEX_REPAIR_SDK_VERSION = '0.144.4' as const;
 export const CODEX_REPAIR_CLI_VERSION = '0.144.4' as const;
+export const CODEX_REPAIR_LOGIN_SHELL_ALLOWED = false as const;
+export const CODEX_REPAIR_WINDOWS_SANDBOX = 'elevated' as const;
 export const CODEX_REPAIR_PROMPT_VERSION =
-  'promiseproof.codex-repair-prompt.v2' as const;
+  'promiseproof.codex-repair-prompt.v3' as const;
 export const CODEX_REPAIR_SUMMARY_VERSION =
   'promiseproof.codex-repair-summary.v1' as const;
 
@@ -12,6 +14,11 @@ export const REPAIR_ALLOWED_PATHS = [
   'src/client/main.ts',
   'tests/regression/initialization-order.spec.ts',
 ] as const;
+
+export const REPAIR_INSPECTION_COMMANDS = Object.freeze([
+  "Get-Content -Raw -Encoding UTF8 -LiteralPath 'src/client/main.ts'",
+  "Get-Content -Raw -Encoding UTF8 -LiteralPath 'tests/support/scenario.ts'",
+] as const);
 
 export const REPAIR_CONSTRAINT_CODES = [
   'source_and_regression_only',
@@ -162,6 +169,7 @@ export const REPAIR_COMMAND_EXIT_DISPOSITIONS = [
 ] as const;
 
 export const REPAIR_COMMAND_FAILURE_REASONS = [
+  'approval_policy_declined',
   'status_not_completed',
   'exit_code_nonzero',
   'exit_code_missing',

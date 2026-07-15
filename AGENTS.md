@@ -86,7 +86,13 @@ Milestone 04 invariants:
    turn with the resolved `gpt-5.6-sol` identifier, an explicit worktree working
    directory, `workspace-write`, no network or web search, no MCP/apps/hooks or
    subagents, a minimal process environment, a secret-filtering shell environment
-   policy, an output schema, event/output bounds, and an abort timeout.
+   policy, an output schema, event/output bounds, and an abort timeout. On native
+   Windows require the administrator-provisioned elevated offline-user sandbox;
+   never fall back to the weaker unelevated backend. Before every paid turn,
+   require a no-key behavioral preflight proving the workspace is readable while
+   the setup marker and provisioning credential are unreadable, the pinned
+   command runner is not writable, and the raw TCP probe fails with the exact
+   Windows socket access-denied signal rather than a timeout or unrelated error.
 3. PromiseProof—not Codex—creates both detached worktrees, installs dependencies,
    captures the base commit and refs, computes the diff, validates paths and
    sizes, hashes evidence, requests human review, invokes Playwright, writes the

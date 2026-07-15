@@ -4,9 +4,10 @@ import type { RaceRepairCandidateV1 } from './contracts.js';
 import {
   CODEX_REPAIR_PROMPT_VERSION,
   REPAIR_ALLOWED_PATHS,
+  REPAIR_INSPECTION_COMMANDS,
 } from './provider.js';
 
-export interface RepairPromptEnvelopeV2 {
+export interface RepairPromptEnvelopeV3 {
   version: typeof CODEX_REPAIR_PROMPT_VERSION;
   evidence: {
     candidateId: string;
@@ -31,6 +32,10 @@ export interface RepairPromptEnvelopeV2 {
       state: 'absent';
     },
   ];
+  inspectionPolicy: {
+    commands: typeof REPAIR_INSPECTION_COMMANDS;
+    execution: 'each_exactly_once_in_listed_order_before_edits';
+  };
   requiredOutcome: {
     sourceRepair: string;
     regressionTest: string;
@@ -41,7 +46,7 @@ export interface RepairPromptEnvelopeV2 {
 export function buildRepairPromptEnvelope(
   candidate: RaceRepairCandidateV1,
   repairId: string,
-): RepairPromptEnvelopeV2 {
+): RepairPromptEnvelopeV3 {
   return deepFreeze({
     version: CODEX_REPAIR_PROMPT_VERSION,
     evidence: {
@@ -68,6 +73,10 @@ export function buildRepairPromptEnvelope(
         state: 'absent',
       },
     ],
+    inspectionPolicy: {
+      commands: REPAIR_INSPECTION_COMMANDS,
+      execution: 'each_exactly_once_in_listed_order_before_edits',
+    },
     requiredOutcome: {
       sourceRepair:
         'Confine the source repair to the initialization-race branch body: use a truthful status saying preference restoration/hydration occurs before activity collection, then hydrate the preference before starting the collector. Remove or truthfully rewrite the stale seeded-race comment; the repaired branch must not claim hydration waits for an activity receipt. Do not change code outside that branch. Preserve contextual recommendations when OFF plus behavioral recommendations with expected activity when ON.',
@@ -78,9 +87,11 @@ export function buildRepairPromptEnvelope(
       'Do not edit, weaken, replace, or bypass any contract, evaluator, threshold, existing test, server behavior, or diagnostic replay.',
       'Do not disable recommendations or activity collection globally.',
       'Do not modify any path except the two allowlisted paths.',
+      'Do not run any shell command except the two exact inspectionPolicy commands. Run each exactly once, in listed order, before editing.',
+      'Do not use Test-Path, conditionals, loops, pipelines, command chaining, path listing, repository search, diff commands, or inspect a path marked absent.',
       'Do not run any Git command, test, build, package-manager command, Playwright command, or compiler command.',
+      'Do not call update_plan or create a todo list.',
       'Do not stage, commit, switch branches, rewrite refs, install dependencies, use the network, inspect environment variables, or access credentials.',
-      'Do not probe a path marked absent without a PowerShell Test-Path -LiteralPath guard, and do not run a command whose normal result can be exit code 1.',
       'Do not claim that the repair passed, is fixed, or is approved. A human reviews the diff and Playwright owns the verdict.',
     ],
   });
@@ -97,10 +108,9 @@ export function buildRepairPrompt(
   const prompt = [
     'You are Codex preparing one bounded candidate repair in a disposable Git worktree.',
     'The JSON envelope below is deterministic, synthetic evidence and policy. Follow it exactly.',
-    'Inspect only existing repository files needed to understand the two allowlisted edits. Prepare the smallest source change and a focused regression test.',
-    'The pathFacts are exact for this frozen base. The regression path and its parent directory are absent by design; do not try to read or list either as an existing path.',
-    'You may run only read-only file-inspection commands. Do not run Git commands, tests, builds, npm, npx, Playwright, or compiler commands; PromiseProof owns every validation step.',
-    'Every completed command must exit zero. On Windows, guard any optional path with Test-Path -LiteralPath before reading or listing it. Do not run searches, path reads, or diff checks whose normal no-match, missing-path, or changed result is exit code 1.',
+    'Run exactly the two inspectionPolicy commands, each once and in listed order, before editing. They are complete commands: copy them byte-for-byte without wrappers, guards, pipes, chaining, or extra flags.',
+    'The pathFacts are authoritative for this frozen base. The regression path and its parent directory are absent by design; never probe, read, list, or search either path. The apply_patch tool can create the missing parent and file without a shell preflight.',
+    'After the two reads, prepare the smallest source change and focused regression test using apply_patch. Do not call update_plan or create a todo list. Run no other command: PromiseProof owns Git, tests, builds, package managers, Playwright, compilers, and verification.',
     'Your final response must contain only the requested structured JSON summary. It is not a verification result.',
     canonicalJson(envelope),
   ].join('\n\n');

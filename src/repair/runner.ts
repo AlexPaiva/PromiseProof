@@ -53,6 +53,7 @@ import {
   type BoundedCommandRunner,
   type ExpectedRedValidation,
 } from './verification.js';
+import { cleanupIsolatedProviderRuntime } from './windows-sandbox.js';
 import {
   cleanupDisposableWorktree,
   cleanupPersistedDisposableWorktreeIntent,
@@ -500,41 +501,11 @@ async function removeIsolatedProviderRuntime(
   worktree: DisposableWorktree,
   state: LocalRepairStateV1,
 ): Promise<void> {
-  for (const [expectedName, candidate] of [
-    ['codex-home', state.codexHomePath],
-    ['tool-temp', state.toolTempPath],
-  ] as const) {
-    if (
-      path.dirname(candidate) !== worktree.tempRoot ||
-      path.basename(candidate) !== expectedName
-    ) {
-      fail(
-        'PP_REPAIR_PROVIDER_RUNTIME_PATH_UNSAFE',
-        'Isolated provider runtime path escaped its disposable root.',
-      );
-    }
-    let info;
-    try {
-      info = await lstat(candidate);
-    } catch (error) {
-      if (
-        typeof error === 'object' &&
-        error !== null &&
-        'code' in error &&
-        (error as { code?: unknown }).code === 'ENOENT'
-      ) {
-        continue;
-      }
-      throw error;
-    }
-    if (!info.isDirectory() || info.isSymbolicLink()) {
-      fail(
-        'PP_REPAIR_PROVIDER_RUNTIME_PATH_UNSAFE',
-        'Isolated provider runtime must remain a real directory.',
-      );
-    }
-    await rm(candidate, { force: true, recursive: true, maxRetries: 3 });
-  }
+  await cleanupIsolatedProviderRuntime({
+    tempRoot: worktree.tempRoot,
+    codexHomePath: state.codexHomePath,
+    toolTempPath: state.toolTempPath,
+  });
 }
 
 function sensitiveRuntimeValues(apiKey: string): readonly string[] {
@@ -670,6 +641,7 @@ async function cleanupAfterFailure(
         state.candidateWorktreePath,
       );
     } else {
+      await removeIsolatedProviderRuntime(worktree, state);
       await cleanupDisposableWorktree(worktree);
     }
     await appendRepairLifecycle(

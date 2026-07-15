@@ -6,6 +6,7 @@ import {
   mkdtemp,
   readFile,
   rm,
+  symlink,
   unlink,
   writeFile,
 } from 'node:fs/promises';
@@ -659,3 +660,30 @@ test('safe cleanup rejects forged handles and removes only its created root', as
   ).stdout;
   assert.equal(worktreeList.includes(createdRoot), false);
 });
+
+test(
+  'rejects a checkout junction before host Git can traverse its external target',
+  { skip: process.platform !== 'win32' },
+  async () => {
+    const { root, repo, handle } = await createFixture();
+    const externalTarget = join(root, 'external-junction-target');
+    const sentinel = join(externalTarget, 'sentinel.txt');
+    const junction = join(handle.worktreePath, 'external-junction');
+    await mkdir(externalTarget);
+    await writeFile(sentinel, 'preserve me\n', 'utf8');
+    await symlink(externalTarget, junction, 'junction');
+
+    await expectErrorCode(
+      cleanupDisposableWorktree(handle),
+      'unsafe_cleanup_target',
+    );
+    assert.equal(await readFile(sentinel, 'utf8'), 'preserve me\n');
+    await verifyDisposableWorktree(handle);
+
+    await unlink(junction);
+    await cleanupDisposableWorktree(handle);
+    handles.delete(handle);
+    assert.equal(await readFile(sentinel, 'utf8'), 'preserve me\n');
+    await access(repo);
+  },
+);

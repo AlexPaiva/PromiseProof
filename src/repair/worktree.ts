@@ -444,6 +444,7 @@ async function assertCreatedPathSafety(state: HandleState): Promise<void> {
 
 async function removeCreatedPaths(state: HandleState): Promise<void> {
   await assertCreatedPathSafety(state);
+  await assertNoReparsePointsBeforeCleanup(state.tempRoot);
   await runGit(state.repository.repoRoot, [
     '-c',
     'core.hooksPath=',
@@ -471,12 +472,31 @@ async function removeCreatedPaths(state: HandleState): Promise<void> {
         'Refusing recursive cleanup outside the created PromiseProof root.',
       );
     }
+    await assertNoReparsePointsBeforeCleanup(resolvedRoot);
     await rm(resolvedRoot, {
       force: true,
       maxRetries: 3,
       recursive: true,
       retryDelay: 50,
     });
+  }
+}
+
+async function assertNoReparsePointsBeforeCleanup(
+  directory: string,
+): Promise<void> {
+  for (const entry of await readdir(directory)) {
+    const candidate = join(directory, entry);
+    const info = await lstat(candidate);
+    if (info.isSymbolicLink()) {
+      throw new WorktreeBoundaryError(
+        'unsafe_cleanup_target',
+        'Refusing recursive cleanup while a reparse point remains under the disposable root.',
+      );
+    }
+    if (info.isDirectory()) {
+      await assertNoReparsePointsBeforeCleanup(candidate);
+    }
   }
 }
 

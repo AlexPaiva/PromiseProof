@@ -752,9 +752,14 @@ retained state binds this foundation manifest to the exact base commit and tree.
 ### Candidate-generation boundary
 
 The live provider uses pinned `@openai/codex-sdk` and CLI version `0.144.4`, one
-`gpt-5.6-sol` thread, one turn, high reasoning effort, `workspace-write`, no
-approval adapter, no network or web search, no MCP/apps/subagents/hooks, an
-isolated `CODEX_HOME`, and a scrubbed command environment. Unknown top-level SDK
+`gpt-5.6-sol` thread, one turn, high reasoning effort, `workspace-write`, the
+elevated Windows offline-user backend, no approval adapter, requested network-off
+mode, disabled web search, no MCP/apps/subagents/hooks or optional
+skill/app/collaboration instruction blocks, a blank disposable `CODEX_HOME`, and
+a scrubbed command environment. It never falls back to the unelevated backend.
+The host's administrator-provisioned sandbox setup must already exist; missing,
+malformed, linked, version-mismatched, or package-mismatched state fails before
+the paid turn. Unknown top-level SDK
 events, unknown or forbidden item types, failed commands, path escapes, secret
 values, multiple turns/messages, excess events/bytes, and authoritative final
 claims fail closed. The model's final JSON is a bounded activity summary, never
@@ -763,15 +768,60 @@ Codex home and tool-temporary directories are safely removed; raw session,
 prompt, reasoning, and CLI-log state is not retained through human review.
 The command environment disables optional Git locks and interactive Git paging
 or prompts without supplying `GIT_DIR`, `GIT_WORK_TREE`, or another metadata
-redirection. Prompt v2 binds the existing source/helper paths and the absent new
-regression path/directory into the canonical envelope. Codex may inspect only
-existing files; it is explicitly prohibited from running Git, tests, builds,
-package managers, Playwright, or compilers, and optional path probes must be
-guarded so every completed command exits zero.
+redirection. It synthesizes a minimal path from the trusted native Windows
+`System32` and Windows PowerShell directories rather than inheriting a
+user-controlled `PATH`, `COMSPEC`, or `PATHEXT`. The active prompt v3 permits
+exactly two literal reads, once each and in order, before any edit:
+
+- `Get-Content -Raw -Encoding UTF8 -LiteralPath 'src/client/main.ts'`; then
+- `Get-Content -Raw -Encoding UTF8 -LiteralPath 'tests/support/scenario.ts'`.
+
+No `Test-Path`, conditional, loop, pipeline, chain, listing, search, diff, or
+other command is permitted. The absent regression path is an authoritative
+fact and must be created by the patch operation without a shell probe. Provider
+event validation covers every command start and completion; it rejects updates,
+changed command text, reversed, repeated, parallel, incomplete, or third
+commands, and any file-change event before both reads finish. It accepts only
+the pinned CLI's exact `-NoProfile` display wrapper around the trusted native
+Windows PowerShell executable, including the pinned event representation of
+Windows separators; a direct command string or wrapper impostor is rejected.
+File-change starts and completions must preserve one item ID, the same nonempty
+allowlisted path/kind set, and legal `add`/`update` kinds. File-change updates,
+command updates, reasoning/message starts or updates, blank reasoning, todo-list
+items, cross-type item-ID reuse, delete, duplicate, parallel, incomplete, and
+future kinds fail closed. An
+unresolved trusted shell fails before
+the paid turn as `PP_REPAIR_CODEX_SHELL_UNTRUSTED`. A runtime policy decline may
+be projected only as the coarse reason `approval_policy_declined`; raw command,
+output, and runtime status remain excluded.
 Candidate baseline and repaired-state commands also use fresh empty npm user and
 global configuration files, a disposable npm cache, a fixed public registry,
 and an environment that does not inherit API keys, auth tokens, npm credentials,
 or proxy credentials. The complete command runtime is removed after each phase.
+
+The disposable home copies only the exact-version setup marker and a command
+runner whose bytes match both the provisioned host runner and the pinned npm
+package. Host ACLs are converted to protected explicit rules and rebound to both
+copies. Only `.sandbox-secrets` is a directory junction, pointing to the
+administrator-protected host sandbox-user credential directory. Marker, runner,
+and credential files must each be one real single-link file; source directories
+must be real and non-overlapping with the disposable root. Cleanup first unlinks
+the exact expected credential junction, rejects every unexpected reparse point,
+and only then recursively removes PromiseProof's verified runtime directories.
+
+Before constructing the SDK client, a no-key command runs through the same
+pinned elevated CLI boundary. It must prove all six facts: the Windows token is
+the exact `CodexSandboxOffline` identity; the candidate source is readable; the
+setup marker is unreadable; the command runner cannot be opened for writing; the
+provisioning credential is unreadable; and a raw TCP connection to
+`1.1.1.1:443` fails with the exact Windows socket access-denied signal. A route
+timeout, remote refusal, unrelated socket error, missing control, or otherwise
+ambiguous execution fails closed. This uses the elevated backend's dedicated lower-privilege user,
+ACL boundary, and Windows firewall policy rather than environment-only network
+suppression. Provider event validation remains post-dispatch and is not
+misrepresented as a pre-execution command interceptor. PromiseProof does not
+claim a formal sandbox proof or protection from Windows or Codex implementation
+vulnerabilities.
 
 Only two unstaged paths may differ:
 
@@ -840,9 +890,9 @@ while Git still registers their worktrees.
 
 ### Current checkpoint
 
-One authentic Codex repair request has been made, but it failed closed before a
-candidate was accepted. No candidate diff has been approved, no patch has been
-applied to `main`, and no repaired-state PASS is claimed. The production
+Two authentic Codex repair preparations have been made, and both failed closed
+before a candidate was accepted. No candidate diff has been approved, no patch
+has been applied to `main`, and no repaired-state PASS is claimed. The production
 approval boundary will still stop on the first unseen valid live diff for
 Alex's real human review.
 
@@ -919,3 +969,145 @@ byte-for-byte from `HEAD`. The isolated frozen-commit rerun above is the valid
 receipt reproduction. Windows required explicit long-path cleanup for the
 copied Playwright evidence after Git deregistered that temporary checkout; no
 temporary worktree, source change, or receipt drift remains.
+
+### Second authentic prepare failure and exact-inspection hardening — 2026-07-15
+
+Repair `f446c03e-3041-4f77-862e-5e0f2b65f88a`, based on pushed commit
+`cdd308a3ddb4cb8b98938966fb0ace7add5d8417`, passed the exact race
+expected-red baseline and reached `baseline_verified`. The live Codex stream
+then failed closed as `PP_REPAIR_CODEX_COMMAND_FAILED` at event 7 after 44,591
+serialized event bytes. Its retained coarse diagnostic records
+`path_probe`, `negative_nonzero`, exit `-1`, 615 output bytes, and
+`status_not_completed`. Provider output and patch remained null; failure
+evidence was saved, both isolated runtime directories were removed, and the
+lifecycle reached `cleanup_completed`.
+
+Raw command text and output were intentionally not retained, so the exact live
+command is not claimed as reconstructed. A separate no-cost reproduction using
+the pinned SDK/CLI `0.144.4` and the same sandbox/approval configuration showed
+that a guarded `if (Test-Path ...)` path probe is policy-declined with exit
+`-1`, while each exact literal `Get-Content -Raw -Encoding UTF8 -LiteralPath ...` read
+completes successfully. That is supporting diagnostic evidence for prompt v3,
+not proof that the discarded live command was byte-identical.
+
+Prompt v3 shares one frozen two-command tuple between its canonical envelope
+and provider validation. The provider recognizes only the observed pinned
+wrapper using the trusted native Windows PowerShell path; an arbitrary
+executable ending in `powershell.exe`, an unescaped display path, or a direct
+logical command is not accepted. It tracks item
+IDs across command start/update/completion events and fails closed on mutation,
+reordering, duplication, parallelism, incompletion, or premature file changes.
+Provider rejection also aborts the active SDK turn. The secret scan still runs
+before any diagnostic projection, legacy failure artifacts remain readable,
+and the new policy-decline reason contains no raw command, output, or status.
+
+The v3 production typecheck and all 99/99 repair boundary tests pass, including
+new adversarial coverage for wrapper impostors, aliases, whitespace/casing and
+quoting changes, pipelines, chains, newlines, multiple paths, Git/npm/Playwright
+and search commands, reversed/duplicate/third commands, lifecycle mutation,
+premature edits, unknown future statuses, secret precedence, and artifact
+compatibility. The clean-HEAD two-worktree browser journey is intentionally
+rerun only after this hardening is committed because it refuses a dirty runner
+checkout by design.
+
+A final no-cost integration proof used the real pinned SDK/CLI with a local fake
+Responses endpoint and no OpenAI request. The permissions prompt reported
+`workspace-write` with the disposable root; both exact UTF-8 reads completed
+through native Windows PowerShell with `-NoProfile`; one internal `apply_patch`
+emitted the real file-change `started` then `completed` lifecycle and changed
+only the allowed source and regression paths; and the captured stream passed
+the production validator. The optional skill, app, and collaboration prompt
+blocks were absent. A prior local run had exposed the CLI's doubled-separator
+event display form; binding the validator to that exact pinned form prevented a
+third paid attempt from failing for a fixture-only representation mismatch.
+
+Prompt v3 and its real pinned local SDK path are offline-verified only. Milestone
+04 remains incomplete until one
+authentic candidate reaches `awaiting_human_review`, Alex enters the exact
+decision in a real TTY, a second fresh worktree passes unchanged Playwright
+verification, the propagation expected-red remains specific, and the
+deterministic receipt and cleanup complete.
+
+### Pinned lifecycle and elevated-sandbox hardening — 2026-07-15
+
+An independent audit compared the repair validator with the exact pinned
+`0.144.4` SDK and CLI implementation rather than relying on stale SDK comments.
+The observed lifecycle is command `started` then `completed`, file change
+`started` then `completed`, nonblank reasoning `completed` only, and agent
+message `completed` only. Todo lists have their own mutable lifecycle but are
+unnecessary for this one-turn repair, so prompt v3 forbids `update_plan` and the
+provider rejects todo events. The validator now rejects impossible update/start
+shapes, whitespace-only reasoning, repeated standalone terminal IDs, and one ID
+reused across item types.
+
+The earlier unelevated Windows design was rejected after review because its
+network-off behavior is environment-level and its read boundary is weaker than
+the preferred native mode. PromiseProof now requires the administrator-approved
+elevated setup and never silently falls back. The implementation was checked
+against the pinned open-source Windows sandbox setup and command-runner paths,
+including setup-marker version 5, exact offline/online identities, protected
+credential storage, command-runner permissions, and offline-user firewall
+rules.
+
+A scratch hard-link experiment demonstrated that changing an ACL through a hard
+link also changes the source file's ACL. The scratch links were removed, the
+host setup files were restored to their documented protected ACL layout without
+changing marker or credential contents, and the production design rejects any
+marker, runner, or credential file whose link count is not exactly one. Public
+marker and runner bytes are copied into a fresh home; the protected credential
+directory is the only junction and is unlinked before any recursive cleanup.
+
+The Windows-only no-key integration executed the real pinned elevated boundary
+successfully. The child token was `CodexSandboxOffline`; candidate source read
+passed; setup-marker and provisioning-credential reads were denied; write-open
+on the pinned command runner was denied; and the raw TCP probe returned Windows
+socket access-denied. The
+hermetic cleanup tests also proved that unexpected junctions and a real
+directory substituted for the credential junction fail closed without deleting
+their external sentinel targets. No OpenAI request or API credit was used for
+this boundary proof.
+
+Final red-team review found two cleanup/preflight ambiguities before this
+checkpoint. First, host `git worktree remove --force` ran before the recursive
+reparse scan. On an older Git for Windows that ordering could make Git a
+confused deputy if an unexpected junction survived in the checkout. The scan
+now runs before Git as well as before PromiseProof's own recursive removal; a
+Windows regression test creates a checkout junction to an external sentinel,
+requires cleanup to fail while the worktree remains valid, unlinks only that
+junction, retries cleanup, and proves the external target survives. Second, the
+raw TCP probe originally treated every exception or timeout as a block. It now
+accepts only `SocketError.AccessDenied`; timeout, refusal, routing failure, and
+all other outcomes fail closed.
+
+The combined repair boundary suite now passes 116/116 tests, including every
+interrupted preparation/verification state, retained PASS tamper detection, the
+fresh second-worktree verifier, exact pinned SDK lifecycles, ACL/junction/hard-
+link defenses, and the new pre-Git external-target regression. A subsequent
+consistency review found one availability-only crash window: the lifecycle could
+already say `awaiting_human_review` while `state.json` still said
+`candidate_policy_accepted`. Review and cleanup would then both refuse the valid
+candidate. Recovery now promotes only that exact one-event mismatch, under the
+repair lock, after revalidating the main checkout's symbolic HEAD and complete
+shared-ref snapshot, the registered candidate base and complete diff,
+the canonical single-link patch bytes and file hashes, both lifecycle payload
+digests, absent decision/failure/runtime evidence, and all null approval and
+verification fields. It appends no event and changes only the local state and
+timestamp. Ten focused positive and adversarial cases cover payload, patch,
+decision, runtime, source, candidate-base, and lifecycle-ahead tampering. A
+final adversarial pass then caught missing same-commit branch/ref binding; two
+more tests now cover both a symbolic-HEAD switch and an added shared ref. The
+separate real elevated-sandbox integration passes with no key.
+
+The final pre-commit checkpoint on 2026-07-15 is green: production build and
+typecheck pass; the complete repair boundary passes 116/116; all 12 focused
+crash-reconciliation cases pass; the real elevated no-key sandbox integration
+passes 1/1; the ordinary race and propagation suites pass 6/6 each; five OFF
+plus five ON fresh contexts for each defect pass 20/20; and the expected-red
+wrapper passes all 4 unit guards while requiring only
+`PP_IDENTIFIABLE_EVENT_LEAK` for the race and only
+`PP_PREFERENCE_NOT_PERSISTED` for propagation, with JSON, screenshot, video,
+error-context, and trace evidence. `npm audit --audit-level=moderate` reports
+zero vulnerabilities, `git diff --check` reports no whitespace defect (only the
+known AGENTS.md line-ending notice), and only the main worktree is registered.
+An independent final adversarial re-review reports no remaining P0/P1/P2
+finding. No repaired-state PASS or human approval is claimed by this checkpoint.

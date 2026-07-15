@@ -16,7 +16,10 @@ import {
   buildRepairPrompt,
   buildRepairPromptEnvelope,
 } from '../../src/repair/prompt.js';
-import { CODEX_REPAIR_PROMPT_VERSION } from '../../src/repair/provider.js';
+import {
+  CODEX_REPAIR_PROMPT_VERSION,
+  REPAIR_INSPECTION_COMMANDS,
+} from '../../src/repair/provider.js';
 import {
   liveStabilityReceiptV1Schema,
   raceRepairCandidateV1Schema,
@@ -134,7 +137,7 @@ test('derives a frozen sanitized startup-order repair candidate from the committ
   }, TypeError);
 });
 
-test('binds the v2 repair prompt to exact existing and absent path facts', () => {
+test('binds the v3 repair prompt to exact ordered reads and absent path facts', () => {
   const candidate = deriveRaceRepairCandidateV1(committedReceipt);
   const repairId = '2d696ef3-0352-407f-a543-ee4d92711a31';
   const envelope = buildRepairPromptEnvelope(candidate, repairId);
@@ -142,9 +145,13 @@ test('binds the v2 repair prompt to exact existing and absent path facts', () =>
 
   assert.equal(
     CODEX_REPAIR_PROMPT_VERSION,
-    'promiseproof.codex-repair-prompt.v2',
+    'promiseproof.codex-repair-prompt.v3',
   );
   assert.equal(envelope.version, CODEX_REPAIR_PROMPT_VERSION);
+  assert.deepEqual(envelope.inspectionPolicy, {
+    commands: REPAIR_INSPECTION_COMMANDS,
+    execution: 'each_exactly_once_in_listed_order_before_edits',
+  });
   assert.deepEqual(envelope.pathFacts, [
     { path: 'src/client/main.ts', state: 'existing_file' },
     { path: 'tests/support/scenario.ts', state: 'existing_file' },
@@ -158,10 +165,25 @@ test('binds the v2 repair prompt to exact existing and absent path facts', () =>
     built.promptEnvelopeSha256,
     sha256CanonicalJson(envelope),
   );
+  assert.equal(
+    buildRepairPrompt(candidate, repairId).promptEnvelopeSha256,
+    built.promptEnvelopeSha256,
+  );
   assert.match(built.prompt, /absent by design/u);
-  assert.match(built.prompt, /Test-Path -LiteralPath/u);
-  assert.match(built.prompt, /Do not run Git commands, tests, builds/u);
-  assert.match(built.prompt, /normal no-match, missing-path, or changed result/u);
+  assert.match(built.prompt, /Do not use Test-Path, conditionals/u);
+  assert.doesNotMatch(built.prompt, /Test-Path -LiteralPath|if \(Test-Path/u);
+  assert.ok(
+    built.prompt.indexOf(REPAIR_INSPECTION_COMMANDS[0]) <
+      built.prompt.indexOf(REPAIR_INSPECTION_COMMANDS[1]),
+  );
+  for (const command of REPAIR_INSPECTION_COMMANDS) {
+    assert.match(command, /-Raw -Encoding UTF8 -LiteralPath/u);
+    assert.equal(built.prompt.split(command).length - 1, 1);
+  }
+  assert.match(built.prompt, /each once and in listed order, before editing/u);
+  assert.match(built.prompt, /using apply_patch/u);
+  assert.match(built.prompt, /Do not call update_plan or create a todo list/u);
+  assert.match(built.prompt, /Do not run any Git command, test, build/u);
   assert.doesNotMatch(built.prompt, /npm\.cmd|npx\.cmd/u);
   assertRecursivelyFrozen(envelope);
 });

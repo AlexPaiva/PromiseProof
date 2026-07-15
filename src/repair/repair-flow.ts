@@ -1,12 +1,17 @@
 import { lstat, readFile, realpath } from 'node:fs/promises';
 import path from 'node:path';
 
+import {
+  canonicalJson,
+  sha256CanonicalJson,
+} from '../investigation/canonical-json.js';
 import { deepFreeze } from '../investigation/immutable.js';
 import {
   appendRepairLifecycle,
   fileSha256,
   readLocalRepairState,
   readRepairLifecycle,
+  sha256Bytes,
   writeLocalRepairState,
   writeNewJson,
   type LocalRepairStateV1,
@@ -18,8 +23,12 @@ import {
   type HumanRepairDecisionV1,
 } from './approval.js';
 import {
+  validateRepairDiff,
+} from './diff-validator.js';
+import {
   equalRefStates,
   resolveCleanRepository,
+  resolveRepositoryPath,
   runGit,
 } from './git.js';
 import {
@@ -34,6 +43,7 @@ import {
   type BoundedCommandRunner,
   type RepairVerificationReceiptV1,
 } from './verification.js';
+import { cleanupIsolatedProviderRuntime } from './windows-sandbox.js';
 import {
   cleanupDisposableWorktree,
   cleanupPersistedDisposableWorktreeIntent,
@@ -244,6 +254,11 @@ export async function readBoundRepairState(
 async function cleanupCandidate(
   state: LocalRepairStateV1,
 ): Promise<void> {
+  await cleanupIsolatedProviderRuntime({
+    tempRoot: path.dirname(state.candidateWorktreePath),
+    codexHomePath: state.codexHomePath,
+    toolTempPath: state.toolTempPath,
+  });
   if (!(await pathExists(state.candidateWorktreePath))) {
     await cleanupPersistedDisposableWorktreeIntent(
       state.projectRoot,
@@ -308,6 +323,216 @@ async function lifecycleHead(
     throw new Error('PP_REPAIR_LIFECYCLE_INVALID: lifecycle is empty.');
   }
   return head;
+}
+
+function reconciliationFailure(message: string, cause?: unknown): never {
+  throw new Error(
+    `PP_REPAIR_REVIEW_RECONCILIATION_INVALID: ${message}`,
+    cause === undefined ? undefined : { cause },
+  );
+}
+
+async function assertCanonicalRepairArtifact(
+  candidate: string,
+  kind: 'directory' | 'file',
+): Promise<void> {
+  let info: Awaited<ReturnType<typeof lstat>>;
+  let resolved: string;
+  try {
+    [info, resolved] = await Promise.all([
+      lstat(candidate),
+      realpath(candidate),
+    ]);
+  } catch (error) {
+    reconciliationFailure(
+      `retained ${kind} is missing or cannot be resolved.`,
+      error,
+    );
+  }
+  const hasExpectedKind =
+    kind === 'directory' ? info.isDirectory() : info.isFile();
+  if (
+    info.isSymbolicLink() ||
+    !hasExpectedKind ||
+    (kind === 'file' && info.nlink !== 1) ||
+    !sameFilesystemPath(resolved, candidate)
+  ) {
+    reconciliationFailure(
+      `retained ${kind} is not one real object at its canonical path.`,
+    );
+  }
+}
+
+/**
+ * Repairs the one intentional lifecycle-first persistence window at the end of
+ * preparation. No lifecycle event is invented: the already-retained transition
+ * is accepted only when the live candidate, immutable patch artifact, payload
+ * digests, and every persisted patch field all still agree.
+ */
+async function reconcileAwaitingHumanReviewCrash(
+  statePath: string,
+  state: LocalRepairStateV1,
+): Promise<boolean> {
+  const lifecycle = await readRepairLifecycle(state.lifecyclePath);
+  const awaitingEvent = lifecycle.events.at(-1);
+  if (
+    awaitingEvent?.state !== 'awaiting_human_review' ||
+    state.state !== 'candidate_policy_accepted'
+  ) {
+    return false;
+  }
+
+  const candidateEvent = lifecycle.events.at(-2);
+  if (
+    lifecycle.repairId !== state.repairId ||
+    candidateEvent?.state !== 'candidate_policy_accepted' ||
+    state.patch === null ||
+    state.provider === null ||
+    state.providerFailure !== null ||
+    state.failure !== null ||
+    state.approvalSha256 !== null ||
+    state.verificationWorktreePath !== null ||
+    state.verificationReceiptPath !== null ||
+    state.verificationReceiptSha256 !== null
+  ) {
+    reconciliationFailure(
+      'retained preparation state is not the exact pre-review success state.',
+    );
+  }
+  if (
+    candidateEvent.payloadSha256 !== sha256CanonicalJson(state.patch) ||
+    awaitingEvent.payloadSha256 !==
+      sha256CanonicalJson({
+        patchSha256: state.patch.sha256,
+        patchBytes: state.patch.bytes,
+        automaticApproval: false,
+      })
+  ) {
+    reconciliationFailure(
+      'candidate or awaiting-review lifecycle payload digest changed.',
+    );
+  }
+  if (
+    (await pathExists(state.approvalPath)) ||
+    (await pathExists(path.join(state.artifactDirectory, 'failure.json'))) ||
+    (await pathExists(state.codexHomePath)) ||
+    (await pathExists(state.toolTempPath))
+  ) {
+    reconciliationFailure(
+      'decision, failure, or isolated-provider runtime evidence appeared before review.',
+    );
+  }
+  try {
+    await assertUnchangedBase(state);
+  } catch (error) {
+    reconciliationFailure(
+      'main checkout HEAD or shared Git refs changed after preparation.',
+      error,
+    );
+  }
+
+  await assertCanonicalRepairArtifact(state.artifactDirectory, 'directory');
+  await assertCanonicalRepairArtifact(state.lifecyclePath, 'file');
+  await assertCanonicalRepairArtifact(state.patchPath, 'file');
+  const retainedPatchBytes = await readFile(state.patchPath);
+  if (
+    retainedPatchBytes.byteLength !== state.patch.bytes ||
+    sha256Bytes(retainedPatchBytes) !== state.patch.sha256
+  ) {
+    reconciliationFailure(
+      'retained patch size or digest differs from the candidate record.',
+    );
+  }
+
+  let candidate: DisposableWorktree;
+  try {
+    candidate = await reopenDisposableWorktree(
+      state.projectRoot,
+      state.candidateWorktreePath,
+    );
+  } catch (error) {
+    reconciliationFailure(
+      'candidate worktree is missing, unregistered, or outside its retained boundary.',
+      error,
+    );
+  }
+  if (candidate.repository.baseHead !== state.baseCommit) {
+    reconciliationFailure(
+      'candidate worktree base differs from the retained base commit.',
+    );
+  }
+  let validated: Awaited<ReturnType<typeof validateRepairDiff>>;
+  try {
+    validated = await validateRepairDiff(candidate);
+  } catch (error) {
+    reconciliationFailure(
+      'candidate diff no longer satisfies the bounded repair policy.',
+      error,
+    );
+  }
+  if (validated.baseHead !== state.baseCommit) {
+    reconciliationFailure(
+      'validated candidate is no longer based on the retained commit.',
+    );
+  }
+
+  const sourcePath = resolveRepositoryPath(
+    candidate.worktreePath,
+    'src/client/main.ts',
+  );
+  const regressionPath = resolveRepositoryPath(
+    candidate.worktreePath,
+    'tests/regression/initialization-order.spec.ts',
+  );
+  const [baseSource, sourceAfterSha256, regressionAfterSha256] =
+    await Promise.all([
+      runGit(candidate.worktreePath, [
+        'show',
+        `${state.baseCommit}:src/client/main.ts`,
+      ]),
+      fileSha256(sourcePath),
+      fileSha256(regressionPath),
+    ]);
+  const expectedPatch = {
+    sha256: validated.patchSha256,
+    bytes: validated.patchBytes,
+    additions: validated.addedLines,
+    deletions: validated.deletedLines,
+    changedFiles: [
+      {
+        path: 'src/client/main.ts' as const,
+        status: 'modified' as const,
+        beforeSha256: sha256Bytes(baseSource.stdout),
+        afterSha256: sourceAfterSha256,
+      },
+      {
+        path: 'tests/regression/initialization-order.spec.ts' as const,
+        status: 'added' as const,
+        beforeSha256: null,
+        afterSha256: regressionAfterSha256,
+      },
+    ],
+  };
+  const expectedPatchBytes = Buffer.from(validated.patch, 'utf8');
+  if (
+    !retainedPatchBytes.equals(expectedPatchBytes)
+  ) {
+    reconciliationFailure(
+      'retained patch bytes differ from the twice-validated live candidate.',
+    );
+  }
+  if (
+    canonicalJson(expectedPatch) !== canonicalJson(state.patch)
+  ) {
+    reconciliationFailure(
+      'candidate record differs from the validated patch and file hashes.',
+    );
+  }
+
+  state.state = 'awaiting_human_review';
+  state.updatedAt = new Date().toISOString();
+  await writeLocalRepairState(statePath, state);
+  return true;
 }
 
 async function cleanupVerificationWorktree(
@@ -409,7 +634,12 @@ export async function reviewRaceRepairInteractively(
 ): Promise<HumanReviewResult> {
   const lock = await acquireRepairLock(projectRoot);
   try {
-    const { statePath } = await readBoundRepairState(projectRoot, repairId);
+    const bound = await readBoundRepairState(projectRoot, repairId);
+    const statePath = bound.statePath;
+    await reconcileAwaitingHumanReviewCrash(
+      statePath,
+      structuredClone(bound.state),
+    );
     const decision = await reviewCandidateInteractively({ statePath });
     if (decision.decision === 'approved') {
       return deepFreeze({
@@ -1006,6 +1236,12 @@ export async function retryRepairCleanup(
     const statePath = bound.statePath;
     const state = structuredClone(bound.state);
     let head = await lifecycleHead(state);
+    if (
+      head === 'awaiting_human_review' &&
+      (await reconcileAwaitingHumanReviewCrash(statePath, state))
+    ) {
+      return (await readBoundRepairState(projectRoot, repairId)).state;
+    }
     if (head === 'cleanup_completed') {
       state.state = 'cleanup_completed';
       state.updatedAt = new Date().toISOString();
