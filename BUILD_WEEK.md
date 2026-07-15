@@ -724,3 +724,130 @@ recorded, the smallest next milestone is Codex preparation of one minimal source
 patch and regression test in a disposable worktree, followed by a real human
 approval gate and the unchanged Playwright verdict. It begins only after this
 Milestone 03 evidence is committed, tagged, and pushed.
+
+## Milestone 04 — bounded Codex repair infrastructure
+
+Milestone 03 was committed as `65a5dd6a0bb23465b776c2010c1d8e6048ac46b0`,
+tagged `milestone-03-gpt56-investigation`, and pushed before repair work began.
+Milestone 04 supports only the initialization-race journey. The propagation
+failure remains deliberately broken and must continue producing only
+`PP_PREFERENCE_NOT_PERSISTED` during repaired-state verification.
+
+### Repair eligibility and frozen authority
+
+Repair eligibility is derived deterministically from the committed Milestone 03
+3+3 live-stability receipt, read from the frozen commit rather than the current
+checkout. It requires the exact race signature, `PP_IDENTIFIABLE_EVENT_LEAK`,
+`inspect_startup_order`, one request and receipt, collector-before-hydration and
+activity-before-preference-read facts, stable dossier identity, unique response
+and investigation IDs, six allowlisted completed GPT-5.6 responses, and no
+model-owned verdict.
+
+The repair runner verifies that its base descends from the exact Milestone 03
+tag and that every base change is repair infrastructure. Critical evaluator,
+contract, application, defect, replay-binding, investigation, scenario, and
+live-receipt blobs must remain byte-identical to the frozen checkpoint. The
+retained state binds this foundation manifest to the exact base commit and tree.
+
+### Candidate-generation boundary
+
+The live provider uses pinned `@openai/codex-sdk` and CLI version `0.144.4`, one
+`gpt-5.6-sol` thread, one turn, high reasoning effort, `workspace-write`, no
+approval adapter, no network or web search, no MCP/apps/subagents/hooks, an
+isolated `CODEX_HOME`, and a scrubbed command environment. Unknown top-level SDK
+events, unknown or forbidden item types, failed commands, path escapes, secret
+values, multiple turns/messages, excess events/bytes, and authoritative final
+claims fail closed. The model's final JSON is a bounded activity summary, never
+a pass result. Immediately after that sanitized result is accepted, the isolated
+Codex home and tool-temporary directories are safely removed; raw session,
+prompt, reasoning, and CLI-log state is not retained through human review.
+Candidate baseline and repaired-state commands also use fresh empty npm user and
+global configuration files, a disposable npm cache, a fixed public registry,
+and an environment that does not inherit API keys, auth tokens, npm credentials,
+or proxy credentials. The complete command runtime is removed after each phase.
+
+Only two unstaged paths may differ:
+
+- `src/client/main.ts` as one tracked modification; and
+- `tests/regression/initialization-order.spec.ts` as one new regular file.
+
+The patch is limited to 32 KiB and 160 changed lines, rejects staged, ignored,
+binary, mode, rename, delete, symlink, hard-link, Unicode-direction, terminal
+control, and unexpected-path content, and is validated twice before retention.
+The source edit is confined to the startup-race branch body: a truthful status,
+preference hydration, then collector startup. This is a deliberately narrow
+causal repair policy, not a claim of general autonomous source repair.
+
+The new regression is parsed as TypeScript before execution. It may import only
+`expect`/`test` from Playwright and the existing scenario helper, execute exactly
+one literal OFF journey, derive the two event indices directly from the captured
+timeline, and make direct hard assertions for event order, browser errors,
+activity requests and receipts, the unchanged evaluator, reload, and contextual
+recommendations. Filesystem, process, network, dynamic-code, interception,
+fixture-label, skip/only/fixme, assignment, control-flow, and comment-only
+assertion bypasses are rejected.
+
+### Human and verification boundaries
+
+The candidate runs outside the main checkout. Its complete retained patch is
+UTF-8/control checked again immediately before display. Production review
+accepts no injected stream, pipe, flag, or automatic adapter: both stdin and
+stdout must be real TTYs, and the operator must type exactly `APPROVE` or
+`REJECT` followed by the full repair UUID and full patch SHA-256. The immutable
+decision record binds the exact phrase digest, repair ID, patch digest, and byte
+count. A valid retained decision is reconciled idempotently after an interrupted
+write without prompting for a different decision.
+
+Approval never applies the patch to `main`. Verification creates a second fresh
+detached worktree, freshly installs with `npm ci --ignore-scripts`, applies the
+exact retained digest, and revalidates the two-file policy. It then runs, on an
+isolated loopback port: build; canonical race OFF and ON once; race OFF five
+times; race ON five times; the propagation expected-red contract; all six
+propagation green cases; and finally the AST-bounded startup regression. The
+model-authored regression runs last. Playwright JSON discovery, run markers,
+fresh artifact times, evidence copies, canonical runtime schemas, and the
+deterministic evaluator are independently checked. The seeded race expected-red
+test is intentionally not reused as repaired acceptance because it asserts the
+presence of the original defect.
+
+Lifecycle events are SHA-256 chained with explicit legal transitions. Patch,
+approval, command, artifact, success, and failure receipts are retained before
+cleanup. Interrupted approval, verification, evidence-finalization, and cleanup
+windows reconcile without duplicate lifecycle events; a pre-PASS interruption
+is conservatively retired, while a valid retained deterministic PASS receipt is
+preserved as PASS during cleanup recovery. Both candidate and verification
+checkout paths are planned as exact UUID locations and persisted before their
+directories are materialized, closing the crash window in which Git could retain
+an unknown disposable checkout. Recovery safely distinguishes an absent intent,
+an empty owned UUID root, and a registered materialized worktree.
+
+The PASS receipt path and SHA-256 are persisted before the lifecycle advances to
+`verification_passed`. Restart recovery rehashes the exact regular receipt,
+revalidates its repair/base/patch/check sequence, and compares its evidence
+manifest with the retained verification files. A shape-compatible post-PASS
+receipt mutation fails closed and cannot be recovered as authoritative PASS. A
+stale orchestration lock can be
+removed only by an explicit command after its strict record is old enough and
+its PID is confirmed dead. Missing checkout directories cannot be called clean
+while Git still registers their worktrees.
+
+### Current checkpoint
+
+No live Codex repair candidate has been requested, no candidate diff has been
+approved, no patch has been applied to `main`, and no repaired-state PASS is
+claimed in this infrastructure checkpoint. The production approval boundary
+will stop on the first unseen live diff for Alex's real human review.
+
+The infrastructure checkpoint currently passes `npm.cmd run build` and all
+87/87 repair tests. Those tests include the SDK event/provider boundary,
+eligibility, lifecycle and approval immutability, exact PASS-receipt anchoring,
+post-anchor tamper rejection, four interrupted preparation states, interrupted
+verification and cleanup recovery, absent/empty/materialized worktree intents,
+nonempty/malformed/registered-intent rejection, repository-bound local state,
+repair-role-bound UUID paths, inherited Git-redirection rejection, fresh
+second-worktree verification, command-environment credential isolation,
+the TypeScript regression firewall, Git/ref/path boundaries, patch limits, and
+adversarial bypasses. The complete offline two-worktree browser journey remains
+the next gate and will run from the clean committed infrastructure checkpoint,
+because it deliberately clones committed `HEAD` rather than trusting this
+working tree.
