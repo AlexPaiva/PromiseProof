@@ -5,24 +5,24 @@ import { defineConfig } from '@playwright/test';
 const baseURL = process.env.PROMISEPROOF_BASE_URL ?? 'http://127.0.0.1:4173';
 const projectRoot = fileURLToPath(new URL('../..', import.meta.url));
 
+if (process.env.OPENAI_API_KEY?.trim().length === 0 || process.env.OPENAI_API_KEY === undefined) {
+  throw new Error(
+    'OPENAI_API_KEY is required for the explicit live investigation command.',
+  );
+}
+
 export default defineConfig({
-  testDir: '..',
-  testMatch: [
-    'propagation/health.spec.ts',
-    'propagation/manual-observation.spec.ts',
-    'control/personalization-on.spec.ts',
-    'propagation/detector.spec.ts',
-    'propagation/replays.spec.ts',
-    'investigation/offline.spec.ts',
-  ],
+  testDir: '.',
+  testMatch: 'live.spec.ts',
   fullyParallel: false,
   workers: 1,
   retries: 0,
-  forbidOnly: Boolean(process.env.CI),
+  preserveOutput: 'always',
   reporter: [['list']],
   outputDir: fileURLToPath(
-    new URL('../../test-results/propagation-green', import.meta.url),
+    new URL('../../test-results/investigation-live-race', import.meta.url),
   ),
+  timeout: 240_000,
   expect: { timeout: 5_000 },
   use: {
     baseURL,
@@ -31,7 +31,7 @@ export default defineConfig({
     video: 'retain-on-failure',
   },
   webServer: {
-    command: 'npm run dev:test:propagation',
+    command: 'npm run dev:test:race',
     cwd: projectRoot,
     url: `${baseURL}/api/health`,
     reuseExistingServer: false,

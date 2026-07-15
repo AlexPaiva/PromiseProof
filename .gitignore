@@ -15,3 +15,9 @@ coverage/
 .DS_Store
 Thumbs.db
 *.log
+
+# Local cross-conversation handoff; BUILD_WEEK.md is the tracked source of truth.
+BUILD_WEEK_HANDOFF.md
+
+# Atomic receipt writes should never be staged after an interrupted process.
+artifacts/*.tmp-*

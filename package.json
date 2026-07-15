@@ -20,12 +20,23 @@
     "start:race": "cross-env NODE_ENV=production DEMO_MODE=initialization-race node dist/server.mjs",
     "start:propagation": "cross-env NODE_ENV=production DEMO_MODE=propagation-failure node dist/server.mjs",
     "typecheck": "tsc --noEmit",
-    "test": "npm run test:race && npm run test:propagation",
-    "test:race": "playwright test tests/health tests/control tests/detector tests/diagnostics",
+    "test": "npm run test:investigation:unit && npm run test:live-stability:unit && npm run test:race && npm run test:propagation",
+    "test:race": "playwright test tests/health tests/control tests/detector tests/diagnostics tests/investigation/offline.spec.ts",
     "test:propagation": "playwright test --config=tests/propagation/playwright.config.ts",
     "test:health": "playwright test tests/health tests/control",
     "test:detector": "playwright test tests/detector tests/diagnostics",
     "test:determinism": "playwright test --config=tests/determinism/playwright.config.ts && playwright test --config=tests/propagation/determinism.config.ts",
+    "test:investigation:unit": "tsx --test tests/investigation/investigation.unit.ts",
+    "test:live-stability:unit": "tsx --test scripts/verify-live-stability.unit.ts",
+    "test:investigation:offline": "npm run test:investigation:unit && npm run test:live-stability:unit && playwright test tests/investigation/offline.spec.ts && playwright test --config=tests/investigation/propagation.offline.config.ts",
+    "investigate:live": "npm run investigate:live:race && npm run investigate:live:propagation",
+    "investigate:live:race": "node --env-file-if-exists=.env.local ./node_modules/@playwright/test/cli.js test --config=tests/investigation/race.live.config.ts",
+    "investigate:live:propagation": "node --env-file-if-exists=.env.local ./node_modules/@playwright/test/cli.js test --config=tests/investigation/propagation.live.config.ts",
+    "investigate:live:stability": "npm run prepare:investigation:live-stability && npm run investigate:live:stability:race && npm run investigate:live:stability:propagation && npm run verify:investigation:live-stability",
+    "prepare:investigation:live-stability": "node ./node_modules/tsx/dist/cli.mjs scripts/verify-live-stability.ts --capture-source-snapshot",
+    "investigate:live:stability:race": "npm run investigate:live:race -- --repeat-each=3 --output=test-results/investigation-live-stability-race",
+    "investigate:live:stability:propagation": "npm run investigate:live:propagation -- --repeat-each=3 --output=test-results/investigation-live-stability-propagation",
+    "verify:investigation:live-stability": "node --env-file-if-exists=.env.local ./node_modules/tsx/dist/cli.mjs scripts/verify-live-stability.ts",
     "test:expected-red:unit": "tsx --test scripts/test-expected-red.unit.ts",
     "test:expected-red": "npm run test:expected-red:unit && tsx scripts/test-expected-red.ts",
     "verify:promise": "npm run verify:promise:race",
@@ -33,7 +44,9 @@
     "verify:promise:propagation": "playwright test --config=tests/propagation/contract.config.ts"
   },
   "dependencies": {
-    "express": "^5.1.0"
+    "express": "^5.1.0",
+    "openai": "^6.47.0",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@playwright/test": "^1.53.2",

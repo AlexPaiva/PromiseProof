@@ -8,7 +8,9 @@ PromiseProof begins as a new OpenAI Build Week project. `AGENTS.md` is the canon
 
 - Enter the Developer Tools track as a solo entrant.
 - Prove one narrow, observable promise before expanding scope.
-- Keep verdict ownership deterministic: models may later investigate and propose repairs, but they may not declare verification success.
+- Keep verdict ownership deterministic: models may investigate and later propose
+  repairs, but their schemas do not contain an overall-verdict field; only the
+  deterministic evaluator and Playwright can establish verification success.
 - Use a synthetic recommendation product and synthetic identifiers only.
 - Preserve an authentic frontend-to-backend HTTP boundary for activity evidence.
 - Keep the ordinary health suite green while exposing the seeded contract violation through a separate non-zero promise verifier.
@@ -332,3 +334,393 @@ returned exit `0` while both nested canonical tests independently returned exit
 The Git tag `milestone-02-deterministic-foundation` identifies this protected
 checkpoint. Model integration must not modify the evaluator, contract assertion,
 seeded defects, or existing evidence-capture behavior.
+
+## Milestone 03 — bounded GPT-5.6 investigation — live verified — 2026-07-15
+
+### Implemented architecture
+
+Milestone 03 adds a bounded investigation layer around the two existing factual
+diagnostic replays. It does not add a general-purpose agent and does not change
+the deterministic verdict path.
+
+The implemented sequence is:
+
+1. Parse normalized OFF evidence with a strict runtime schema and call the
+   unchanged deterministic evaluator.
+2. Build versioned `InvestigationDossierV1` by copying only explicitly
+   allowlisted fields.
+3. Send the dossier to the Responses API with model `gpt-5.6`, one strict
+   function tool named `run_diagnostic_replay`, forced tool choice, and parallel
+   tool calls disabled.
+4. Require exactly one individually completed function call. GPT-5.6 proposes
+   the initial hypothesis titles and evidence in the project-owned opaque slots
+   `h1` through `h4`; deterministic code validates the name, JSON shape,
+   contiguous confidence-ordered slots/titles, cited evidence IDs, defensive verdict-language
+   boundary, and replay ID before recursively freezing the complete accepted
+   argument object and executing anything.
+5. Dispatch either `inspect_startup_order` or
+   `inspect_preference_roundtrip` through a closed branch to the already
+   implemented Playwright/API replay. There is no default or arbitrary command
+   execution path.
+6. Normalize the factual replay report and return it through one
+   `function_call_output` continuation tied to the first response and call IDs.
+7. Require a strict `InvestigationResultV1` containing the same hypothesis IDs,
+   relative model confidence estimates, replay-cited evidence/status updates,
+   `mostLikelyHypothesisId`, the replay performed, conclusion evidence, and
+   exactly the ordered `single_replay_scope`, `synthetic_evidence_scope`, and
+   `diagnostic_not_verdict` limitation codes. The final schema contains neither
+   hypothesis titles, model-authored caveats, nor a free-form cause/verdict
+   field; deterministic code retains the original model-proposed titles and
+   renders fixed project-owned limitation prose.
+8. Reject a final response that changes hypothesis or replay identity, selects a
+   leading ID other than the first maximum-confidence hypothesis, cites unknown
+   facts, fails to place replay citations in the required status-specific arrays
+   and the leading hypothesis's supporting array, returns a live model identity other than
+   `gpt-5.6` or `gpt-5.6-sol`, repeats or overlaps evidence references, returns a
+   refusal/incomplete/error response or any final output other than one
+   individually completed message containing one `output_text` item plus absent
+   or completed reasoning, or attempts to place reserved outcome language in the
+   initial diagnostic prose. The accepted final result is recursively frozen.
+
+The runner hard-codes a maximum of two provider calls and one replay execution.
+A rejection or provider/replay failure terminates the loop; no fallback replay,
+second tool round, or unvalidated execution is attempted.
+
+Structural output-item validation observes the complete response shape and each
+item's completion status. Any second function call, extra message, refusal,
+incomplete reason, provider error, incomplete item, unexpected content part, or
+unexpected output kind terminates the loop without dispatching another replay.
+
+### Exact model-input boundary
+
+The dossier payload supplied as evidence in the first model request contains
+only:
+
+- dossier version and canonical OFF promise statement;
+- the three deterministic clause IDs, descriptions, expected values, observed
+  values, and boolean clause results;
+- stable deterministic violation codes;
+- UI preference and toggle state;
+- browser-storage preference;
+- backend preference;
+- total and identifiable activity request/receipt counts;
+- recommendation mode, item count, and feed-functionality flag;
+- an ordered list of allowlisted event names;
+- sanitized evidence-reference IDs and descriptions; and
+- the two registered replay IDs and descriptions.
+
+The second request continues the first response. Its only new evidence payload
+is the normalized factual report from the one executed replay plus its sanitized
+evidence references. Raw `PromiseEvidence`, replay journey objects, and
+identity-bearing requests remain on the deterministic side of the boundary.
+
+The model boundary excludes fixture selection and root-cause labels,
+configuration and health contents, environment variables, run/user IDs, source
+paths and source code, server logs, screenshots, videos, and Playwright traces.
+The exact first and second request objects are serializable in the unit suite so
+this exclusion can be tested as an executable boundary rather than a prompt
+convention.
+
+### Runtime contracts and authority boundary
+
+- Zod strict schemas reject unknown properties in the dossier, function
+  arguments, replay reports, and final result.
+- The only accepted tool name is `run_diagnostic_replay`; its `replayId` is a
+  shared two-value enum.
+- Initial and final evidence citations must resolve to dossier or executed-replay
+  references. Model-supplied reference arrays must be duplicate-free, and each
+  hypothesis's supporting and contradicting reference sets must be disjoint.
+- Multiple calls, malformed JSON, unexpected or incomplete response output items, invalid
+  metadata, non-contiguous ranks, dangling references, a second replay, and
+  malformed replay reports are deterministic rejections.
+- Initial hypothesis titles are proposed by GPT-5.6 inside the deterministic
+  opaque slots `h1` through `h4`, validated once, and retained inside a
+  recursively frozen accepted argument object as the immutable identity
+  baseline. The recursively frozen final result can only update the
+  existing IDs with relative confidence, status, and evidence references; it
+  cannot rename a hypothesis or return a free-form cause.
+- `mostLikelyHypothesisId` must resolve to the first maximum-confidence final
+  hypothesis. Its status must be `supported` and cite supporting replay facts.
+- Every final `supported` status must cite supporting replay evidence, and every
+  `weakened` status must cite contradicting replay evidence. Confidence movement
+  alone does not count as a material causal update. This is a deterministic
+  citation-placement check, not proof that model-authored hypothesis prose is
+  semantically entailed by the cited fact.
+- Confidence integers are relative model estimates, not calibrated
+  probabilities.
+- Live selection and conclusion metadata must identify exactly `gpt-5.6` or the
+  documented resolved `gpt-5.6-sol` model; arbitrary suffixes are rejected. The
+  deterministic offline provider retains its distinct nonempty model identity.
+- The final result schema has no overall verdict or model-authored prose field.
+  It carries the complete canonical limitation-code sequence, which project
+  code maps to fixed prose. Reserved pass/fix/approval/compliance phrases remain
+  a defense-in-depth check on the model-authored initial diagnostic content,
+  but only the unchanged TypeScript evaluator and Playwright contract own the
+  promise verdict.
+- Startup replay validation recomputes the first collector/hydration indices and
+  startup/network ordering flags from their event arrays. Preference replay
+  validation recomputes consistency from acknowledgement and authoritative
+  readback. Internally contradictory factual reports are rejected.
+
+### Providers, commands, and artifacts
+
+The ordinary suite uses a deterministic offline provider that sees the same
+allowlisted dossier and replay-output boundary as the live provider. It records
+its exact inputs, uses zero token metadata, and makes no network request. The
+OpenAI provider performs API calls only during explicit live commands and reads
+`OPENAI_API_KEY` from the current environment or ignored `.env.local`.
+
+Relevant commands are:
+
+```text
+npm run test:investigation:unit
+npm run test:investigation:offline
+npm test
+npm run investigate:live:race
+npm run investigate:live:propagation
+npm run investigate:live:stability
+```
+
+The versioned investigation artifact records the sanitized dossier and its
+SHA-256 digest, provider kind, requested/returned model IDs, response IDs and
+statuses, latency, per-response and aggregate input/cached/output/reasoning/total
+token usage, provider/replay bounds, validation decisions, tool call ID,
+sanitized initial output, normalized factual replay report, strict final output,
+deterministic limitation codes, final output-shape decision, failure code, and
+total timing. It never records the API key.
+
+The live provider deliberately sends `store: true` for both calls so the second
+call can continue the first with `previous_response_id`. OpenAI retains stored
+Response objects for 30 days by default. This milestone sends only the sanitized
+synthetic dossier and normalized synthetic replay report; real customer data
+would require a separately designed storage and retention policy.
+
+### Verification status
+
+All non-credit checks below were freshly produced from the Milestone 03 working
+tree. The no-key fail-closed path was exercised first. After the credential was
+placed only in ignored `.env.local`, both live smokes and the strict 3+3
+stability gate passed; the detailed live record follows this table.
+
+| Command or check | Status |
+| --- | --- |
+| `npm.cmd run build` | PASS — strict typecheck, client bundle, and server bundle after authority hardening |
+| Fresh `npm.cmd ci` followed by build/offline investigation | PASS — 110 packages restored from lockfile, 0 vulnerabilities, build and both browser investigations green |
+| Production bundle smoke, race mode | PASS — `/` returned 200 and `/api/health` returned `ok: true`, `initialization-race` |
+| Production bundle smoke, propagation mode | PASS — `/` returned 200 and `/api/health` returned `ok: true`, `propagation-failure` |
+| `npm.cmd run test:investigation:unit` | PASS — 10/10 adversarial provider-boundary groups after second hardening |
+| `npm.cmd run test:live-stability:unit` | PASS — 10/10 no-network retained-proof and filesystem-verifier groups |
+| `npm.cmd run test:investigation:offline` | PASS — 10/10 provider groups, 10/10 receipt-verifier groups, and both real-browser investigations |
+| `npm.cmd test` | PASS — 20/20 unit groups plus 6/6 race and 6/6 propagation browser cases |
+| `npm.cmd run test:determinism` | PASS — 20/20 unchanged fresh-context cases after authority hardening |
+| `npm.cmd run test:expected-red` | PASS — race leak code only; propagation persistence code only; complete artifacts after authority hardening |
+| `npm.cmd audit --audit-level=moderate` | PASS — 0 vulnerabilities |
+| Frozen evaluator/contract/defect hash comparison | PASS — seven protected files match the Milestone 02 checkpoint; recorded SHA-256 values unchanged |
+| `git diff --check` | PASS — no whitespace errors; only the known `AGENTS.md` CRLF-to-LF warning |
+| Exact serialized model-input leakage assertions | PASS — first and second requests excluded every seeded sentinel and forbidden key/value class |
+| `npm.cmd run investigate:live:race` | PASS — first paid smoke; `gpt-5.6-sol`; startup replay; leading `h1` supported by all startup replay facts |
+| `npm.cmd run investigate:live:propagation` | PASS — first paid smoke; `gpt-5.6-sol`; preference-roundtrip replay; leading `h1` supported by all round-trip facts |
+| `npm.cmd run investigate:live:stability` | PASS — fresh source-bound race 3/3 plus propagation 3/3; aggregate verifier wrote the sanitized receipt |
+| Sanitized receipt | PASS — 6 investigations, 12 unique response IDs, exact signatures/usage/source binding, and no credential retention |
+
+The ten adversarial test groups cover exact request serialization with network
+disabled, strict outbound reparsing, strict schemas, unknown/zero/multiple tool
+calls, unexpected or incomplete response output items, unknown replay IDs, unexpected
+arguments, invalid JSON/ranks/metadata/evidence references, accepted and
+rejected live model identities, missing live usage, sanitized provider failures,
+defensive outcome-language synonyms, zero execution after rejection, a
+one-replay execution cap, malformed or internally inconsistent replay reports,
+hypothesis/replay identity mismatch, invented leading IDs, an incorrect leading
+ID, attempted title or free-cause fields, dangling final references, uncited
+supported/weakened statuses, and failure to materially update hypotheses. The
+allowlisted dossier and normalized replay
+output are deeply frozen before they cross the provider boundary. The complete
+accepted first-call argument object and accepted final result are also deeply
+frozen before the runner or artifact can retain them.
+
+The offline and live browser investigation specifications now assert that the
+initial observed journey recorded zero browser errors. The browser-backed
+startup-order replay also fails before report normalization if its diagnostic
+journey records a browser error. The preference-roundtrip replay is API-only and
+therefore has no browser-error channel.
+
+The harmless Node warning about `NO_COLOR` being ignored while `FORCE_COLOR` is
+set is emitted by the local test environment; the application/browser suites
+reported no console errors.
+
+### Authority-hardening pass — 2026-07-15
+
+A red-team review found that a finite phrase blacklist could not support the
+earlier broad claim that model prose was incapable of declaring success. The
+deterministic evaluator was never bypassed, so this was not a false-green path,
+but the model-output boundary and documentation were strengthened before any
+live API spend:
+
+- GPT-5.6 still proposes the initial causal hypothesis titles and evidence.
+  Deterministic validation prescribes opaque IDs `h1` through `h4` by rank and
+  preserves the IDs, titles, order, and replay request as the continuity baseline.
+- The final schema no longer accepts hypothesis titles or the free-form
+  `mostLikelyCause` field. It accepts only the existing IDs, relative confidence,
+  status/evidence updates, `mostLikelyHypothesisId`, replay identity, conclusion
+  references, and the three canonical limitation codes. Fixed project-owned
+  prose replaces model-authored caveats.
+- The leading ID must be the first maximum-confidence hypothesis and must be
+  `supported` by a supporting reference from the executed replay.
+- Every non-`unresolved` status is checked against the corresponding replay
+  evidence list. A confidence-number change alone is insufficient.
+- Both live response phases accept only exact `gpt-5.6` or documented resolved
+  `gpt-5.6-sol` identities. Offline provider identity remains independently
+  accepted for network-free tests.
+- The exact outbound dossier and replay report are strictly reparsed immediately
+  before serialization, closing a future unsafe-cast path.
+- Reserved success/fix/approval/compliance prose checks remain as defense in
+  depth and gained adversarial synonym coverage; the structural schema and
+  unchanged deterministic evaluator remain the real authority boundary.
+
+### Second red-team hardening — 2026-07-15
+
+A second adversarial review found no route to a false Playwright pass, arbitrary
+replay execution, fixture leakage, or API-key exposure, but identified six
+boundary claims that needed stronger executable enforcement before live API use:
+
+- accepted initial arguments and the accepted final result are now recursively
+  frozen, including nested arrays and objects;
+- free-form final caveats were replaced by three required ordered limitation
+  codes and a deterministic code-to-prose mapping;
+- the provider now exposes structural summaries for every output item plus
+  refusal, incomplete, and error presence; validation requires an individually
+  completed function call and exactly one individually completed final message
+  with one `output_text` part, so a second call or partial item is visible and
+  rejected;
+- live returned-model validation now accepts only exact `gpt-5.6` or documented
+  resolved `gpt-5.6-sol`;
+- model-supplied reference arrays must be unique, and supporting/contradicting
+  sets must be disjoint within each initial and final hypothesis; and
+- startup indices/order flags and preference-roundtrip consistency are checked
+  against the report fields from which they are deterministically derived.
+- response and call IDs are bounded to a safe identifier form, token totals must
+  exactly equal input plus output, opaque hypothesis IDs cannot carry verdict
+  prose, and provider failures are projected twice onto four safe fields.
+
+These changes do not broaden the milestone or alter the deterministic promise
+verdict. Live outcomes were held unclaimed until the explicit gates ran with a
+separately supplied API key; the verified record is below.
+
+Fresh hardening verification produced 10/10 passing provider-boundary groups,
+10/10 passing retained-proof-verifier groups, and both passing browser
+investigations through `npm.cmd run test:investigation:offline`. The
+investigation browser paths now
+assert zero observed browser errors, and the startup-order replay rejects a
+browser-error-bearing diagnostic journey. The final broader checkpoint also
+passed: build; 10/10 unit plus 6/6 race and 6/6 propagation ordinary tests; 20/20
+determinism; both exact expected-red signatures and artifacts; the seven-file
+frozen-foundation comparison; and the zero-vulnerability moderate audit. This
+was the pre-live checkpoint; the subsequent live acceptance did not change the
+protected foundation.
+
+### Live-stability retained-proof hardening — 2026-07-15
+
+Before spending API credits, the repeated-live command gained an independent
+aggregate acceptance gate. It now removes any stale green receipt and both prior
+stability-output cohorts, then captures a canonical pre-run digest over
+executable source, tests, scripts, package files, and build/test configuration,
+and requires the same digest after all six runs.
+Race and propagation repetitions use isolated output directories and must each
+leave a clean Playwright `.last-run.json` plus exactly three distinct full
+artifacts with the exact expected basename outside attachment-copy directories.
+
+The verifier strictly reparses every retained artifact and independently checks
+the exact 28 accepted validation decisions; response and output-item shapes;
+positive and internally consistent token use; finite latency and timing;
+singleton defect signatures and factual replay reports; initial ranking and
+dossier grounding; final hypothesis continuity, replay citations, and leading
+ID; limitation codes; cohort hashes; unique investigation/response IDs; and
+fixture, credential, local-path, and verdict-language exclusion. It writes only
+an atomic sanitized projection to `artifacts/milestone-03-live-stability.json`.
+Canonical hashes are explicitly consistency checks, not provider attestation.
+
+A final independent red-team initially found that deleting only the receipt and
+snapshot would let the standalone verifier reuse old successful cohorts. The
+preflight now recursively deletes both cohort directories too; a targeted unit
+test seeds stale passed outputs and proves they are gone before the source
+snapshot is captured. The reviewer re-audited the fix and reported no remaining
+P0/P1 issue in the temporal-binding path.
+
+The new no-network verifier suite passed 10/10 adversarial groups, including a
+valid synthetic 3+3 cohort, cardinality/identity tampering, wrong defect and
+replay signatures, malformed provider/timing/usage fields, altered ranks and
+validation decisions, fixture/key/verdict leakage, exact artifact discovery,
+stale-receipt/cohort removal, pre/post source mismatch, and an end-to-end atomic
+receipt write. The complete fresh matrix then passed: build; 20/20 unit groups;
+both offline browser investigations; 6/6 race and 6/6 propagation ordinary browser
+cases; 20/20 deterministic contexts; both exact expected-red signatures with
+complete evidence; seven unchanged protected hashes; `git diff --check`; and a
+zero-vulnerability moderate dependency audit. Both single live commands and the
+aggregate stability command fail closed before server/API use when the key is
+absent. They subsequently passed with the ignored credential, as recorded next.
+
+### Live GPT-5.6 acceptance — 2026-07-15
+
+Both paid smoke investigations passed on their first attempt. The earlier
+missing-key executions were intentional zero-request boundary checks, not failed
+paid investigations.
+
+- Race smoke: investigation `10702fc3-a0dd-40da-b566-067bebb07dd0`;
+  `inspect_startup_order`; leading `h1` supported; returned model
+  `gpt-5.6-sol` twice; response IDs
+  `resp_00e302531917885c006a572f965288819381bc705d09b26289` and
+  `resp_00e302531917885c006a572fa09f648193b0986abcb5bd4bbf`; 3,898 total
+  tokens; 15,082.922 ms summed provider latency; dossier SHA-256
+  `5b00ab36a0aee62666c9907003f1521496c485ec8bf9a78b79b069ed0547172a`.
+- Propagation smoke: investigation `aa19f3b2-d7b9-4f91-bf1e-d93517e445c4`;
+  `inspect_preference_roundtrip`; leading `h1` supported; returned model
+  `gpt-5.6-sol` twice; response IDs
+  `resp_0b8c6597206d2da8006a572ff85a988193a5ce7c9705b320ae` and
+  `resp_0b8c6597206d2da8006a573000e8888193be05a5941fdb4d04`; 3,846 total
+  tokens; 13,920.318 ms summed provider latency; dossier SHA-256
+  `bbed3cbdff16bdb6923ff599ece0e8ce207cdf57899e2f6acb32a59e8c3c18a0`.
+
+After manual inspection, `npm.cmd run investigate:live:stability` removed old
+cohorts, captured the execution-source snapshot, ran race 3/3 and propagation
+3/3, required both clean Playwright run markers, revalidated all six complete
+artifacts, confirmed the post-run source snapshot, and atomically wrote
+`artifacts/milestone-03-live-stability.json`.
+
+The receipt records three `inspect_startup_order` selections and three
+`inspect_preference_roundtrip` selections, six supported replay-cited leading
+IDs, twelve unique `gpt-5.6-sol` response IDs, 18,847 input tokens including
+5,944 cached, 4,871 output tokens including 1,061 reasoning, 23,718 total
+tokens, and 87,842.468 ms summed provider latency. Its source manifest covers 64
+files with digest
+`3de910ab131c54389f0583cfcb11ddfe37e6abeafc17b48db95ed41a169f5a50`.
+The receipt file SHA-256 is
+`1a28dade48671e05e81dd07525f7a6a0c2da312a2cea8d574fc5ba86c6b90b57`.
+
+Across both smokes and stability, the complete exercise contains eight
+investigations, sixteen unique Responses, 25,078 input tokens including 5,944
+cached, 6,384 output tokens including 1,359 reasoning, 31,462 total tokens, and
+116,845.708 ms summed provider latency. All eight returned `gpt-5.6-sol`; every
+run chose the defect-appropriate replay. The model never supplied the product
+verdict, and no credential was found in either smoke artifact, any stability
+artifact, or the aggregate receipt.
+
+### Frozen foundation and deferred work
+
+Milestone 03 must preserve the evaluator, unchanged OFF contract assertion,
+both seeded defects, existing evidence capture, and the two existing replay
+implementations. A model response is investigation evidence, never a replacement
+for the canonical evaluator.
+
+The following remain explicitly out of scope: Codex patch generation,
+regression-test preparation, disposable Git worktrees, human diff approval,
+repaired-state execution, a same-process architecture refactor, other browsers
+or mobile coverage, immutable external logging, comprehensive accessibility
+work, JUnit or artifact-upload infrastructure, correlation-header redesign, a
+generic contract framework, CI, hosting, a visual redesign or architecture
+diagram, and any second product promise.
+
+With both single live investigations and their three-run stability checks now
+recorded, the smallest next milestone is Codex preparation of one minimal source
+patch and regression test in a disposable worktree, followed by a real human
+approval gate and the unchanged Playwright verdict. It begins only after this
+Milestone 03 evidence is committed, tagged, and pushed.

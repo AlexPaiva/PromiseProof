@@ -1,0 +1,456 @@
+{
+  "schemaVersion": "promiseproof.live-stability-receipt.v1",
+  "verificationScope": "six_retained_live_stability_runs",
+  "configuredProviderBaseUrl": "https://api.openai.com/v1",
+  "requestedModel": "gpt-5.6",
+  "promptVersion": "promiseproof.investigation-prompt.v1",
+  "productVerdictAuthority": "deterministic_typescript_and_playwright_only",
+  "artifactIntegrityMeaning": "canonical_sha256_consistency_not_provider_origin_attestation",
+  "sourceSnapshotMeaning": "pre_run_and_post_run_canonical_file_manifest_match",
+  "responseIdUniquenessScope": "retained_six_run_cohort",
+  "sourceSnapshotSha256": "3de910ab131c54389f0583cfcb11ddfe37e6abeafc17b48db95ed41a169f5a50",
+  "sourceFileCount": 64,
+  "requiredRunsPerEvidenceSignature": 3,
+  "totalRuns": 6,
+  "totalResponses": 12,
+  "aggregateUsage": {
+    "inputTokens": 18847,
+    "cachedInputTokens": 5944,
+    "outputTokens": 4871,
+    "reasoningTokens": 1061,
+    "totalTokens": 23718
+  },
+  "aggregateLatencyMs": 87842.46830000001,
+  "groups": [
+    {
+      "evidenceSignature": "identifiable_activity_leak",
+      "expectedViolationCode": "PP_IDENTIFIABLE_EVENT_LEAK",
+      "selectedReplay": "inspect_startup_order",
+      "verifiedFactualSignature": {
+        "failedClauseId": "no_identifiable_activity",
+        "identifiableActivityRequests": 1,
+        "identifiableActivityReceipts": 1,
+        "collectorBeforeHydration": true,
+        "activityBeforePreferenceRead": true
+      },
+      "dossierSha256": "5b00ab36a0aee62666c9907003f1521496c485ec8bf9a78b79b069ed0547172a",
+      "runCount": 3,
+      "responseCount": 6,
+      "aggregateUsage": {
+        "inputTokens": 9454,
+        "cachedInputTokens": 3528,
+        "outputTokens": 2434,
+        "reasoningTokens": 570,
+        "totalTokens": 11888
+      },
+      "aggregateLatencyMs": 45117.90809999999,
+      "runs": [
+        {
+          "investigationId": "c9fd4842-070a-40c7-a854-71235998c8cb",
+          "canonicalArtifactSha256": "c271ce3e5bb002459743ec4bd88276326c04d668ee31329433b218e830ebf1b4",
+          "dossierSha256": "5b00ab36a0aee62666c9907003f1521496c485ec8bf9a78b79b069ed0547172a",
+          "completedAt": "2026-07-15T07:01:46.948Z",
+          "leadingHypothesisId": "h1",
+          "responses": [
+            {
+              "phase": "replay_selection",
+              "responseId": "resp_02f1ac7f4d7317e1006a57304b58148193a4bb973a477f7cbf",
+              "model": "gpt-5.6-sol",
+              "status": "completed",
+              "latencyMs": 9326.961800000001,
+              "usage": {
+                "inputTokens": 1308,
+                "cachedInputTokens": 1176,
+                "outputTokens": 442,
+                "reasoningTokens": 101,
+                "totalTokens": 1750
+              },
+              "outputItems": [
+                {
+                  "type": "reasoning",
+                  "status": null,
+                  "contentTypes": []
+                },
+                {
+                  "type": "function_call",
+                  "status": "completed",
+                  "contentTypes": []
+                }
+              ]
+            },
+            {
+              "phase": "hypothesis_update",
+              "responseId": "resp_02f1ac7f4d7317e1006a5730559fbc8193874cd6a13a0b0bad",
+              "model": "gpt-5.6-sol",
+              "status": "completed",
+              "latencyMs": 5422.861599999998,
+              "usage": {
+                "inputTokens": 1860,
+                "cachedInputTokens": 0,
+                "outputTokens": 430,
+                "reasoningTokens": 133,
+                "totalTokens": 2290
+              },
+              "outputItems": [
+                {
+                  "type": "reasoning",
+                  "status": null,
+                  "contentTypes": []
+                },
+                {
+                  "type": "message",
+                  "status": "completed",
+                  "contentTypes": [
+                    "output_text"
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "investigationId": "37599ada-a98f-4965-8036-d88a60d50868",
+          "canonicalArtifactSha256": "3a82066685a29302f3d8ca22511ee7c80fcbaa0d80e44d00564f9972bf2f0d55",
+          "dossierSha256": "5b00ab36a0aee62666c9907003f1521496c485ec8bf9a78b79b069ed0547172a",
+          "completedAt": "2026-07-15T07:02:07.863Z",
+          "leadingHypothesisId": "h1",
+          "responses": [
+            {
+              "phase": "replay_selection",
+              "responseId": "resp_0aa843fc86b6241f006a57306036b881968e4a04dfb291142d",
+              "model": "gpt-5.6-sol",
+              "status": "completed",
+              "latencyMs": 9032.0425,
+              "usage": {
+                "inputTokens": 1308,
+                "cachedInputTokens": 1176,
+                "outputTokens": 420,
+                "reasoningTokens": 97,
+                "totalTokens": 1728
+              },
+              "outputItems": [
+                {
+                  "type": "reasoning",
+                  "status": null,
+                  "contentTypes": []
+                },
+                {
+                  "type": "function_call",
+                  "status": "completed",
+                  "contentTypes": []
+                }
+              ]
+            },
+            {
+              "phase": "hypothesis_update",
+              "responseId": "resp_0aa843fc86b6241f006a57306a63e08196a4e49b4254fbf923",
+              "model": "gpt-5.6-sol",
+              "status": "completed",
+              "latencyMs": 5569.819700000002,
+              "usage": {
+                "inputTokens": 1838,
+                "cachedInputTokens": 0,
+                "outputTokens": 363,
+                "reasoningTokens": 87,
+                "totalTokens": 2201
+              },
+              "outputItems": [
+                {
+                  "type": "reasoning",
+                  "status": null,
+                  "contentTypes": []
+                },
+                {
+                  "type": "message",
+                  "status": "completed",
+                  "contentTypes": [
+                    "output_text"
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "investigationId": "1a2f870c-fcbe-4208-b1e4-3fb7c776340f",
+          "canonicalArtifactSha256": "479ec9518d0b1df1b98159db52a3de34ab6c67329950d21ce53215a6024989b4",
+          "dossierSha256": "5b00ab36a0aee62666c9907003f1521496c485ec8bf9a78b79b069ed0547172a",
+          "completedAt": "2026-07-15T07:01:26.467Z",
+          "leadingHypothesisId": "h1",
+          "responses": [
+            {
+              "phase": "replay_selection",
+              "responseId": "resp_09ec8a9f2e346b1c006a573035be24819084593df00dcb9403",
+              "model": "gpt-5.6-sol",
+              "status": "completed",
+              "latencyMs": 9905.4031,
+              "usage": {
+                "inputTokens": 1308,
+                "cachedInputTokens": 1176,
+                "outputTokens": 414,
+                "reasoningTokens": 87,
+                "totalTokens": 1722
+              },
+              "outputItems": [
+                {
+                  "type": "reasoning",
+                  "status": null,
+                  "contentTypes": []
+                },
+                {
+                  "type": "function_call",
+                  "status": "completed",
+                  "contentTypes": []
+                }
+              ]
+            },
+            {
+              "phase": "hypothesis_update",
+              "responseId": "resp_09ec8a9f2e346b1c006a573040ba4081909a53e30d311cf896",
+              "model": "gpt-5.6-sol",
+              "status": "completed",
+              "latencyMs": 5860.8194,
+              "usage": {
+                "inputTokens": 1832,
+                "cachedInputTokens": 0,
+                "outputTokens": 365,
+                "reasoningTokens": 65,
+                "totalTokens": 2197
+              },
+              "outputItems": [
+                {
+                  "type": "reasoning",
+                  "status": null,
+                  "contentTypes": []
+                },
+                {
+                  "type": "message",
+                  "status": "completed",
+                  "contentTypes": [
+                    "output_text"
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "evidenceSignature": "preference_state_mismatch",
+      "expectedViolationCode": "PP_PREFERENCE_NOT_PERSISTED",
+      "selectedReplay": "inspect_preference_roundtrip",
+      "verifiedFactualSignature": {
+        "failedClauseId": "preference_survives_reload",
+        "requested": "off",
+        "acknowledged": "off",
+        "authoritativeReadback": "on",
+        "receiptRecorded": true,
+        "identityCorrelated": true,
+        "roundtripConsistent": false
+      },
+      "dossierSha256": "bbed3cbdff16bdb6923ff599ece0e8ce207cdf57899e2f6acb32a59e8c3c18a0",
+      "runCount": 3,
+      "responseCount": 6,
+      "aggregateUsage": {
+        "inputTokens": 9393,
+        "cachedInputTokens": 2416,
+        "outputTokens": 2437,
+        "reasoningTokens": 491,
+        "totalTokens": 11830
+      },
+      "aggregateLatencyMs": 42724.5602,
+      "runs": [
+        {
+          "investigationId": "59eb5d09-2ccf-4817-8e8d-584ca24e4eb9",
+          "canonicalArtifactSha256": "82184c911746feec81f6a430d6f659f708e6c8ed554d3aa94a2bf28905718560",
+          "dossierSha256": "bbed3cbdff16bdb6923ff599ece0e8ce207cdf57899e2f6acb32a59e8c3c18a0",
+          "completedAt": "2026-07-15T07:02:57.591Z",
+          "leadingHypothesisId": "h1",
+          "responses": [
+            {
+              "phase": "replay_selection",
+              "responseId": "resp_04870d7fd25267e5006a5730965ad88194934d22bc41344c67",
+              "model": "gpt-5.6-sol",
+              "status": "completed",
+              "latencyMs": 5966.8551,
+              "usage": {
+                "inputTokens": 1340,
+                "cachedInputTokens": 1208,
+                "outputTokens": 386,
+                "reasoningTokens": 67,
+                "totalTokens": 1726
+              },
+              "outputItems": [
+                {
+                  "type": "reasoning",
+                  "status": null,
+                  "contentTypes": []
+                },
+                {
+                  "type": "function_call",
+                  "status": "completed",
+                  "contentTypes": []
+                }
+              ]
+            },
+            {
+              "phase": "hypothesis_update",
+              "responseId": "resp_04870d7fd25267e5006a57309c41588194acd4c66b767adc73",
+              "model": "gpt-5.6-sol",
+              "status": "completed",
+              "latencyMs": 5460.646699999999,
+              "usage": {
+                "inputTokens": 1772,
+                "cachedInputTokens": 0,
+                "outputTokens": 391,
+                "reasoningTokens": 97,
+                "totalTokens": 2163
+              },
+              "outputItems": [
+                {
+                  "type": "reasoning",
+                  "status": null,
+                  "contentTypes": []
+                },
+                {
+                  "type": "message",
+                  "status": "completed",
+                  "contentTypes": [
+                    "output_text"
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "investigationId": "603316fd-4237-4e5e-af49-528f931d67c9",
+          "canonicalArtifactSha256": "458df02e4f569bf8cad6a83d2428464ce109495ec49f99630e9f7cde43b79e86",
+          "dossierSha256": "bbed3cbdff16bdb6923ff599ece0e8ce207cdf57899e2f6acb32a59e8c3c18a0",
+          "completedAt": "2026-07-15T07:03:18.271Z",
+          "leadingHypothesisId": "h1",
+          "responses": [
+            {
+              "phase": "replay_selection",
+              "responseId": "resp_029422b970175cf6006a5730a8bc6c8195b73d7b8600c09449",
+              "model": "gpt-5.6-sol",
+              "status": "completed",
+              "latencyMs": 7469.4224,
+              "usage": {
+                "inputTokens": 1340,
+                "cachedInputTokens": 1208,
+                "outputTokens": 403,
+                "reasoningTokens": 102,
+                "totalTokens": 1743
+              },
+              "outputItems": [
+                {
+                  "type": "reasoning",
+                  "status": null,
+                  "contentTypes": []
+                },
+                {
+                  "type": "function_call",
+                  "status": "completed",
+                  "contentTypes": []
+                }
+              ]
+            },
+            {
+              "phase": "hypothesis_update",
+              "responseId": "resp_029422b970175cf6006a5730b0166481959d3bab1526420172",
+              "model": "gpt-5.6-sol",
+              "status": "completed",
+              "latencyMs": 6291.5262,
+              "usage": {
+                "inputTokens": 1789,
+                "cachedInputTokens": 0,
+                "outputTokens": 406,
+                "reasoningTokens": 102,
+                "totalTokens": 2195
+              },
+              "outputItems": [
+                {
+                  "type": "reasoning",
+                  "status": null,
+                  "contentTypes": []
+                },
+                {
+                  "type": "message",
+                  "status": "completed",
+                  "contentTypes": [
+                    "output_text"
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "investigationId": "f47212aa-adc2-4f0e-82f7-6b69e3bba23c",
+          "canonicalArtifactSha256": "8b20ffd5d5a6258b45c3623b89b44f721a59034b85eee267211b8dfb7504ddb3",
+          "dossierSha256": "bbed3cbdff16bdb6923ff599ece0e8ce207cdf57899e2f6acb32a59e8c3c18a0",
+          "completedAt": "2026-07-15T07:02:40.727Z",
+          "leadingHypothesisId": "h1",
+          "responses": [
+            {
+              "phase": "replay_selection",
+              "responseId": "resp_007647032cbc966c006a5730808968819a97824c0efb2fc231",
+              "model": "gpt-5.6-sol",
+              "status": "completed",
+              "latencyMs": 8722.5573,
+              "usage": {
+                "inputTokens": 1340,
+                "cachedInputTokens": 0,
+                "outputTokens": 426,
+                "reasoningTokens": 54,
+                "totalTokens": 1766
+              },
+              "outputItems": [
+                {
+                  "type": "reasoning",
+                  "status": null,
+                  "contentTypes": []
+                },
+                {
+                  "type": "function_call",
+                  "status": "completed",
+                  "contentTypes": []
+                }
+              ]
+            },
+            {
+              "phase": "hypothesis_update",
+              "responseId": "resp_007647032cbc966c006a5730887d80819ab87a57538864ff6d",
+              "model": "gpt-5.6-sol",
+              "status": "completed",
+              "latencyMs": 8813.552499999998,
+              "usage": {
+                "inputTokens": 1812,
+                "cachedInputTokens": 0,
+                "outputTokens": 425,
+                "reasoningTokens": 69,
+                "totalTokens": 2237
+              },
+              "outputItems": [
+                {
+                  "type": "reasoning",
+                  "status": null,
+                  "contentTypes": []
+                },
+                {
+                  "type": "message",
+                  "status": "completed",
+                  "contentTypes": [
+                    "output_text"
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
