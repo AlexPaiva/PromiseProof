@@ -1184,6 +1184,19 @@ no API credit. Targeted provider/eligibility tests pass 33/33. Production build
 and typecheck pass. The complete repair boundary passes 118/118, including a
 new incident-shaped three-event regression that rejects the schema-only
 completion before any tool event. The real elevated no-key sandbox integration
-passes 1/1. A clean-HEAD offline two-worktree rerun remains required after this
-v4 checkpoint is committed and pushed; no further authentic request will be
-made before that gate passes.
+passes 1/1.
+
+After prompt v4 was committed and pushed as `d981758`, the exact clean-HEAD
+`npm.cmd run test:repair:offline` gate passed. Its package-script unit phase
+passed 118/118 in 394,670.1842 ms, followed by the complete offline
+two-worktree integration in 155,406.2299 ms. The deterministic candidate
+stopped at `awaiting_human_review`; test-only approval exercised the production
+mechanics without impersonating Alex's real decision; the exact patch was
+reapplied to a second fresh worktree; five repaired OFF runs, five ON controls,
+the focused startup-order regression, propagation green/control coverage, and
+the unchanged propagation expected-red all passed under Playwright; evidence
+was retained; and both disposable worktrees were removed. Post-run checks
+showed a clean tree, only the main worktree, local HEAD and `origin/main` both at
+`d98175867aebd611763ac8fe244ac90a3f6c5964`, and symbolic HEAD still at
+`refs/heads/main`. This rehearsal made no OpenAI request and is not an authentic
+candidate, human approval, or repaired-state production PASS.
