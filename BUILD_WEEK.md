@@ -1122,3 +1122,17 @@ contract assertion. `README.md` is now explicitly allowed alongside
 evidence, replay, and investigation file remains blob-frozen. A repository-level
 unit test now executes the real foundation validator against `HEAD`, requires
 the README delta, and rechecks all critical checkpoint/base blob identities.
+
+After the reviewed four-file correction was committed and pushed as `4fd46ad`,
+the exact clean-HEAD `npm.cmd run test:repair:offline` gate passed: 117/117
+repair-boundary tests plus the complete offline two-worktree integration. The
+deterministic provider produced a validated candidate and stopped at
+`awaiting_human_review`; the test-only approval fixture exercised mechanics that
+production exposes only through a real TTY; a distinct fresh verification
+worktree reapplied the exact retained patch; five OFF and five ON race checks,
+the startup-order regression, six propagation green/control tests, and the
+unchanged propagation expected-red (`PP_PREFERENCE_NOT_PERSISTED` only) all
+passed; the deterministic receipt said PASS; both disposable worktrees were
+removed; and the cloned main source, commit, complete ref snapshot, and clean
+status remained byte-for-byte unchanged. This rehearsal used no OpenAI request
+and does not count as human approval or an authentic Codex repair.
