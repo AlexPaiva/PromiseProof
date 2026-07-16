@@ -8,6 +8,7 @@ import {
   mkdir,
   mkdtemp,
   readFile,
+  realpath,
   rm,
   symlink,
   unlink,
@@ -57,11 +58,11 @@ function marker(): string {
 }
 
 async function fixture() {
-  const hostCodexHomePath = await mkdtemp(
-    path.join(tmpdir(), 'promiseproof-host-sandbox-'),
+  const hostCodexHomePath = await realpath(
+    await mkdtemp(path.join(tmpdir(), 'promiseproof-host-sandbox-')),
   );
-  const tempRoot = await mkdtemp(
-    path.join(tmpdir(), 'promiseproof-provider-runtime-'),
+  const tempRoot = await realpath(
+    await mkdtemp(path.join(tmpdir(), 'promiseproof-provider-runtime-')),
   );
   const worktreePath = path.join(tempRoot, 'checkout');
   const codexHomePath = path.join(tempRoot, 'codex-home');

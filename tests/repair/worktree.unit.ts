@@ -6,6 +6,7 @@ import {
   mkdir,
   mkdtemp,
   readFile,
+  realpath,
   rm,
   symlink,
   unlink,
@@ -364,7 +365,7 @@ test('Git commands ignore inherited Git redirection environment variables', asyn
     const topLevel = (
       await runGit(repo, ['rev-parse', '--show-toplevel'])
     ).stdout.trim();
-    assert.equal(resolve(topLevel), resolve(repo));
+    assert.equal(resolve(topLevel), resolve(await realpath(repo)));
   } finally {
     if (originalGitDirectory === undefined) {
       delete process.env.GIT_DIR;

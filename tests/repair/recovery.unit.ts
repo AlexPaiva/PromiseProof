@@ -915,11 +915,9 @@ test('retires an old-base approved candidate only through retained NOT RUN evide
     approved.lifecyclePath,
     'utf8',
   );
-  const unexpectedVerificationPath = join(
-    tmpdir(),
-    'promiseproof-repair-worktrees',
-    `repair-${repairWorktreeAllocationId(approved.repairId, 'verification')}`,
-    'checkout',
+  const unexpectedVerificationPath = await expectedDefaultRepairWorktreePath(
+    approved.repairId,
+    'verification',
   );
   const retirementEntryPoints = [
     () =>
