@@ -1244,7 +1244,10 @@ no-key sandbox integration is 1/1; and the clean committed offline
 two-worktree integration is 1/1 with evidence retention, repaired Playwright
 coverage, propagation control/expected-red coverage, and cleanup all passing.
 
-The approved repair is still not a production repaired-state PASS. It must be
-retired through Alex's real TTY before one fresh authentic candidate is
-prepared from the corrected base. No model, offline rehearsal, or prior
-approval substitutes for that human decision.
+The approved repair was retired through Alex's real TTY on 2026-07-16. The
+retained retirement receipt proves `verificationStarted: false`,
+`playwrightInvoked: false`, `verificationReceiptCreated: false`, the exact
+approved two-file patch, and `cleanup_completed`. It remains explicitly
+`not_run`, never a repaired-state PASS. The next action is one fresh authentic
+candidate from the corrected pushed base; no model, offline rehearsal, or
+prior approval substitutes for the next human review.
