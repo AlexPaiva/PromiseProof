@@ -353,8 +353,9 @@ function stateFixture(input: {
   readonly approvalSha256?: string | null;
 }): LocalRepairStateV1 {
   const createdAt = '2026-07-15T10:00:00.000Z';
+  const repositoryRoot = input.fixture.repository.repoRoot;
   const artifactDirectory = join(
-    input.fixture.repo,
+    repositoryRoot,
     'test-results',
     'repair-runs',
     input.repairId,
@@ -366,7 +367,7 @@ function stateFixture(input: {
     state: input.state,
     createdAt,
     updatedAt: createdAt,
-    projectRoot: input.fixture.repo,
+    projectRoot: repositoryRoot,
     artifactDirectory,
     lifecyclePath: join(artifactDirectory, 'lifecycle.json'),
     patchPath: join(artifactDirectory, 'candidate.patch'),
@@ -432,6 +433,41 @@ function stateFixture(input: {
     verificationReceiptSha256: null,
   };
 }
+
+test('binds a hand-built recovery state to the canonical repository root before cleanup', async () => {
+  const fixture = await createRepositoryFixture();
+  const repairId = randomUUID();
+  const plan = await planDisposableWorktree(fixture.repo, {
+    allocationId: repairWorktreeAllocationId(repairId, 'candidate'),
+  });
+  const state = stateFixture({
+    fixture,
+    repairId,
+    state: 'created',
+    candidateWorktreePath: plan.worktreePath,
+    provider: null,
+    patch: null,
+    approvalSha256: null,
+  });
+  await persistStateAndLifecycle(state, ['created']);
+
+  const bound = await readBoundRepairState(fixture.repo, repairId);
+  assert.equal(bound.state.projectRoot, fixture.repository.repoRoot);
+  assert.equal(
+    bound.state.artifactDirectory,
+    join(
+      fixture.repository.repoRoot,
+      'test-results',
+      'repair-runs',
+      repairId,
+    ),
+  );
+
+  const recovered = await retryRepairCleanup(fixture.repo, repairId);
+  assert.equal(recovered.state, 'cleanup_completed');
+  assert.equal(recovered.failure?.code, 'PP_REPAIR_PREPARATION_FAILED');
+  await cleanupPlannedDisposableWorktree(plan);
+});
 
 async function persistStateAndLifecycle(
   state: LocalRepairStateV1,
@@ -1856,7 +1892,7 @@ test('rejects self-consistent state that is not bound to the caller repository a
     approvalPath: join(forgedArtifactDirectory, 'human-decision.json'),
   };
   const actualArtifactDirectory = join(
-    fixture.repo,
+    fixture.repository.repoRoot,
     'test-results',
     'repair-runs',
     repairId,
