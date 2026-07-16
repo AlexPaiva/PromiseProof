@@ -1234,15 +1234,17 @@ the historical candidate only after evidence is durable. Reconciliation now
 rejects hidden verification/candidate allocations, impossible lifecycle/state
 crash windows, tampered cleanup failures, and recreated worktrees after cleanup.
 
-Post-hardening verification now passes on the working tree: the complete
-`npm test` aggregate is green (investigation unit, live-stability unit, repair
-unit 131/131, race Playwright 6/6, and propagation Playwright 6/6). The
-elevated Windows no-key sandbox integration is 1/1. A production build and
-typecheck also pass. The clean committed offline integration remains the next
-source-checkout gate because it must clone the committed source rather than
-this dirty tree.
+Post-hardening verification passes on the committed and pushed checkpoint
+`d817f363813f407be0951f737573c9ec00725650`: the complete `npm test` aggregate
+is green (investigation unit, live-stability unit, repair unit 131/131, race
+Playwright 6/6, and propagation Playwright 6/6), deterministic contexts are
+20/20, and both expected-red wrappers report only their intended singleton
+violation. The production build and typecheck pass; the elevated Windows
+no-key sandbox integration is 1/1; and the clean committed offline
+two-worktree integration is 1/1 with evidence retention, repaired Playwright
+coverage, propagation control/expected-red coverage, and cleanup all passing.
 
-Implementation is still uncommitted on `main`. The approved repair must be
+The approved repair is still not a production repaired-state PASS. It must be
 retired through Alex's real TTY before one fresh authentic candidate is
-prepared from the corrected base; no repaired-state production PASS is claimed
-for the old candidate.
+prepared from the corrected base. No model, offline rehearsal, or prior
+approval substitutes for that human decision.
