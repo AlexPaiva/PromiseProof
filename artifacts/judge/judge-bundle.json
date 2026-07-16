@@ -1,0 +1,65 @@
+{
+  "schemaVersion": "promiseproof.judge-bundle.v1",
+  "product": {
+    "name": "PromiseProof",
+    "descriptor": "Deterministic verification of an activity-based personalization promise."
+  },
+  "canonicalPromise": "When personalization is OFF, no identifiable activity reaches recommendations, contextual recommendations remain functional, and the preference survives reload. When ON, expected activity reaches recommendations and behavioral recommendations remain functional.",
+  "observedContradiction": {
+    "scenario": "off",
+    "result": "broken",
+    "violationCode": "PP_IDENTIFIABLE_EVENT_LEAK"
+  },
+  "initialHypotheses": [
+    {
+      "id": "h1",
+      "statement": "Activity collection begins before the saved preference is hydrated.",
+      "result": "supported"
+    },
+    {
+      "id": "h2",
+      "statement": "The backend preference is not retained after an OFF update.",
+      "result": "not_selected"
+    }
+  ],
+  "investigation": {
+    "label": "Recorded authentic GPT-5.6 run",
+    "selectedReplay": "inspect_startup_order",
+    "replayExpectation": "The replay checks whether collection begins before preference hydration.",
+    "observedTimeline": [
+      "collector_started",
+      "identifiable_activity_received",
+      "preference_hydration_completed"
+    ],
+    "postReplayResult": "Collection began before preference hydration.",
+    "provenance": "recorded_authentic_gpt56"
+  },
+  "repair": {
+    "label": "Recorded authentic Codex repair",
+    "repairId": "c52183ec-2075-47e9-a1fb-7902e028dc42",
+    "baseCommit": "bcadb6ea75b17666e8e509cbfb25b7f838cf846c",
+    "patchSha256": "62e2924d0d5c6d88d40e5fae47a95607661f900ae0889a4105df58b8e83557f7",
+    "patchBytes": 2311,
+    "changedPaths": [
+      "src/client/main.ts",
+      "tests/regression/initialization-order.spec.ts"
+    ],
+    "humanApproval": "approved",
+    "provenance": "recorded_authentic_codex"
+  },
+  "verification": {
+    "label": "Reproducible offline verification",
+    "matrix": {
+      "off": "pass",
+      "reload": "pass",
+      "on": "pass",
+      "browser": "pass",
+      "propagationControl": "pass"
+    },
+    "authority": "unchanged_playwright_and_deterministic_evaluator",
+    "provenance": [
+      "reproducible_offline_verification",
+      "deterministic_verdict"
+    ]
+  }
+}

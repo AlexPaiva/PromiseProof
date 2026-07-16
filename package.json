@@ -22,6 +22,8 @@
     "start:propagation": "cross-env NODE_ENV=production DEMO_MODE=propagation-failure node dist/server.mjs",
     "typecheck": "tsc --noEmit",
     "evidence:verify": "tsx scripts/evidence-verify.ts",
+    "demo:rehearse": "tsx scripts/demo-rehearse.ts",
+    "test:judge:unit": "tsx --test tests/judge/rehearsal.unit.ts",
     "test:evidence:unit": "tsx --test tests/evidence/evidence-verify.unit.ts",
     "test": "npm run test:investigation:unit && npm run test:live-stability:unit && npm run test:repair:unit && npm run test:race && npm run test:propagation",
     "test:race": "playwright test tests/health tests/control tests/detector tests/diagnostics tests/investigation/offline.spec.ts",
