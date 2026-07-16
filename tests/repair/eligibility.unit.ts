@@ -15,10 +15,7 @@ import {
   REPAIR_INELIGIBLE_CODE,
   RepairEligibilityError,
 } from '../../src/repair/eligibility.js';
-import {
-  FROZEN_CRITICAL_PATHS,
-  validateFrozenFoundation,
-} from '../../src/repair/foundation.js';
+import { validateFrozenFoundation } from '../../src/repair/foundation.js';
 import { runGit } from '../../src/repair/git.js';
 import {
   buildRepairPrompt,
@@ -86,7 +83,7 @@ function assertIneligible(receipt: unknown): void {
   );
 }
 
-test('frozen foundation accepts the committed M04 README delta while preserving critical blobs', async () => {
+test('frozen foundation fails closed once tracked submission evidence is outside the M04 allowlist', async () => {
   const projectRoot = process.cwd();
   const baseCommit = (
     await runGit(projectRoot, ['rev-parse', '--verify', 'HEAD'])
@@ -95,22 +92,15 @@ test('frozen foundation accepts the committed M04 README delta while preserving 
     await runGit(projectRoot, ['rev-parse', '--verify', 'HEAD^{tree}'])
   ).stdout.trim();
 
-  const frozen = await validateFrozenFoundation({
-    projectRoot,
-    baseCommit,
-    baseTree,
-  });
-
-  assert.equal(frozen.changedPathsFromCheckpoint.includes('README.md'), true);
-  assert.equal(
-    frozen.criticalFiles.length,
-    FROZEN_CRITICAL_PATHS.length,
-  );
-  assert.equal(
-    frozen.criticalFiles.every(
-      (entry) => entry.checkpointBlobId === entry.baseBlobId,
-    ),
-    true,
+  await assert.rejects(
+    validateFrozenFoundation({
+      projectRoot,
+      baseCommit,
+      baseTree,
+    }),
+    (error: unknown) =>
+      error instanceof Error &&
+      error.message.startsWith('PP_REPAIR_FOUNDATION_CHANGED:'),
   );
 });
 

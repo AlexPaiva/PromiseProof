@@ -1,0 +1,70 @@
+name: Submission hardening
+
+on:
+  push:
+    branches: [main]
+    tags: ['submission-hardening-*']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  fast-integrity:
+    name: Fast integrity (Windows)
+    runs-on: windows-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install chromium
+      - run: npm run build
+      - run: npm run evidence:verify
+      - run: npm run test:evidence:unit
+      - run: npm run test:investigation:unit
+      - run: npm run test:investigation:offline
+      - run: npm run test:determinism
+      - run: npm run test:expected-red
+
+  browser-foundation:
+    name: Browser foundation (Windows)
+    runs-on: windows-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install chromium
+      - run: npm test
+      - run: npm run test:expected-red
+
+  repair-rehearsal:
+    name: Repair rehearsal and Windows sandbox (Windows)
+    runs-on: windows-latest
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install chromium
+      - run: npm run test:repair:offline
+      - run: npm run test:repair:elevated-sandbox
+      - name: Preserve safe failure artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: repair-rehearsal-failure-artifacts
+          path: test-results/
+          if-no-files-found: ignore
+          retention-days: 7

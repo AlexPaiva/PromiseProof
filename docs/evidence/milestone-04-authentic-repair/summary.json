@@ -90,6 +90,21 @@
   "cleanup": {
     "state": "cleanup_completed"
   },
+  "evidencePackage": {
+    "artifactManifest": "artifact-manifest.json",
+    "authenticOriginalMachineArtifacts": [
+      "candidate.patch",
+      "original/human-decision.json",
+      "original/lifecycle.json",
+      "original/verification-receipt.json",
+      "original/playwright/*.last-run.json"
+    ],
+    "sanitizedDerivatives": [
+      "sanitized/candidate-state.json"
+    ],
+    "recordedAuthenticRun": "The verification receipt records additional runtime artifact hashes that are not fully reproduced by this tracked package.",
+    "reproducibleOfflineRehearsal": "npm run test:repair:offline is offline-only and is not a fresh GPT-5.6 or Codex execution."
+  },
   "limits": {
     "modelAndHumanApprovalDidNotDeterminePass": true,
     "scope": "synthetic initialization-race repair only"

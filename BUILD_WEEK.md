@@ -1252,7 +1252,7 @@ approved two-file patch, and `cleanup_completed`. It remains explicitly
 candidate from the corrected pushed base; no model, offline rehearsal, or
 prior approval substitutes for the next human review.
 
-### Milestone 04 authentic repair proof â€” 2026-07-16
+### Milestone 04 authentic repair proof - 2026-07-16
 
 Fresh authentic repair `c52183ec-2075-47e9-a1fb-7902e028dc42` was prepared
 from `bcadb6ea75b17666e8e509cbfb25b7f838cf846c` by one bounded
@@ -1276,3 +1276,42 @@ The tracked sanitized proof package at
 approval state, verification facts, complete approved patch, and integrity
 instructions. This is evidence for the synthetic initialization-race journey;
 it makes no compliance, production-safety, or universal-correctness claim.
+
+### Submission-hardening evidence policy — 2026-07-16
+
+The authentic repair proof now preserves safe byte-for-byte original machine
+receipts for the human approval, lifecycle/cleanup, verification result, and
+referenced Playwright result metadata. The retained local state receipt is not
+tracked because it contains local runtime paths; its explicitly labelled
+allowlisted sanitized derivative records the original SHA-256 and byte count.
+The original verification receipt also records hashes for detailed runtime
+logs, traces, screenshots, video, and evidence files that are not fully
+reproduced in Git. They remain a recorded authentic run, not replacement
+artifacts or a claim that the tracked package fully reproduces the live run.
+
+`npm run evidence:verify` validates only tracked evidence and Git objects. It
+checks receipt and derivative identities, original digests, patch bytes and
+pre-image, the recorded base, approval, verification authority, cleanup, and
+that main remains intentionally seeded-broken without the repaired source or
+regression-test blobs. The reproducible offline rehearsal is separately
+labelled and makes no fresh GPT-5.6 or Codex call.
+
+The submission-hardening files are deliberately outside the frozen Milestone 04
+foundation delta allowlist. A future `repair:race:prepare` from this checkpoint
+would therefore fail closed; the allowlist was not changed or reinterpreted.
+Submission packaging uses the already approved authentic patch and does not
+prepare another repair candidate.
+
+The offline repair rehearsal first asserts that the frozen submission checkpoint
+rejects deterministic candidate preparation with
+`PP_REPAIR_FOUNDATION_CHANGED`. It then checks out the last eligible Milestone
+04 code checkpoint only inside its disposable test repository to exercise the
+existing two-worktree protocol. This is a reproducible offline rehearsal, not a
+fresh candidate or live Codex execution.
+
+Submission-hardening gates passed locally on Windows: evidence verifier and its
+eight focused tests, build/typecheck, investigation unit and offline suites,
+the full Playwright foundation suite, twenty deterministic browser contexts,
+the two expected-red checks, the clean offline repair rehearsal, and the
+Windows elevated-sandbox integration. The CI workflow repeats these checks in
+separate Windows jobs without secrets or live API calls.

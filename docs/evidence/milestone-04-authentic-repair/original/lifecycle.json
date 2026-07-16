@@ -1,0 +1,96 @@
+{
+  "schemaVersion": "promiseproof.repair-lifecycle.v1",
+  "repairId": "c52183ec-2075-47e9-a1fb-7902e028dc42",
+  "events": [
+    {
+      "sequence": 1,
+      "repairId": "c52183ec-2075-47e9-a1fb-7902e028dc42",
+      "state": "created",
+      "recordedAt": "2026-07-16T13:40:16.570Z",
+      "previousEventSha256": null,
+      "payloadSha256": "7c1293f1207a5e35fd1e8d981d79cf5da9ae033c983fb2c7a6e1d53790d4c364",
+      "eventSha256": "a8c907b9ddf544003ef5db71f444d8acefe18d95b22d1068c05be55bdf101652"
+    },
+    {
+      "sequence": 2,
+      "repairId": "c52183ec-2075-47e9-a1fb-7902e028dc42",
+      "state": "baseline_verified",
+      "recordedAt": "2026-07-16T13:40:40.427Z",
+      "previousEventSha256": "a8c907b9ddf544003ef5db71f444d8acefe18d95b22d1068c05be55bdf101652",
+      "payloadSha256": "ca09492cf6eebd20a14735ab6a86d3760b16c3039acade30cfea96a5e3cd8277",
+      "eventSha256": "4540007f0e70b05f9ba28ff82ec7d86cf30a88ef9aa9881da24b47d367cae5a9"
+    },
+    {
+      "sequence": 3,
+      "repairId": "c52183ec-2075-47e9-a1fb-7902e028dc42",
+      "state": "codex_completed",
+      "recordedAt": "2026-07-16T13:41:23.023Z",
+      "previousEventSha256": "4540007f0e70b05f9ba28ff82ec7d86cf30a88ef9aa9881da24b47d367cae5a9",
+      "payloadSha256": "da9ab520de521d7512916be09a9be38136afb5529fb7ff295b1f5ee01c4fac06",
+      "eventSha256": "703379df3cd97240a82eee630d20f395031aba6ae6a6e1ad768b520a1af81b89"
+    },
+    {
+      "sequence": 4,
+      "repairId": "c52183ec-2075-47e9-a1fb-7902e028dc42",
+      "state": "candidate_policy_accepted",
+      "recordedAt": "2026-07-16T13:41:29.726Z",
+      "previousEventSha256": "703379df3cd97240a82eee630d20f395031aba6ae6a6e1ad768b520a1af81b89",
+      "payloadSha256": "57336a0814ccb834c4de547c285187fa68206ad817240ccdaf69f01423c2a25b",
+      "eventSha256": "986fc9ee7ad8f32f0affed326c792df649ae46ec3f9f784ca88794e252c6efb7"
+    },
+    {
+      "sequence": 5,
+      "repairId": "c52183ec-2075-47e9-a1fb-7902e028dc42",
+      "state": "awaiting_human_review",
+      "recordedAt": "2026-07-16T13:41:29.734Z",
+      "previousEventSha256": "986fc9ee7ad8f32f0affed326c792df649ae46ec3f9f784ca88794e252c6efb7",
+      "payloadSha256": "6e9f1e01b99adc8663ba2d75a69297f0a92aa8b99f7ca6a90f761b3aa9b1dd74",
+      "eventSha256": "d0fcad336ee337ce1c47568b82e6242d42273c97331f73c94d3afefdefe34509"
+    },
+    {
+      "sequence": 6,
+      "repairId": "c52183ec-2075-47e9-a1fb-7902e028dc42",
+      "state": "human_approved",
+      "recordedAt": "2026-07-16T13:45:42.094Z",
+      "previousEventSha256": "d0fcad336ee337ce1c47568b82e6242d42273c97331f73c94d3afefdefe34509",
+      "payloadSha256": "81fa2b8d56abd6604f0d53e3842b814b14974e08b5dab5d2b07514c240967cbe",
+      "eventSha256": "7228f615f1cc5c5a6399b05c8890280c33d059f0f9c914c4cf2da4590efebc07"
+    },
+    {
+      "sequence": 7,
+      "repairId": "c52183ec-2075-47e9-a1fb-7902e028dc42",
+      "state": "verification_started",
+      "recordedAt": "2026-07-16T13:46:47.399Z",
+      "previousEventSha256": "7228f615f1cc5c5a6399b05c8890280c33d059f0f9c914c4cf2da4590efebc07",
+      "payloadSha256": "24f25878d6363d8d773d9eeb63507466d33c27aad9845f6d5efadef85a15dc0d",
+      "eventSha256": "d78047614570dd77955f408bb1b2dd6660baa73ab89bb8ccdcb0ee7a78d0c009"
+    },
+    {
+      "sequence": 8,
+      "repairId": "c52183ec-2075-47e9-a1fb-7902e028dc42",
+      "state": "verification_passed",
+      "recordedAt": "2026-07-16T13:48:22.087Z",
+      "previousEventSha256": "d78047614570dd77955f408bb1b2dd6660baa73ab89bb8ccdcb0ee7a78d0c009",
+      "payloadSha256": "0eca9f0c10ae40edb4026847c6f4a6b3dd0b3b0a33899059d6c582bf4484c137",
+      "eventSha256": "e9a287d153a384727a0a84263c2c8e1ad4d687aed81fc933b701498f703869d3"
+    },
+    {
+      "sequence": 9,
+      "repairId": "c52183ec-2075-47e9-a1fb-7902e028dc42",
+      "state": "evidence_saved",
+      "recordedAt": "2026-07-16T13:48:22.093Z",
+      "previousEventSha256": "e9a287d153a384727a0a84263c2c8e1ad4d687aed81fc933b701498f703869d3",
+      "payloadSha256": "6d1fa548362214d23cecf51235b3e31138ce990edf5740842063806fa4309675",
+      "eventSha256": "6109d4ba06e3bb5b10367f8a953485de52e0837aa078bb07add10b2ff0053e59"
+    },
+    {
+      "sequence": 10,
+      "repairId": "c52183ec-2075-47e9-a1fb-7902e028dc42",
+      "state": "cleanup_completed",
+      "recordedAt": "2026-07-16T13:48:25.875Z",
+      "previousEventSha256": "6109d4ba06e3bb5b10367f8a953485de52e0837aa078bb07add10b2ff0053e59",
+      "payloadSha256": "e3283c8735df86fb4090e514caa03fc0dc2d31009e46cb835feea8141f6203af",
+      "eventSha256": "b4e10e0feac4835202d9ab784a8122f63cbf2d0a0a3189ba1fb5a70d4bd503e9"
+    }
+  ]
+}

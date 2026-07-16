@@ -1,0 +1,47 @@
+{
+  "schemaVersion": "promiseproof.milestone-04-candidate-state-sanitized.v1",
+  "artifactKind": "sanitized_derivative",
+  "sourceOriginal": {
+    "runtimeRelativePath": "state.json",
+    "schemaVersion": "promiseproof.repair-local-state.v1",
+    "sha256": "0df60e1a3559faba0d0fd647a17f6c13ad136f214c95c2462f7fb5de3e11311f",
+    "bytes": 17105
+  },
+  "repairId": "c52183ec-2075-47e9-a1fb-7902e028dc42",
+  "state": "cleanup_completed",
+  "base": {
+    "commit": "bcadb6ea75b17666e8e509cbfb25b7f838cf846c",
+    "tree": "1a82a11ed2ad1e79bc42c4a3aec7957ea843b7e4",
+    "headRef": "refs/heads/main"
+  },
+  "patch": {
+    "sha256": "62e2924d0d5c6d88d40e5fae47a95607661f900ae0889a4105df58b8e83557f7",
+    "bytes": 2311,
+    "additions": 20,
+    "deletions": 5,
+    "changedPaths": [
+      "src/client/main.ts",
+      "tests/regression/initialization-order.spec.ts"
+    ]
+  },
+  "approval": {
+    "state": "approved",
+    "sha256": "008acc38a8ce1d50228f0b6ec2f9904dcbe5f32fd68ee71e18cc47954adbdc94"
+  },
+  "verification": {
+    "verdict": "pass",
+    "receiptSha256": "76fd3f5a23aa44a9ca9870a51b1c7a69eb2cb63a72482dee91ca7a051134745b",
+    "authority": "unchanged_playwright_and_deterministic_evaluator"
+  },
+  "cleanup": {
+    "state": "cleanup_completed"
+  },
+  "derivation": {
+    "allowlistedFieldsOnly": true,
+    "omitted": [
+      "local_paths",
+      "tool_runtime_paths",
+      "environment_values"
+    ]
+  }
+}

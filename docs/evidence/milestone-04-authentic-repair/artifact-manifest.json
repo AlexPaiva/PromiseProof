@@ -1,0 +1,108 @@
+{
+  "schemaVersion": "promiseproof.milestone-04-artifact-manifest.v1",
+  "repairId": "c52183ec-2075-47e9-a1fb-7902e028dc42",
+  "artifacts": [
+    {
+      "id": "approved_patch",
+      "classification": "authentic_original_machine_artifact",
+      "path": "candidate.patch",
+      "bytes": 2311,
+      "sha256": "62e2924d0d5c6d88d40e5fae47a95607661f900ae0889a4105df58b8e83557f7"
+    },
+    {
+      "id": "human_approval_receipt",
+      "classification": "authentic_original_machine_artifact",
+      "path": "original/human-decision.json",
+      "schemaVersion": "promiseproof.human-repair-decision.v1",
+      "bytes": 461,
+      "sha256": "008acc38a8ce1d50228f0b6ec2f9904dcbe5f32fd68ee71e18cc47954adbdc94"
+    },
+    {
+      "id": "lifecycle_and_cleanup_receipt",
+      "classification": "authentic_original_machine_artifact",
+      "path": "original/lifecycle.json",
+      "schemaVersion": "promiseproof.repair-lifecycle.v1",
+      "bytes": 4588,
+      "sha256": "fd3324a2650f21a99d73dc6bbee3f2b0bbc98fa8791e2199f792f676d1dbbb3c"
+    },
+    {
+      "id": "verification_receipt",
+      "classification": "authentic_original_machine_artifact",
+      "path": "original/verification-receipt.json",
+      "schemaVersion": "promiseproof.repair-verification.v1",
+      "bytes": 32813,
+      "sha256": "76fd3f5a23aa44a9ca9870a51b1c7a69eb2cb63a72482dee91ca7a051134745b"
+    },
+    {
+      "id": "candidate_state",
+      "classification": "sanitized_derivative",
+      "path": "sanitized/candidate-state.json",
+      "schemaVersion": "promiseproof.milestone-04-candidate-state-sanitized.v1",
+      "sourceOriginal": {
+        "runtimeRelativePath": "state.json",
+        "schemaVersion": "promiseproof.repair-local-state.v1",
+        "bytes": 17105,
+        "sha256": "0df60e1a3559faba0d0fd647a17f6c13ad136f214c95c2462f7fb5de3e11311f"
+      }
+    },
+    {
+      "id": "playwright_propagation_expected_red_metadata",
+      "classification": "authentic_original_machine_artifact",
+      "path": "original/playwright/propagation-expected-red.last-run.json",
+      "bytes": 96,
+      "sha256": "5cd645bc20a226cf778e2435772abccf77508b264012da8bc4644a7c89166f5d"
+    },
+    {
+      "id": "playwright_propagation_green_metadata",
+      "classification": "authentic_original_machine_artifact",
+      "path": "original/playwright/propagation-green.last-run.json",
+      "bytes": 45,
+      "sha256": "91d1c43004802cd49950d78eb11c8fa7d05da8ffffe219a8b13b2f561bc00903"
+    },
+    {
+      "id": "playwright_race_off_five_metadata",
+      "classification": "authentic_original_machine_artifact",
+      "path": "original/playwright/race-off-five.last-run.json",
+      "bytes": 45,
+      "sha256": "91d1c43004802cd49950d78eb11c8fa7d05da8ffffe219a8b13b2f561bc00903"
+    },
+    {
+      "id": "playwright_race_off_single_metadata",
+      "classification": "authentic_original_machine_artifact",
+      "path": "original/playwright/race-off-single.last-run.json",
+      "bytes": 45,
+      "sha256": "91d1c43004802cd49950d78eb11c8fa7d05da8ffffe219a8b13b2f561bc00903"
+    },
+    {
+      "id": "playwright_race_on_five_metadata",
+      "classification": "authentic_original_machine_artifact",
+      "path": "original/playwright/race-on-five.last-run.json",
+      "bytes": 45,
+      "sha256": "91d1c43004802cd49950d78eb11c8fa7d05da8ffffe219a8b13b2f561bc00903"
+    },
+    {
+      "id": "playwright_race_on_single_metadata",
+      "classification": "authentic_original_machine_artifact",
+      "path": "original/playwright/race-on-single.last-run.json",
+      "bytes": 45,
+      "sha256": "91d1c43004802cd49950d78eb11c8fa7d05da8ffffe219a8b13b2f561bc00903"
+    },
+    {
+      "id": "playwright_startup_regression_metadata",
+      "classification": "authentic_original_machine_artifact",
+      "path": "original/playwright/startup-regression.last-run.json",
+      "bytes": 45,
+      "sha256": "91d1c43004802cd49950d78eb11c8fa7d05da8ffffe219a8b13b2f561bc00903"
+    }
+  ],
+  "recordedAuthenticButNotFullyReproducibleFromTrackedArtifacts": {
+    "sourceReceiptPath": "original/verification-receipt.json",
+    "reason": "The original receipt records hashes for detailed runtime logs, Playwright evidence, traces, screenshots, and video that are not tracked in this package.",
+    "classification": "recorded_authentic_run"
+  },
+  "offlineRehearsal": {
+    "command": "npm run test:repair:offline",
+    "classification": "reproducible_offline_rehearsal",
+    "notFreshLiveExecution": true
+  }
+}

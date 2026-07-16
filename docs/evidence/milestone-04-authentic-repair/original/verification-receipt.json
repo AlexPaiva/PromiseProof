@@ -1,0 +1,815 @@
+{
+  "schemaVersion": "promiseproof.repair-verification.v1",
+  "repairId": "c52183ec-2075-47e9-a1fb-7902e028dc42",
+  "verdict": "pass",
+  "baseCommit": "bcadb6ea75b17666e8e509cbfb25b7f838cf846c",
+  "approvedPatchSha256": "62e2924d0d5c6d88d40e5fae47a95607661f900ae0889a4105df58b8e83557f7",
+  "patchBytes": 2311,
+  "verificationWorktreeFresh": true,
+  "candidateAndVerificationWorktreesDistinct": true,
+  "patchAppliedByExactDigest": true,
+  "patchUnchangedAfterVerification": true,
+  "isolatedPort": 59857,
+  "baseUrl": "http://127.0.0.1:59857",
+  "startedAt": "2026-07-16T13:46:47.408Z",
+  "completedAt": "2026-07-16T13:48:21.311Z",
+  "commands": [
+    {
+      "id": "install_dependencies",
+      "exitCode": 0,
+      "signal": null,
+      "startedAt": "2026-07-16T13:46:53.778Z",
+      "completedAt": "2026-07-16T13:47:06.726Z",
+      "durationMs": 12948,
+      "timedOut": false,
+      "outputLimitExceeded": false,
+      "spawnError": null,
+      "stdoutBytes": 27,
+      "stdoutSha256": "44d80645099097160f3b6ed5dfde5940eeb1913a75c29b005518e9979fcc485a",
+      "stderrBytes": 0,
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "id": "build",
+      "exitCode": 0,
+      "signal": null,
+      "startedAt": "2026-07-16T13:47:07.515Z",
+      "completedAt": "2026-07-16T13:47:15.409Z",
+      "durationMs": 7894,
+      "timedOut": false,
+      "outputLimitExceeded": false,
+      "spawnError": null,
+      "stdoutBytes": 586,
+      "stdoutSha256": "cdacd95b066fbb59596aad47125d6832304394d086b0927fdae4ecd8981bbefd",
+      "stderrBytes": 41,
+      "stderrSha256": "8801065025a3a38065a647d0d56d21af08fc800a18e16025b52e47b3dc9bc075"
+    },
+    {
+      "id": "race_off_single",
+      "exitCode": 0,
+      "signal": null,
+      "startedAt": "2026-07-16T13:47:16.201Z",
+      "completedAt": "2026-07-16T13:47:21.789Z",
+      "durationMs": 5588,
+      "timedOut": false,
+      "outputLimitExceeded": false,
+      "spawnError": null,
+      "stdoutBytes": 4381,
+      "stdoutSha256": "611400ed4c4771945ac01bb42f343aca37539a03f03b01a3e6c3c888c79acc66",
+      "stderrBytes": 0,
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "id": "race_on_single",
+      "exitCode": 0,
+      "signal": null,
+      "startedAt": "2026-07-16T13:47:22.604Z",
+      "completedAt": "2026-07-16T13:47:27.794Z",
+      "durationMs": 5190,
+      "timedOut": false,
+      "outputLimitExceeded": false,
+      "spawnError": null,
+      "stdoutBytes": 4360,
+      "stdoutSha256": "adc4f2de889d8083566c97fde91894c04d2bf332808e788b162f43d3307a4376",
+      "stderrBytes": 0,
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "id": "race_off_repeat_5",
+      "exitCode": 0,
+      "signal": null,
+      "startedAt": "2026-07-16T13:47:28.538Z",
+      "completedAt": "2026-07-16T13:47:43.856Z",
+      "durationMs": 15318,
+      "timedOut": false,
+      "outputLimitExceeded": false,
+      "spawnError": null,
+      "stdoutBytes": 10769,
+      "stdoutSha256": "bf4e18857717059d35c68cae464bb0685658f68149c9856067f6062b2bcc6109",
+      "stderrBytes": 0,
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "id": "race_on_repeat_5",
+      "exitCode": 0,
+      "signal": null,
+      "startedAt": "2026-07-16T13:47:44.627Z",
+      "completedAt": "2026-07-16T13:47:57.453Z",
+      "durationMs": 12826,
+      "timedOut": false,
+      "outputLimitExceeded": false,
+      "spawnError": null,
+      "stdoutBytes": 10864,
+      "stdoutSha256": "7048d7fc428c43075b03740e186332ef347fcd02dc73779518a20e0c7b8fbf25",
+      "stderrBytes": 0,
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "id": "propagation_expected_red",
+      "exitCode": 1,
+      "signal": null,
+      "startedAt": "2026-07-16T13:47:58.199Z",
+      "completedAt": "2026-07-16T13:48:03.844Z",
+      "durationMs": 5645,
+      "timedOut": false,
+      "outputLimitExceeded": false,
+      "spawnError": null,
+      "stdoutBytes": 10717,
+      "stdoutSha256": "a0bf788700a0049f9ec6dc603b45e09a86dfac32ba2e2d52dbafd0772deb9775",
+      "stderrBytes": 0,
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "id": "propagation_green",
+      "exitCode": 0,
+      "signal": null,
+      "startedAt": "2026-07-16T13:48:04.595Z",
+      "completedAt": "2026-07-16T13:48:14.339Z",
+      "durationMs": 9744,
+      "timedOut": false,
+      "outputLimitExceeded": false,
+      "spawnError": null,
+      "stdoutBytes": 14002,
+      "stdoutSha256": "c26ebbbfed826ea4627de8f2ca957714821dd67603a48bb2a433f05735cd871d",
+      "stderrBytes": 0,
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "id": "startup_regression",
+      "exitCode": 0,
+      "signal": null,
+      "startedAt": "2026-07-16T13:48:15.086Z",
+      "completedAt": "2026-07-16T13:48:20.545Z",
+      "durationMs": 5459,
+      "timedOut": false,
+      "outputLimitExceeded": false,
+      "spawnError": null,
+      "stdoutBytes": 4368,
+      "stdoutSha256": "0a55d2d2568420e51eb6a2c48330d88d252fbee63b3b0c084ba8ba9b1a223a81",
+      "stderrBytes": 0,
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  ],
+  "checks": {
+    "build": true,
+    "raceOffSingle": {
+      "scenario": "off",
+      "runId": "contract-off-001",
+      "userId": "demo-user-contract-off",
+      "verdict": "pass",
+      "violationCodes": [],
+      "passedClauseIds": [
+        "no_identifiable_activity",
+        "contextual_feed_functional",
+        "preference_survives_reload"
+      ],
+      "failedClauseIds": [],
+      "identifiableActivityRequests": 0,
+      "identifiableActivityReceipts": 0,
+      "recommendationSource": "contextual",
+      "recommendationItemCount": 3,
+      "uiPreference": "off",
+      "storagePreference": "off",
+      "backendPreference": "off",
+      "reloadObserved": true,
+      "browserErrorCount": 0,
+      "artifactSha256": "49d9fcad78272834882ee2ac936501ab3585eae97cdfb30c9dc2185abd4e891c"
+    },
+    "raceOnSingle": {
+      "scenario": "on",
+      "runId": "control-on-001",
+      "userId": "demo-user-control-on",
+      "verdict": "pass",
+      "violationCodes": [],
+      "passedClauseIds": [
+        "expected_activity_received",
+        "behavioral_feed_functional"
+      ],
+      "failedClauseIds": [],
+      "identifiableActivityRequests": 1,
+      "identifiableActivityReceipts": 1,
+      "recommendationSource": "behavioral",
+      "recommendationItemCount": 3,
+      "uiPreference": "on",
+      "storagePreference": "on",
+      "backendPreference": "on",
+      "reloadObserved": false,
+      "browserErrorCount": 0,
+      "artifactSha256": "70112b34687891842ba00d2f9a30ca6f38b1efe3fe2faed67c9cc6ad148db155"
+    },
+    "raceOffFive": [
+      {
+        "scenario": "off",
+        "runId": "contract-off-001",
+        "userId": "demo-user-contract-off",
+        "verdict": "pass",
+        "violationCodes": [],
+        "passedClauseIds": [
+          "no_identifiable_activity",
+          "contextual_feed_functional",
+          "preference_survives_reload"
+        ],
+        "failedClauseIds": [],
+        "identifiableActivityRequests": 0,
+        "identifiableActivityReceipts": 0,
+        "recommendationSource": "contextual",
+        "recommendationItemCount": 3,
+        "uiPreference": "off",
+        "storagePreference": "off",
+        "backendPreference": "off",
+        "reloadObserved": true,
+        "browserErrorCount": 0,
+        "artifactSha256": "c8cd7737b831e87a4192a3f0ef8cfa0cec6a8f9fd9c356b365d319c683a80832"
+      },
+      {
+        "scenario": "off",
+        "runId": "contract-off-001",
+        "userId": "demo-user-contract-off",
+        "verdict": "pass",
+        "violationCodes": [],
+        "passedClauseIds": [
+          "no_identifiable_activity",
+          "contextual_feed_functional",
+          "preference_survives_reload"
+        ],
+        "failedClauseIds": [],
+        "identifiableActivityRequests": 0,
+        "identifiableActivityReceipts": 0,
+        "recommendationSource": "contextual",
+        "recommendationItemCount": 3,
+        "uiPreference": "off",
+        "storagePreference": "off",
+        "backendPreference": "off",
+        "reloadObserved": true,
+        "browserErrorCount": 0,
+        "artifactSha256": "d62c0fd5bbbc9affcb79631be9b3b294baeb7dea73ba3d58d8b6927b694653e3"
+      },
+      {
+        "scenario": "off",
+        "runId": "contract-off-001",
+        "userId": "demo-user-contract-off",
+        "verdict": "pass",
+        "violationCodes": [],
+        "passedClauseIds": [
+          "no_identifiable_activity",
+          "contextual_feed_functional",
+          "preference_survives_reload"
+        ],
+        "failedClauseIds": [],
+        "identifiableActivityRequests": 0,
+        "identifiableActivityReceipts": 0,
+        "recommendationSource": "contextual",
+        "recommendationItemCount": 3,
+        "uiPreference": "off",
+        "storagePreference": "off",
+        "backendPreference": "off",
+        "reloadObserved": true,
+        "browserErrorCount": 0,
+        "artifactSha256": "500806f8e6bf22b6a0bc23570cda184aa4bcbbda4bc0a1c75bef4e1dce83ece8"
+      },
+      {
+        "scenario": "off",
+        "runId": "contract-off-001",
+        "userId": "demo-user-contract-off",
+        "verdict": "pass",
+        "violationCodes": [],
+        "passedClauseIds": [
+          "no_identifiable_activity",
+          "contextual_feed_functional",
+          "preference_survives_reload"
+        ],
+        "failedClauseIds": [],
+        "identifiableActivityRequests": 0,
+        "identifiableActivityReceipts": 0,
+        "recommendationSource": "contextual",
+        "recommendationItemCount": 3,
+        "uiPreference": "off",
+        "storagePreference": "off",
+        "backendPreference": "off",
+        "reloadObserved": true,
+        "browserErrorCount": 0,
+        "artifactSha256": "03b568fad0330889aa7cb07f937b9ecb401d88f56a1aebca02c3338c7aabda71"
+      },
+      {
+        "scenario": "off",
+        "runId": "contract-off-001",
+        "userId": "demo-user-contract-off",
+        "verdict": "pass",
+        "violationCodes": [],
+        "passedClauseIds": [
+          "no_identifiable_activity",
+          "contextual_feed_functional",
+          "preference_survives_reload"
+        ],
+        "failedClauseIds": [],
+        "identifiableActivityRequests": 0,
+        "identifiableActivityReceipts": 0,
+        "recommendationSource": "contextual",
+        "recommendationItemCount": 3,
+        "uiPreference": "off",
+        "storagePreference": "off",
+        "backendPreference": "off",
+        "reloadObserved": true,
+        "browserErrorCount": 0,
+        "artifactSha256": "946b18f1ad61e59c2a79aaeb45047005ce957b810ad0b04bcffd3f5f5ca001c9"
+      }
+    ],
+    "raceOnFive": [
+      {
+        "scenario": "on",
+        "runId": "control-on-001",
+        "userId": "demo-user-control-on",
+        "verdict": "pass",
+        "violationCodes": [],
+        "passedClauseIds": [
+          "expected_activity_received",
+          "behavioral_feed_functional"
+        ],
+        "failedClauseIds": [],
+        "identifiableActivityRequests": 1,
+        "identifiableActivityReceipts": 1,
+        "recommendationSource": "behavioral",
+        "recommendationItemCount": 3,
+        "uiPreference": "on",
+        "storagePreference": "on",
+        "backendPreference": "on",
+        "reloadObserved": false,
+        "browserErrorCount": 0,
+        "artifactSha256": "1a987e522c24e8c6216233723bb3b02104fda05e236c0b79747e855510367d41"
+      },
+      {
+        "scenario": "on",
+        "runId": "control-on-001",
+        "userId": "demo-user-control-on",
+        "verdict": "pass",
+        "violationCodes": [],
+        "passedClauseIds": [
+          "expected_activity_received",
+          "behavioral_feed_functional"
+        ],
+        "failedClauseIds": [],
+        "identifiableActivityRequests": 1,
+        "identifiableActivityReceipts": 1,
+        "recommendationSource": "behavioral",
+        "recommendationItemCount": 3,
+        "uiPreference": "on",
+        "storagePreference": "on",
+        "backendPreference": "on",
+        "reloadObserved": false,
+        "browserErrorCount": 0,
+        "artifactSha256": "faac7df50ae83490fd639a63a68d8d877846a331b0d35f485909d35c7d24d8cd"
+      },
+      {
+        "scenario": "on",
+        "runId": "control-on-001",
+        "userId": "demo-user-control-on",
+        "verdict": "pass",
+        "violationCodes": [],
+        "passedClauseIds": [
+          "expected_activity_received",
+          "behavioral_feed_functional"
+        ],
+        "failedClauseIds": [],
+        "identifiableActivityRequests": 1,
+        "identifiableActivityReceipts": 1,
+        "recommendationSource": "behavioral",
+        "recommendationItemCount": 3,
+        "uiPreference": "on",
+        "storagePreference": "on",
+        "backendPreference": "on",
+        "reloadObserved": false,
+        "browserErrorCount": 0,
+        "artifactSha256": "b8f947b1652b2cf45da9cb5d65e6fc016d1917c8a2dc50fd70a1a1de5da5bdbc"
+      },
+      {
+        "scenario": "on",
+        "runId": "control-on-001",
+        "userId": "demo-user-control-on",
+        "verdict": "pass",
+        "violationCodes": [],
+        "passedClauseIds": [
+          "expected_activity_received",
+          "behavioral_feed_functional"
+        ],
+        "failedClauseIds": [],
+        "identifiableActivityRequests": 1,
+        "identifiableActivityReceipts": 1,
+        "recommendationSource": "behavioral",
+        "recommendationItemCount": 3,
+        "uiPreference": "on",
+        "storagePreference": "on",
+        "backendPreference": "on",
+        "reloadObserved": false,
+        "browserErrorCount": 0,
+        "artifactSha256": "2944107e5cb5e5e4890e562769a362cf594bcebc50bb84554a5f5de7e5d81e40"
+      },
+      {
+        "scenario": "on",
+        "runId": "control-on-001",
+        "userId": "demo-user-control-on",
+        "verdict": "pass",
+        "violationCodes": [],
+        "passedClauseIds": [
+          "expected_activity_received",
+          "behavioral_feed_functional"
+        ],
+        "failedClauseIds": [],
+        "identifiableActivityRequests": 1,
+        "identifiableActivityReceipts": 1,
+        "recommendationSource": "behavioral",
+        "recommendationItemCount": 3,
+        "uiPreference": "on",
+        "storagePreference": "on",
+        "backendPreference": "on",
+        "reloadObserved": false,
+        "browserErrorCount": 0,
+        "artifactSha256": "ca7b482207acea1f81e7e85d586da79ed3864d8a98fb106f209277aa9ad402a8"
+      }
+    ],
+    "propagationExpectedRed": {
+      "scenario": "off",
+      "runId": "contract-off-001",
+      "userId": "demo-user-contract-off",
+      "verdict": "fail",
+      "violationCodes": [
+        "PP_PREFERENCE_NOT_PERSISTED"
+      ],
+      "passedClauseIds": [
+        "no_identifiable_activity",
+        "contextual_feed_functional"
+      ],
+      "failedClauseIds": [
+        "preference_survives_reload"
+      ],
+      "identifiableActivityRequests": 0,
+      "identifiableActivityReceipts": 0,
+      "recommendationSource": "contextual",
+      "recommendationItemCount": 3,
+      "uiPreference": "off",
+      "storagePreference": "off",
+      "backendPreference": "on",
+      "reloadObserved": true,
+      "browserErrorCount": 0,
+      "artifactSha256": "6ff72ec974c95c50fc3b11fab32c232fd84aab4205379d220762b7a84616bfb6"
+    },
+    "propagationGreenTestCount": 6,
+    "startupRegressionTestCount": 1
+  },
+  "retainedArtifacts": [
+    {
+      "path": "build.stderr.log",
+      "bytes": 41,
+      "sha256": "8801065025a3a38065a647d0d56d21af08fc800a18e16025b52e47b3dc9bc075"
+    },
+    {
+      "path": "build.stdout.log",
+      "bytes": 586,
+      "sha256": "cdacd95b066fbb59596aad47125d6832304394d086b0927fdae4ecd8981bbefd"
+    },
+    {
+      "path": "install_dependencies.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "install_dependencies.stdout.log",
+      "bytes": 27,
+      "sha256": "44d80645099097160f3b6ed5dfde5940eeb1913a75c29b005518e9979fcc485a"
+    },
+    {
+      "path": "propagation_expected_red.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "propagation_expected_red.stdout.log",
+      "bytes": 10717,
+      "sha256": "a0bf788700a0049f9ec6dc603b45e09a86dfac32ba2e2d52dbafd0772deb9775"
+    },
+    {
+      "path": "propagation_expected_red/.last-run.json",
+      "bytes": 96,
+      "sha256": "5cd645bc20a226cf778e2435772abccf77508b264012da8bc4644a7c89166f5d"
+    },
+    {
+      "path": "propagation_expected_red/contracts-personalization--3439f-ical-personalization-clause/attachments/promiseproof-evidence-contract-off-001-json-6a3a57e0e9056fba31a69952d2cfcadb22bdd1f1.json",
+      "bytes": 13915,
+      "sha256": "6ff72ec974c95c50fc3b11fab32c232fd84aab4205379d220762b7a84616bfb6"
+    },
+    {
+      "path": "propagation_expected_red/contracts-personalization--3439f-ical-personalization-clause/error-context.md",
+      "bytes": 7359,
+      "sha256": "65a751b865896fd9ca296a8451b841bb3c062846c2c17389089c9ce12a204ccc"
+    },
+    {
+      "path": "propagation_expected_red/contracts-personalization--3439f-ical-personalization-clause/promiseproof-evidence-contract-off-001.json",
+      "bytes": 13915,
+      "sha256": "6ff72ec974c95c50fc3b11fab32c232fd84aab4205379d220762b7a84616bfb6"
+    },
+    {
+      "path": "propagation_expected_red/contracts-personalization--3439f-ical-personalization-clause/test-failed-1.png",
+      "bytes": 106092,
+      "sha256": "1a0d2db5aac30dcf03b8c33335eb0c3c47e39edeeb383d5475477efd7fb5f851"
+    },
+    {
+      "path": "propagation_expected_red/contracts-personalization--3439f-ical-personalization-clause/trace.zip",
+      "bytes": 1868489,
+      "sha256": "4258009021eeac1c850cc63bcdc703d4126ebc9e0cad5ceab2e5dd5a043b0e3f"
+    },
+    {
+      "path": "propagation_expected_red/contracts-personalization--3439f-ical-personalization-clause/video.webm",
+      "bytes": 122827,
+      "sha256": "a4dea027f04af2787cef01aa96cf6f4e9fc9a71b710a1a769f4e4e2b0e807447"
+    },
+    {
+      "path": "propagation_green.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "propagation_green.stdout.log",
+      "bytes": 14002,
+      "sha256": "c26ebbbfed826ea4627de8f2ca957714821dd67603a48bb2a433f05735cd871d"
+    },
+    {
+      "path": "propagation_green/.last-run.json",
+      "bytes": 45,
+      "sha256": "91d1c43004802cd49950d78eb11c8fa7d05da8ffffe219a8b13b2f561bc00903"
+    },
+    {
+      "path": "propagation_green/control-personalization-on-926ca-nd-serves-a-behavioral-feed/attachments/promiseproof-evidence-control-on-001-json-6b233a5963395bcb2b6507c404560942019554d9.json",
+      "bytes": 9483,
+      "sha256": "442b082b48a5c3636554e74e7a199f2183c1c65520a229a36ef45e116ed33a46"
+    },
+    {
+      "path": "propagation_green/control-personalization-on-926ca-nd-serves-a-behavioral-feed/promiseproof-evidence-control-on-001.json",
+      "bytes": 9483,
+      "sha256": "442b082b48a5c3636554e74e7a199f2183c1c65520a229a36ef45e116ed33a46"
+    },
+    {
+      "path": "propagation_green/investigation-offline-offl-5e21b-tion-from-real-OFF-evidence/attachments/promiseproof-evidence-offline-observation-001-json-327ec9b7395d61d75fc3c2c3e3e1d659df5650dd.json",
+      "bytes": 14005,
+      "sha256": "31b3300ed5bfff4c47ab35a970beb04b99f38d357d5a3dca48804ba3b353ddf0"
+    },
+    {
+      "path": "propagation_green/investigation-offline-offl-5e21b-tion-from-real-OFF-evidence/attachments/promiseproof-offline-investigation-json-6eac395bd0c99b1acf2f2c2132ca5df45cbd2ed4.json",
+      "bytes": 16403,
+      "sha256": "d665b32a9432813cf1688023d7dbd26acb76b177be19419d0a3fa03f358972b3"
+    },
+    {
+      "path": "propagation_green/investigation-offline-offl-5e21b-tion-from-real-OFF-evidence/attachments/promiseproof-replay-offline-diagnostic-001-json-2fbdfd0f5bba692d4640178d0567942e6268b386.json",
+      "bytes": 1284,
+      "sha256": "2639a82082b5c5617750737a90181b799c86cd2ddf01e9f5f2fec98158b4363a"
+    },
+    {
+      "path": "propagation_green/investigation-offline-offl-5e21b-tion-from-real-OFF-evidence/promiseproof-evidence-offline-observation-001.json",
+      "bytes": 14005,
+      "sha256": "31b3300ed5bfff4c47ab35a970beb04b99f38d357d5a3dca48804ba3b353ddf0"
+    },
+    {
+      "path": "propagation_green/investigation-offline-offl-5e21b-tion-from-real-OFF-evidence/promiseproof-offline-investigation.json",
+      "bytes": 16403,
+      "sha256": "d665b32a9432813cf1688023d7dbd26acb76b177be19419d0a3fa03f358972b3"
+    },
+    {
+      "path": "propagation_green/investigation-offline-offl-5e21b-tion-from-real-OFF-evidence/promiseproof-replay-offline-diagnostic-001.json",
+      "bytes": 1284,
+      "sha256": "2639a82082b5c5617750737a90181b799c86cd2ddf01e9f5f2fec98158b4363a"
+    },
+    {
+      "path": "propagation_green/propagation-detector-detec-b7e07-authoritative-backend-state/attachments/promiseproof-evidence-observation-001-json-99ba6a46912bd4e4fa5fd5c6c684326686ef0aea.json",
+      "bytes": 13877,
+      "sha256": "b34a0488e4daf12297e00e388a7d2091151a23358e3ee78e57653d019719c550"
+    },
+    {
+      "path": "propagation_green/propagation-detector-detec-b7e07-authoritative-backend-state/attachments/promiseproof-replay-observation-001-json-e3809e515c9579523c569ce8c0e27d8ad36abe4d.json",
+      "bytes": 684,
+      "sha256": "e2d354f17e0c9be4bc5f910fe7180660acfebabbfe5e86a1294f1ee2cf2ef918"
+    },
+    {
+      "path": "propagation_green/propagation-detector-detec-b7e07-authoritative-backend-state/promiseproof-evidence-observation-001.json",
+      "bytes": 13877,
+      "sha256": "b34a0488e4daf12297e00e388a7d2091151a23358e3ee78e57653d019719c550"
+    },
+    {
+      "path": "propagation_green/propagation-detector-detec-b7e07-authoritative-backend-state/promiseproof-replay-observation-001.json",
+      "bytes": 684,
+      "sha256": "e2d354f17e0c9be4bc5f910fe7180660acfebabbfe5e86a1294f1ee2cf2ef918"
+    },
+    {
+      "path": "propagation_green/propagation-replays-prefer-0306b-ed-OFF-and-authoritative-ON/attachments/promiseproof-replay-replay-001-json-347885ad769075c99b97ae6092979e7d5ea3a43e.json",
+      "bytes": 1236,
+      "sha256": "55b2ba68a9f59c7f1e10cc3b94e5c8fb46b331213706bdac86aab0f1385fa434"
+    },
+    {
+      "path": "propagation_green/propagation-replays-prefer-0306b-ed-OFF-and-authoritative-ON/promiseproof-replay-replay-001.json",
+      "bytes": 1236,
+      "sha256": "55b2ba68a9f59c7f1e10cc3b94e5c8fb46b331213706bdac86aab0f1385fa434"
+    },
+    {
+      "path": "race_off_repeat_5.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "race_off_repeat_5.stdout.log",
+      "bytes": 10769,
+      "sha256": "bf4e18857717059d35c68cae464bb0685658f68149c9856067f6062b2bcc6109"
+    },
+    {
+      "path": "race_off_repeat_5/.last-run.json",
+      "bytes": 45,
+      "sha256": "91d1c43004802cd49950d78eb11c8fa7d05da8ffffe219a8b13b2f561bc00903"
+    },
+    {
+      "path": "race_off_repeat_5/personalization-off-OFF-sa-cd834-ical-personalization-clause-repeat1/attachments/promiseproof-evidence-contract-off-001-json-e427ecd7c410aef5d4b3349d4299416c819c1df0.json",
+      "bytes": 11223,
+      "sha256": "c8cd7737b831e87a4192a3f0ef8cfa0cec6a8f9fd9c356b365d319c683a80832"
+    },
+    {
+      "path": "race_off_repeat_5/personalization-off-OFF-sa-cd834-ical-personalization-clause-repeat1/promiseproof-evidence-contract-off-001.json",
+      "bytes": 11223,
+      "sha256": "c8cd7737b831e87a4192a3f0ef8cfa0cec6a8f9fd9c356b365d319c683a80832"
+    },
+    {
+      "path": "race_off_repeat_5/personalization-off-OFF-sa-cd834-ical-personalization-clause-repeat2/attachments/promiseproof-evidence-contract-off-001-json-7ac246147b1f9395892a03acce2f9daea012bd8c.json",
+      "bytes": 11223,
+      "sha256": "d62c0fd5bbbc9affcb79631be9b3b294baeb7dea73ba3d58d8b6927b694653e3"
+    },
+    {
+      "path": "race_off_repeat_5/personalization-off-OFF-sa-cd834-ical-personalization-clause-repeat2/promiseproof-evidence-contract-off-001.json",
+      "bytes": 11223,
+      "sha256": "d62c0fd5bbbc9affcb79631be9b3b294baeb7dea73ba3d58d8b6927b694653e3"
+    },
+    {
+      "path": "race_off_repeat_5/personalization-off-OFF-sa-cd834-ical-personalization-clause-repeat3/attachments/promiseproof-evidence-contract-off-001-json-2c4078c678b0ea6a0a6bd14d45fc92210c8f256f.json",
+      "bytes": 11223,
+      "sha256": "500806f8e6bf22b6a0bc23570cda184aa4bcbbda4bc0a1c75bef4e1dce83ece8"
+    },
+    {
+      "path": "race_off_repeat_5/personalization-off-OFF-sa-cd834-ical-personalization-clause-repeat3/promiseproof-evidence-contract-off-001.json",
+      "bytes": 11223,
+      "sha256": "500806f8e6bf22b6a0bc23570cda184aa4bcbbda4bc0a1c75bef4e1dce83ece8"
+    },
+    {
+      "path": "race_off_repeat_5/personalization-off-OFF-sa-cd834-ical-personalization-clause-repeat4/attachments/promiseproof-evidence-contract-off-001-json-d6441ab864b17b3316aa6f8bcce9485e44e4480b.json",
+      "bytes": 11223,
+      "sha256": "03b568fad0330889aa7cb07f937b9ecb401d88f56a1aebca02c3338c7aabda71"
+    },
+    {
+      "path": "race_off_repeat_5/personalization-off-OFF-sa-cd834-ical-personalization-clause-repeat4/promiseproof-evidence-contract-off-001.json",
+      "bytes": 11223,
+      "sha256": "03b568fad0330889aa7cb07f937b9ecb401d88f56a1aebca02c3338c7aabda71"
+    },
+    {
+      "path": "race_off_repeat_5/personalization-off-OFF-sa-cd834-ical-personalization-clause/attachments/promiseproof-evidence-contract-off-001-json-a636ad12e6a937d5aa22856e379ee7f75b18cdae.json",
+      "bytes": 11223,
+      "sha256": "946b18f1ad61e59c2a79aaeb45047005ce957b810ad0b04bcffd3f5f5ca001c9"
+    },
+    {
+      "path": "race_off_repeat_5/personalization-off-OFF-sa-cd834-ical-personalization-clause/promiseproof-evidence-contract-off-001.json",
+      "bytes": 11223,
+      "sha256": "946b18f1ad61e59c2a79aaeb45047005ce957b810ad0b04bcffd3f5f5ca001c9"
+    },
+    {
+      "path": "race_off_single.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "race_off_single.stdout.log",
+      "bytes": 4381,
+      "sha256": "611400ed4c4771945ac01bb42f343aca37539a03f03b01a3e6c3c888c79acc66"
+    },
+    {
+      "path": "race_off_single/.last-run.json",
+      "bytes": 45,
+      "sha256": "91d1c43004802cd49950d78eb11c8fa7d05da8ffffe219a8b13b2f561bc00903"
+    },
+    {
+      "path": "race_off_single/personalization-off-OFF-sa-cd834-ical-personalization-clause/attachments/promiseproof-evidence-contract-off-001-json-4cd928fbd211714447cf80497aa275de66c187b6.json",
+      "bytes": 11223,
+      "sha256": "49d9fcad78272834882ee2ac936501ab3585eae97cdfb30c9dc2185abd4e891c"
+    },
+    {
+      "path": "race_off_single/personalization-off-OFF-sa-cd834-ical-personalization-clause/promiseproof-evidence-contract-off-001.json",
+      "bytes": 11223,
+      "sha256": "49d9fcad78272834882ee2ac936501ab3585eae97cdfb30c9dc2185abd4e891c"
+    },
+    {
+      "path": "race_on_repeat_5.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "race_on_repeat_5.stdout.log",
+      "bytes": 10864,
+      "sha256": "7048d7fc428c43075b03740e186332ef347fcd02dc73779518a20e0c7b8fbf25"
+    },
+    {
+      "path": "race_on_repeat_5/.last-run.json",
+      "bytes": 45,
+      "sha256": "91d1c43004802cd49950d78eb11c8fa7d05da8ffffe219a8b13b2f561bc00903"
+    },
+    {
+      "path": "race_on_repeat_5/control-personalization-on-926ca-nd-serves-a-behavioral-feed-repeat1/attachments/promiseproof-evidence-control-on-001-json-042eaf64f610bd4b80917f87e2dce7843a14cf04.json",
+      "bytes": 9483,
+      "sha256": "1a987e522c24e8c6216233723bb3b02104fda05e236c0b79747e855510367d41"
+    },
+    {
+      "path": "race_on_repeat_5/control-personalization-on-926ca-nd-serves-a-behavioral-feed-repeat1/promiseproof-evidence-control-on-001.json",
+      "bytes": 9483,
+      "sha256": "1a987e522c24e8c6216233723bb3b02104fda05e236c0b79747e855510367d41"
+    },
+    {
+      "path": "race_on_repeat_5/control-personalization-on-926ca-nd-serves-a-behavioral-feed-repeat2/attachments/promiseproof-evidence-control-on-001-json-dbec6d91e425f900e549128a1e699e5e06e57478.json",
+      "bytes": 9483,
+      "sha256": "faac7df50ae83490fd639a63a68d8d877846a331b0d35f485909d35c7d24d8cd"
+    },
+    {
+      "path": "race_on_repeat_5/control-personalization-on-926ca-nd-serves-a-behavioral-feed-repeat2/promiseproof-evidence-control-on-001.json",
+      "bytes": 9483,
+      "sha256": "faac7df50ae83490fd639a63a68d8d877846a331b0d35f485909d35c7d24d8cd"
+    },
+    {
+      "path": "race_on_repeat_5/control-personalization-on-926ca-nd-serves-a-behavioral-feed-repeat3/attachments/promiseproof-evidence-control-on-001-json-b1dc9eb2cd6ed642ad26357a49bf60336a8a680f.json",
+      "bytes": 9483,
+      "sha256": "b8f947b1652b2cf45da9cb5d65e6fc016d1917c8a2dc50fd70a1a1de5da5bdbc"
+    },
+    {
+      "path": "race_on_repeat_5/control-personalization-on-926ca-nd-serves-a-behavioral-feed-repeat3/promiseproof-evidence-control-on-001.json",
+      "bytes": 9483,
+      "sha256": "b8f947b1652b2cf45da9cb5d65e6fc016d1917c8a2dc50fd70a1a1de5da5bdbc"
+    },
+    {
+      "path": "race_on_repeat_5/control-personalization-on-926ca-nd-serves-a-behavioral-feed-repeat4/attachments/promiseproof-evidence-control-on-001-json-b2a77cf565474dad2751f7a40ce179418e6a3f19.json",
+      "bytes": 9483,
+      "sha256": "2944107e5cb5e5e4890e562769a362cf594bcebc50bb84554a5f5de7e5d81e40"
+    },
+    {
+      "path": "race_on_repeat_5/control-personalization-on-926ca-nd-serves-a-behavioral-feed-repeat4/promiseproof-evidence-control-on-001.json",
+      "bytes": 9483,
+      "sha256": "2944107e5cb5e5e4890e562769a362cf594bcebc50bb84554a5f5de7e5d81e40"
+    },
+    {
+      "path": "race_on_repeat_5/control-personalization-on-926ca-nd-serves-a-behavioral-feed/attachments/promiseproof-evidence-control-on-001-json-a983dc54fc30ddff243bb886e1a458682500b1c9.json",
+      "bytes": 9483,
+      "sha256": "ca7b482207acea1f81e7e85d586da79ed3864d8a98fb106f209277aa9ad402a8"
+    },
+    {
+      "path": "race_on_repeat_5/control-personalization-on-926ca-nd-serves-a-behavioral-feed/promiseproof-evidence-control-on-001.json",
+      "bytes": 9483,
+      "sha256": "ca7b482207acea1f81e7e85d586da79ed3864d8a98fb106f209277aa9ad402a8"
+    },
+    {
+      "path": "race_on_single.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "race_on_single.stdout.log",
+      "bytes": 4360,
+      "sha256": "adc4f2de889d8083566c97fde91894c04d2bf332808e788b162f43d3307a4376"
+    },
+    {
+      "path": "race_on_single/.last-run.json",
+      "bytes": 45,
+      "sha256": "91d1c43004802cd49950d78eb11c8fa7d05da8ffffe219a8b13b2f561bc00903"
+    },
+    {
+      "path": "race_on_single/control-personalization-on-926ca-nd-serves-a-behavioral-feed/attachments/promiseproof-evidence-control-on-001-json-fc615fa790754ec67c3e50cd2b09e9e9c4fc89d7.json",
+      "bytes": 9483,
+      "sha256": "70112b34687891842ba00d2f9a30ca6f38b1efe3fe2faed67c9cc6ad148db155"
+    },
+    {
+      "path": "race_on_single/control-personalization-on-926ca-nd-serves-a-behavioral-feed/promiseproof-evidence-control-on-001.json",
+      "bytes": 9483,
+      "sha256": "70112b34687891842ba00d2f9a30ca6f38b1efe3fe2faed67c9cc6ad148db155"
+    },
+    {
+      "path": "startup_regression.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "startup_regression.stdout.log",
+      "bytes": 4368,
+      "sha256": "0a55d2d2568420e51eb6a2c48330d88d252fbee63b3b0c084ba8ba9b1a223a81"
+    },
+    {
+      "path": "startup_regression/.last-run.json",
+      "bytes": 45,
+      "sha256": "91d1c43004802cd49950d78eb11c8fa7d05da8ffffe219a8b13b2f561bc00903"
+    },
+    {
+      "path": "startup_regression/regression-initialization--1609d--before-activity-collection/attachments/promiseproof-evidence-startup-order-off-json-36b331da7c94d39250ccad30091fa4764b7545e8.json",
+      "bytes": 11182,
+      "sha256": "735b572d062c7cf0e3644c95686ab65f73794b5776e6891ffaff40240c0a3f0a"
+    },
+    {
+      "path": "startup_regression/regression-initialization--1609d--before-activity-collection/promiseproof-evidence-startup-order-off.json",
+      "bytes": 11182,
+      "sha256": "735b572d062c7cf0e3644c95686ab65f73794b5776e6891ffaff40240c0a3f0a"
+    }
+  ]
+}

@@ -2,6 +2,7 @@
   "name": "promiseproof",
   "version": "0.1.0",
   "private": true,
+  "license": "MIT",
   "type": "module",
   "description": "Deterministic product-promise verification for activity-based personalization.",
   "engines": {
@@ -20,6 +21,8 @@
     "start:race": "cross-env NODE_ENV=production DEMO_MODE=initialization-race node dist/server.mjs",
     "start:propagation": "cross-env NODE_ENV=production DEMO_MODE=propagation-failure node dist/server.mjs",
     "typecheck": "tsc --noEmit",
+    "evidence:verify": "tsx scripts/evidence-verify.ts",
+    "test:evidence:unit": "tsx --test tests/evidence/evidence-verify.unit.ts",
     "test": "npm run test:investigation:unit && npm run test:live-stability:unit && npm run test:repair:unit && npm run test:race && npm run test:propagation",
     "test:race": "playwright test tests/health tests/control tests/detector tests/diagnostics tests/investigation/offline.spec.ts",
     "test:propagation": "playwright test --config=tests/propagation/playwright.config.ts",

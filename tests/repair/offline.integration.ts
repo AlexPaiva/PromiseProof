@@ -37,6 +37,8 @@ const sourceProjectRoot = path.resolve(
   '..',
   '..',
 );
+const LAST_ELIGIBLE_REHEARSAL_COMMIT =
+  'd817f363813f407be0951f737573c9ec00725650';
 
 function sha256(value: string): string {
   return createHash('sha256').update(value, 'utf8').digest('hex');
@@ -88,6 +90,26 @@ test(
       const originalHead = (
         await runGit(repository, ['rev-parse', '--verify', 'HEAD^{commit}'])
       ).stdout.trim();
+      await assert.rejects(
+        prepareRaceRepair({
+          projectRoot: repository,
+          provider: new DeterministicRepairProvider(),
+          apiKey: 'offline-test-only-not-a-real-platform-key',
+        }),
+        (error: unknown) =>
+          error instanceof Error &&
+          error.message.startsWith('PP_REPAIR_FOUNDATION_CHANGED:'),
+      );
+      await runGit(repository, [
+        'checkout',
+        '--detach',
+        LAST_ELIGIBLE_REHEARSAL_COMMIT,
+      ]);
+      const rehearsalHead = (
+        await runGit(repository, ['rev-parse', '--verify', 'HEAD^{commit}'])
+      ).stdout.trim();
+      assert.equal(rehearsalHead, LAST_ELIGIBLE_REHEARSAL_COMMIT);
+      assert.notEqual(originalHead, rehearsalHead);
       const originalRefs = await runGit(repository, [
         'for-each-ref',
         '--sort=refname',
@@ -189,7 +211,7 @@ test(
         (
           await runGit(repository, ['rev-parse', '--verify', 'HEAD^{commit}'])
         ).stdout.trim(),
-        originalHead,
+        rehearsalHead,
       );
       assert.equal(
         (

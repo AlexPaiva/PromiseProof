@@ -1,0 +1,11 @@
+{
+  "schemaVersion": "promiseproof.human-repair-decision.v1",
+  "repairId": "c52183ec-2075-47e9-a1fb-7902e028dc42",
+  "decision": "approved",
+  "patchSha256": "62e2924d0d5c6d88d40e5fae47a95607661f900ae0889a4105df58b8e83557f7",
+  "patchBytes": 2311,
+  "decidedAt": "2026-07-16T13:45:42.086Z",
+  "reviewer": "human_operator",
+  "method": "interactive_tty_exact_phrase",
+  "confirmationSha256": "ca0cfdd5be7963493b7222b7c7c582ab1ea0ba5ab20bd7192c7f5194a1875a4c"
+}

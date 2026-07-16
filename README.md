@@ -10,6 +10,8 @@ The Milestone 03 investigation layer is implemented and verified both offline an
 
 Milestone 04's bounded repair infrastructure is implemented and has one authentic verified initialization-race repair proof. The earlier approved candidate was correctly retired as `not_run` after transient Codex capture-ref rotation prevented verification. A fresh candidate, `c52183ec-2075-47e9-a1fb-7902e028dc42`, was then human-approved and reapplied by exact digest in a second fresh worktree. The unchanged Playwright journey and deterministic evaluator passed the repaired OFF journey, ON control, focused regression, five-run repetitions, and independent propagation control. The tracked [Milestone 04 proof package](docs/evidence/milestone-04-authentic-repair/README.md) contains sanitized provenance, the exact approved patch, and verification facts.
 
+The proof package distinguishes recorded authentic runtime evidence, byte-for-byte original machine receipts, sanitized derivatives, and reproducible offline rehearsals. It establishes internal integrity for this synthetic journey, not external attestation. Main intentionally remains seeded-broken; the approved repair was applied only in a disposable verification worktree, and the unchanged Playwright journey plus deterministic evaluator—not the model or human approval—own the recorded PASS. Fresh candidate preparation is not part of the judge path at this frozen checkpoint.
+
 ## Current evidence matrix
 
 | Seeded fixture | OFF evidence after reload | Only violation | Offline- and live-verified replay |
