@@ -248,6 +248,39 @@ test(
 );
 
 test(
+  'keeps provisioning diagnostics limited to a safe phase and outcome',
+  windowsOnly,
+  async () => {
+    const setup = await fixture();
+    const secretShapedPath = 'C:\\pp-secret-value-must-not-appear\\powershell.exe';
+    try {
+      await assert.rejects(
+        provisionElevatedWindowsSandbox({
+          codexHomePath: setup.codexHomePath,
+          toolTempPath: setup.toolTempPath,
+          worktreePath: setup.worktreePath,
+          hostCodexHomePath: setup.hostCodexHomePath,
+          trustedPowerShellExecutable: secretShapedPath,
+        }),
+        (error: unknown) => {
+          assert.ok(error instanceof WindowsSandboxBoundaryError);
+          assert.equal(error.code, 'PP_REPAIR_CODEX_SANDBOX_PROVISION_FAILED');
+          assert.equal(
+            error.safeDiagnostic,
+            'phase=copy_control_acls outcome=operation_failed',
+          );
+          assert.match(error.message, /phase=copy_control_acls outcome=operation_failed/);
+          assert.doesNotMatch(error.message, /pp-secret-value-must-not-appear/i);
+          return true;
+        },
+      );
+    } finally {
+      await setup.cleanup();
+    }
+  },
+);
+
+test(
   'refuses recursive cleanup when an unexpected junction remains',
   windowsOnly,
   async () => {

@@ -46,12 +46,19 @@ export type WindowsSandboxBoundaryCode =
 export class WindowsSandboxBoundaryError extends Error {
   readonly code: WindowsSandboxBoundaryCode;
   readonly publicMessage: string;
+  readonly safeDiagnostic: string | undefined;
 
-  constructor(code: WindowsSandboxBoundaryCode, message: string, cause?: unknown) {
+  constructor(
+    code: WindowsSandboxBoundaryCode,
+    message: string,
+    cause?: unknown,
+    safeDiagnostic?: string,
+  ) {
     super(`${code}: ${message}`, cause === undefined ? undefined : { cause });
     this.name = 'WindowsSandboxBoundaryError';
     this.code = code;
     this.publicMessage = message;
+    this.safeDiagnostic = safeDiagnostic;
   }
 }
 
@@ -522,26 +529,31 @@ export async function provisionElevatedWindowsSandbox(
     sandboxBinPath,
     `codex-command-runner-${CODEX_REPAIR_CLI_VERSION}.exe`,
   );
+  let provisioningPhase = 'create_runtime_directories';
   try {
     await mkdir(codexHomePath, { recursive: false, mode: 0o700 });
     await mkdir(toolTempPath, { recursive: false, mode: 0o700 });
     await mkdir(sandboxPath, { recursive: false, mode: 0o700 });
     await mkdir(sandboxBinPath, { recursive: false, mode: 0o700 });
+    provisioningPhase = 'copy_setup_marker';
     await copyFile(
       sourceMarkerPath,
       copiedMarkerPath,
       fsConstants.COPYFILE_EXCL,
     );
+    provisioningPhase = 'copy_command_runner';
     await copyFile(
       bundledRunnerPath,
       copiedRunnerPath,
       fsConstants.COPYFILE_EXCL,
     );
+    provisioningPhase = 'create_secrets_junction';
     await symlink(
       sourceSecretsPath,
       sandboxSecretsJunctionPath,
       'junction',
     );
+    provisioningPhase = 'copy_control_acls';
     await copyRuntimeControlAcls({
       sourceMarkerPath,
       copiedMarkerPath,
@@ -551,10 +563,16 @@ export async function provisionElevatedWindowsSandbox(
       sourceEnvironment,
     });
   } catch (error) {
+    const safeDiagnostic =
+      error instanceof WindowsSandboxBoundaryError &&
+      error.safeDiagnostic !== undefined
+        ? error.safeDiagnostic
+        : `phase=${provisioningPhase} outcome=operation_failed`;
     throw new WindowsSandboxBoundaryError(
       'PP_REPAIR_CODEX_SANDBOX_PROVISION_FAILED',
-      'The isolated elevated Windows sandbox runtime could not be provisioned.',
+      `The isolated elevated Windows sandbox runtime could not be provisioned. [${safeDiagnostic}]`,
       error,
+      safeDiagnostic,
     );
   }
 
@@ -671,9 +689,16 @@ async function copyRuntimeControlAcls(input: {
     );
   });
   if (outcome.code !== 0 || outcome.killed || outcome.signal !== null) {
+    const safeDiagnostic = outcome.killed
+      ? 'phase=copy_control_acls outcome=timeout'
+      : outcome.signal !== null
+        ? 'phase=copy_control_acls outcome=signal'
+        : `phase=copy_control_acls outcome=powershell_exit_${outcome.code ?? 'unknown'}`;
     throw new WindowsSandboxBoundaryError(
       'PP_REPAIR_CODEX_SANDBOX_PROVISION_FAILED',
-      'The disposable control files did not inherit the validated host ACLs.',
+      `The disposable control files did not inherit the validated host ACLs. [${safeDiagnostic}]`,
+      undefined,
+      safeDiagnostic,
     );
   }
 }
