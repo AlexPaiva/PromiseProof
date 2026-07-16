@@ -1313,5 +1313,9 @@ Submission-hardening gates passed locally on Windows: evidence verifier and its
 eight focused tests, build/typecheck, investigation unit and offline suites,
 the full Playwright foundation suite, twenty deterministic browser contexts,
 the two expected-red checks, the clean offline repair rehearsal, and the
-Windows elevated-sandbox integration. The CI workflow repeats these checks in
-separate Windows jobs without secrets or live API calls.
+Windows elevated-sandbox integration. GitHub-hosted Windows CI verifies the
+deterministic repair rehearsal and the sandbox's exact fail-closed behavior when
+administrator-provisioned setup is unavailable. Live egress, credential, and
+ACL enforcement is exercised only on a provisioned Windows host. Run
+`29538201385` recorded all three hosted jobs green without secrets or live API
+calls.

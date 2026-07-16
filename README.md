@@ -216,6 +216,10 @@ The elevated-sandbox integration is Windows-only, uses no API key, and performs
 the same real offline-identity, filesystem, control-file, credential, and raw
 network preflight required immediately before an authentic Codex turn. It
 requires the administrator-approved native Codex sandbox setup described above.
+GitHub-hosted Windows CI verifies the deterministic repair rehearsal and the
+sandbox's exact fail-closed behavior when administrator-provisioned setup is
+unavailable. Live egress, credential, and ACL enforcement is exercised only on
+a provisioned Windows host.
 
 After an authentic preparation reaches human review, the production sequence is:
 

@@ -22,8 +22,15 @@ jobs:
       - name: Verify required history
         shell: pwsh
         run: |
+          $ErrorActionPreference = 'Stop'
           git rev-parse --verify 'bcadb6ea75b17666e8e509cbfb25b7f838cf846c^{commit}'
+          if ($LASTEXITCODE -ne 0) {
+            exit $LASTEXITCODE
+          }
           git rev-parse --verify 'milestone-03-gpt56-investigation^{commit}'
+          if ($LASTEXITCODE -ne 0) {
+            exit $LASTEXITCODE
+          }
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -49,8 +56,15 @@ jobs:
       - name: Verify required history
         shell: pwsh
         run: |
+          $ErrorActionPreference = 'Stop'
           git rev-parse --verify 'bcadb6ea75b17666e8e509cbfb25b7f838cf846c^{commit}'
+          if ($LASTEXITCODE -ne 0) {
+            exit $LASTEXITCODE
+          }
           git rev-parse --verify 'milestone-03-gpt56-investigation^{commit}'
+          if ($LASTEXITCODE -ne 0) {
+            exit $LASTEXITCODE
+          }
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -61,7 +75,7 @@ jobs:
       - run: npm run test:expected-red
 
   repair-rehearsal:
-    name: Repair rehearsal and Windows sandbox (Windows)
+    name: Repair rehearsal & sandbox fail-closed (Windows)
     runs-on: windows-latest
     timeout-minutes: 50
     steps:
@@ -71,8 +85,15 @@ jobs:
       - name: Verify required history
         shell: pwsh
         run: |
+          $ErrorActionPreference = 'Stop'
           git rev-parse --verify 'bcadb6ea75b17666e8e509cbfb25b7f838cf846c^{commit}'
+          if ($LASTEXITCODE -ne 0) {
+            exit $LASTEXITCODE
+          }
           git rev-parse --verify 'milestone-03-gpt56-investigation^{commit}'
+          if ($LASTEXITCODE -ne 0) {
+            exit $LASTEXITCODE
+          }
       - uses: actions/setup-node@v4
         with:
           node-version: 22
