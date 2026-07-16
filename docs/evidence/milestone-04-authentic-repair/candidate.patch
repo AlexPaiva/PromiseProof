@@ -1,0 +1,43 @@
+diff --git a/src/client/main.ts b/src/client/main.ts
+index 5fbd443c6d6f2cbe46c5cee49a0483b57cfa3f4d..0851f00cf5df5edb055bf5f067079b3dde618d3d 100644
+--- a/src/client/main.ts
++++ b/src/client/main.ts
+@@ -92,12 +92,9 @@ async function startApplication(): Promise<void> {
+     );
+ 
+     if (demoMode === "initialization-race") {
+-      setStatus("Collector starting with the in-memory default…", "working");
+-
+-      // The await is the seeded race: hydration cannot begin until a real
+-      // recommendation-service activity receipt has already returned.
+-      await runStartupCollector();
++      setStatus("Restoring the saved preference before collection…", "working");
+       await hydratePreference();
++      await runStartupCollector();
+     } else {
+       setStatus("Restoring the saved preference before collection…", "working");
+       await hydratePreference();
+diff --git a/tests/regression/initialization-order.spec.ts b/tests/regression/initialization-order.spec.ts
+new file mode 100644
+index 0000000000000000000000000000000000000000..4411a0cbcb2390eb276ad82edf88bf867497b145
+--- /dev/null
++++ b/tests/regression/initialization-order.spec.ts
+@@ -0,0 +1,18 @@
++import { expect, test } from '@playwright/test';
++import { runPromiseScenario } from '../support/scenario.js';
++
++test('restores an opted-out preference before activity collection', async ({ page, request }, testInfo) => {
++  const result = await runPromiseScenario(page, request, testInfo, 'off', { runId: 'startup-order-off', userId: 'startup-order-user' });
++  const events = result.evidence.timestamps.clientTimeline.map(entry => entry.event);
++  const hydrationCompleted = events.indexOf('preference_hydration_completed');
++  const collectorStarted = events.indexOf('collector_started');
++  expect(hydrationCompleted).toBeGreaterThanOrEqual(0);
++  expect(collectorStarted).toBeGreaterThanOrEqual(0);
++  expect(hydrationCompleted).toBeLessThan(collectorStarted);
++  expect(result.browserErrors).toEqual([]);
++  expect(result.evidence.request.activityPayloads).toEqual([]);
++  expect(result.evidence.backend.activityReceipts).toEqual([]);
++  expect(result.evaluation.violations).toEqual([]);
++  expect(result.evidence.journey.reloadObserved).toBe(true);
++  expect(result.evidence.recommendation.source).toBe('contextual');
++});

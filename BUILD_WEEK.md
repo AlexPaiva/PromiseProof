@@ -1251,3 +1251,28 @@ approved two-file patch, and `cleanup_completed`. It remains explicitly
 `not_run`, never a repaired-state PASS. The next action is one fresh authentic
 candidate from the corrected pushed base; no model, offline rehearsal, or
 prior approval substitutes for the next human review.
+
+### Milestone 04 authentic repair proof â€” 2026-07-16
+
+Fresh authentic repair `c52183ec-2075-47e9-a1fb-7902e028dc42` was prepared
+from `bcadb6ea75b17666e8e509cbfb25b7f838cf846c` by one bounded
+`gpt-5.6-sol` Codex SDK turn, then approved through the required real-TTY
+digest phrase. Its two-file, 2,311-byte patch has SHA-256
+`62e2924d0d5c6d88d40e5fae47a95607661f900ae0889a4105df58b8e83557f7`.
+
+The exact approved patch was applied by digest in a distinct fresh detached
+verification worktree. The unchanged Playwright journey and deterministic
+evaluator returned `pass`: build passed; the single repaired OFF contract and
+five OFF repetitions passed with zero identifiable requests/receipts,
+contextual recommendations, reload persistence, and zero browser errors; the
+single ON control and five ON repetitions passed with expected activity,
+behavioral recommendations, and zero browser errors; the focused startup-order
+regression passed; and the independent propagation expected-red retained only
+`PP_PREFERENCE_NOT_PERSISTED` while its green/control suite passed six tests.
+Evidence was retained before both worktrees reached `cleanup_completed`.
+
+The tracked sanitized proof package at
+`docs/evidence/milestone-04-authentic-repair/` records the safe provenance,
+approval state, verification facts, complete approved patch, and integrity
+instructions. This is evidence for the synthetic initialization-race journey;
+it makes no compliance, production-safety, or universal-correctness claim.

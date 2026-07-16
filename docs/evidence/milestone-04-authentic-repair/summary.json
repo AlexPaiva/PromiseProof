@@ -1,0 +1,97 @@
+{
+  "schemaVersion": "promiseproof.milestone-04-authentic-repair-evidence.v1",
+  "repair": {
+    "repairId": "c52183ec-2075-47e9-a1fb-7902e028dc42",
+    "baseCommit": "bcadb6ea75b17666e8e509cbfb25b7f838cf846c",
+    "baseTree": "1a82a11ed2ad1e79bc42c4a3aec7957ea843b7e4",
+    "changedPaths": [
+      "src/client/main.ts",
+      "tests/regression/initialization-order.spec.ts"
+    ],
+    "patchSha256": "62e2924d0d5c6d88d40e5fae47a95607661f900ae0889a4105df58b8e83557f7",
+    "patchBytes": 2311,
+    "patchAdditions": 20,
+    "patchDeletions": 5
+  },
+  "humanApproval": {
+    "state": "approved",
+    "method": "interactive_tty_exact_phrase",
+    "approvalSha256": "008acc38a8ce1d50228f0b6ec2f9904dcbe5f32fd68ee71e18cc47954adbdc94",
+    "confirmationSha256": "ca0cfdd5be7963493b7222b7c7c582ab1ea0ba5ab20bd7192c7f5194a1875a4c"
+  },
+  "codexProvenance": {
+    "provider": "openai-codex-sdk",
+    "requestedModel": "gpt-5.6-sol",
+    "sdkVersion": "0.144.4",
+    "cliVersion": "0.144.4",
+    "threadId": "019f6b28-7c14-7972-96a8-ca8748467b20",
+    "turnsUsed": 1,
+    "finalResponseSha256": "7b04db019e835f7dc8523ecbe74d3fd9b063edc229b7e8ab7e766b7a4032fcf7",
+    "usage": {
+      "inputTokens": 83842,
+      "cachedInputTokens": 63955,
+      "outputTokens": 1114,
+      "reasoningTokens": 337
+    },
+    "eventSummary": {
+      "eventCount": 12,
+      "completedCommandCount": 2,
+      "completedFileChangeCount": 2,
+      "sanitizedSequenceSha256": "b574b7c734289d023ee87e88125b906c1536439abdf5df7af44e52b86b08a049"
+    }
+  },
+  "verification": {
+    "verdict": "pass",
+    "authority": "unchanged_playwright_and_deterministic_evaluator",
+    "verificationReceiptSha256": "76fd3f5a23aa44a9ca9870a51b1c7a69eb2cb63a72482dee91ca7a051134745b",
+    "verificationWorktreeFresh": true,
+    "candidateAndVerificationWorktreesDistinct": true,
+    "patchAppliedByExactDigest": true,
+    "patchUnchangedAfterVerification": true,
+    "testMatrix": {
+      "build": "pass",
+      "raceOffSingle": {
+        "verdict": "pass",
+        "identifiableActivityRequests": 0,
+        "identifiableActivityReceipts": 0,
+        "recommendationSource": "contextual",
+        "reloadObserved": true,
+        "browserErrorCount": 0
+      },
+      "raceOffFive": {
+        "passes": 5,
+        "browserErrorCountPerRun": 0
+      },
+      "raceOnSingle": {
+        "verdict": "pass",
+        "identifiableActivityRequests": 1,
+        "identifiableActivityReceipts": 1,
+        "recommendationSource": "behavioral",
+        "browserErrorCount": 0
+      },
+      "raceOnFive": {
+        "passes": 5,
+        "browserErrorCountPerRun": 0
+      },
+      "startupRegression": {
+        "passes": 1
+      },
+      "propagationExpectedRed": {
+        "expectedViolationCode": "PP_PREFERENCE_NOT_PERSISTED",
+        "observedViolationCode": "PP_PREFERENCE_NOT_PERSISTED",
+        "expectedNonzeroExit": true,
+        "browserErrorCount": 0
+      },
+      "propagationGreen": {
+        "passes": 6
+      }
+    }
+  },
+  "cleanup": {
+    "state": "cleanup_completed"
+  },
+  "limits": {
+    "modelAndHumanApprovalDidNotDeterminePass": true,
+    "scope": "synthetic initialization-race repair only"
+  }
+}
