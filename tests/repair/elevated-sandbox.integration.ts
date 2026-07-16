@@ -3,6 +3,7 @@ import {
   access,
   mkdir,
   mkdtemp,
+  realpath,
   rm,
   rmdir,
   writeFile,
@@ -25,8 +26,10 @@ test(
   'real elevated Windows sandbox blocks raw egress and protected credentials',
   { skip: process.platform !== 'win32', timeout: 60_000 },
   async () => {
-    const tempRoot = await mkdtemp(
-      path.join(tmpdir(), 'promiseproof-elevated-preflight-'),
+    const tempRoot = await realpath(
+      await mkdtemp(
+        path.join(tmpdir(), 'promiseproof-elevated-preflight-'),
+      ),
     );
     const worktreePath = path.join(tempRoot, 'checkout');
     const codexHomePath = path.join(tempRoot, 'codex-home');
