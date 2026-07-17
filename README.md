@@ -88,9 +88,15 @@ runner for writing, and receives the Windows access-denied signal on the raw TCP
 probe. The setup source
 defaults to `%USERPROFILE%\.codex`; an alternate already-provisioned source may
 be selected with the absolute `PROMISEPROOF_ELEVATED_SANDBOX_HOME` path. The
-judge path is not yet packaged; the current local
-no-key verification paths are `npm run test:investigation:offline` and
-`npm run test:repair:offline` after the reproducible installation above.
+judge path is `npm run demo:rehearse`: a deterministic, no-key offline rehearsal
+that validates the authentic tracked artifacts, applies the approved patch only
+in disposable worktrees, and executes the unchanged verifier. It is a rehearsal
+of the recorded repair, not a fresh GPT-5.6 or Codex run. The recorded
+walkthrough of the same journey is served at `/judge` (`npm run dev`, then
+<http://127.0.0.1:4173/judge>); it reads only tracked evidence and makes no
+model call. The other local no-key paths remain
+`npm run test:investigation:offline` and `npm run test:repair:offline` after the
+reproducible installation above.
 
 ## OpenAI model and Codex contributions
 
@@ -114,9 +120,11 @@ retained artifacts, Git diffs, and protected-file hashes—not a model claim—a
 used to verify that work. Alex retained final product, scope, sequencing, and
 engineering decisions throughout the collaboration.
 
-The Codex product integration is implemented but deliberately not claimed as a
-completed repair. It can prepare one minimal patch and regression test in a
-disposable Git worktree only from the live-verified Milestone 03 foundation.
+PromiseProof contains one recorded authentic, human-approved Codex repair that
+passed unchanged Playwright and deterministic verification in a fresh disposable
+worktree. Main remains intentionally seeded-broken for the red-to-green
+demonstration. The integration prepares one minimal patch and regression test in
+a disposable Git worktree only from the live-verified Milestone 03 foundation.
 One shared prompt/provider policy permits exactly two ordered source reads and
 changes to exactly two paths. Pinned SDK lifecycle events are audited after
 dispatch and fail closed on broader command or patch behavior; they are not
