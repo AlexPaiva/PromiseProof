@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="light" />
+    <meta name="referrer" content="no-referrer" />
+    <meta
+      name="description"
+      content="PromiseProof — experiment-guided debugging for broken product promises. Recorded, no-key judge walkthrough."
+    />
+    <title>PromiseProof · Find the boundary that broke the promise</title>
+  </head>
+  <body>
+    <div id="judge-root" class="judge-shell" data-testid="judge-root" data-stage="observe">
+      <header class="judge-topbar">
+        <div class="judge-brand">
+          <span class="judge-mark" aria-hidden="true">
+            <span></span><span></span><span></span>
+          </span>
+          <span class="judge-brand-text">
+            <strong>PromiseProof</strong>
+            <small>Find the boundary that broke the promise.</small>
+          </span>
+        </div>
+        <p class="judge-offline-chip" data-testid="offline-chip">
+          <span class="judge-dot" aria-hidden="true"></span>
+          Recorded evidence · no live model calls
+        </p>
+      </header>
+
+      <nav class="judge-nav" aria-label="Journey stages">
+        <ol id="judge-nav-list" class="judge-nav-list" data-testid="judge-nav"></ol>
+      </nav>
+
+      <main id="judge-stage" class="judge-stage" data-testid="judge-stage" tabindex="-1"></main>
+
+      <footer class="judge-footer">
+        <div class="judge-stage-controls">
+          <button
+            type="button"
+            id="judge-previous"
+            class="judge-button"
+            data-testid="judge-previous"
+          >Previous</button>
+          <button
+            type="button"
+            id="judge-next"
+            class="judge-button judge-button-primary"
+            data-testid="judge-next"
+          >Next</button>
+          <button
+            type="button"
+            id="judge-reset"
+            class="judge-button judge-button-quiet"
+            data-testid="judge-reset"
+          >Reset</button>
+        </div>
+        <p class="judge-footnote">
+          Experiment-guided debugging for broken product promises. Synthetic
+          Signal Shelf journey.
+        </p>
+      </footer>
+    </div>
+
+    <script type="module" src="/src/judge/main.ts"></script>
+  </body>
+</html>

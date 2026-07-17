@@ -58,6 +58,18 @@ export async function createApplication(
   application.use("/api", createApiRouter(store, demoMode));
   application.use("/api", apiNotFound);
 
+  // The judge walkthrough is a separate static entry point. It never touches the
+  // Signal Shelf application, its state, or the seeded fixture.
+  application.use((request, _response, next) => {
+    if (
+      request.method === "GET" &&
+      (request.path === "/judge" || request.path === "/judge/")
+    ) {
+      request.url = "/judge.html";
+    }
+    next();
+  });
+
   if (production) {
     const clientDirectory = path.resolve(process.cwd(), "dist/client");
     application.use(express.static(clientDirectory));
