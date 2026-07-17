@@ -13,11 +13,33 @@ const MOBILE = { width: 390, height: 844 } as const;
 
 const STAGES = ['observe', 'investigate', 'replay', 'repair', 'prove'] as const;
 
+async function settleReplayReveal(page: import('@playwright/test').Page): Promise<void> {
+  // The Replay reveal is a one-time timed animation; wait for the resolved frame.
+  await page
+    .getByTestId('replay-finding')
+    .evaluate(
+      (node) =>
+        new Promise<void>((resolve) => {
+          const done = (): void => {
+            if (window.getComputedStyle(node).opacity === '1') {
+              resolve();
+            } else {
+              window.requestAnimationFrame(done);
+            }
+          };
+          done();
+        }),
+    );
+}
+
 test('capture judge stages', async ({ page }) => {
   await page.setViewportSize(DESKTOP);
   for (const stage of STAGES) {
     await page.goto(`/judge#${stage}`);
     await expect(page.getByTestId('judge-root')).toHaveAttribute('data-stage', stage);
+    if (stage === 'replay') {
+      await settleReplayReveal(page);
+    }
     await page.screenshot({ path: path.join(OUT, `${stage}-1440x900.png`) });
   }
 

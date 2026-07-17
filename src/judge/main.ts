@@ -5,7 +5,6 @@ import {
   REPLAY_TITLES,
   TIMELINE_TITLES,
   type JudgeData,
-  type ObserveRow,
 } from "./bundle-contract.js";
 
 type StageId = "observe" | "investigate" | "replay" | "repair" | "prove";
@@ -90,13 +89,26 @@ function required<T extends HTMLElement>(selector: string): T {
 function stageHeader(
   eyebrow: string,
   title: string,
-  lede?: string,
+  options: {
+    readonly lede?: string;
+    readonly titleTestId?: string;
+    readonly aside?: HTMLElement;
+  } = {},
 ): HTMLElement {
   const header = element("header", "stage-header");
-  header.append(element("p", "stage-eyebrow", eyebrow));
-  header.append(element("h1", "stage-title", title));
-  if (lede !== undefined) {
-    header.append(element("p", "stage-lede", lede));
+  const main = element("div", "stage-head-main");
+  main.append(element("p", "stage-eyebrow", eyebrow));
+  const title1 = element("h1", "stage-title", title);
+  if (options.titleTestId !== undefined) {
+    title1.dataset.testid = options.titleTestId;
+  }
+  main.append(title1);
+  if (options.lede !== undefined) {
+    main.append(element("p", "stage-lede", options.lede));
+  }
+  header.append(main);
+  if (options.aside !== undefined) {
+    header.append(options.aside);
   }
   return header;
 }
@@ -107,36 +119,44 @@ function provenanceTag(text: string, testId: string): HTMLElement {
   return tag;
 }
 
-function sourceNote(text: string): HTMLElement {
-  const note = element("p", "source-note", text);
-  return note;
+function arrow(text: string, className: string): HTMLElement {
+  const node = element("span", className, text);
+  node.setAttribute("aria-hidden", "true");
+  return node;
 }
 
-function observeRow(row: ObserveRow): HTMLElement {
-  const item = element("div", "observe-row");
-  item.dataset.state = row.state;
-  item.dataset.testid = "observe-row";
+/* ------------------------------ Observe ------------------------------ */
 
-  const label = element("dt", "observe-label");
-  label.append(element("span", "observe-label-text", row.label));
-  label.append(sourceNote(row.source));
-
-  const value = element("dd", "observe-value");
-  value.dataset.testid = `observe-value-${row.state}`;
-
-  const readout = element("span", "observe-readout", row.value);
-  readout.dataset.state = row.state;
-  value.append(readout);
-  value.append(
-    element(
-      "span",
-      "observe-flag",
-      row.state === "leak" ? "Not permitted" : "As chosen",
-    ),
-  );
-
-  item.append(label, value);
-  return item;
+function causalBeat(input: {
+  readonly variant: "neutral" | "breach" | "result";
+  readonly eyebrow: string;
+  readonly value: string;
+  readonly note: string;
+  readonly testId?: string;
+  readonly valueTestId?: string;
+  readonly code?: string;
+  readonly codeTestId?: string;
+}): HTMLElement {
+  const beat = element("div", `seq-beat seq-beat-${input.variant}`);
+  if (input.testId !== undefined) {
+    beat.dataset.testid = input.testId;
+  }
+  beat.append(element("p", "seq-eyebrow", input.eyebrow));
+  const value = element("p", "seq-value", input.value);
+  if (input.valueTestId !== undefined) {
+    value.dataset.testid = input.valueTestId;
+  }
+  beat.append(value);
+  if (input.code !== undefined) {
+    const code = element("code", "verdict-code", input.code);
+    if (input.codeTestId !== undefined) {
+      code.dataset.testid = input.codeTestId;
+    }
+    beat.append(code);
+  } else {
+    beat.append(element("p", "seq-note", input.note));
+  }
+  return beat;
 }
 
 function renderObserve(data: JudgeData): HTMLElement {
@@ -145,62 +165,67 @@ function renderObserve(data: JudgeData): HTMLElement {
     stageHeader(
       "Observe",
       "Personalization was OFF. Identifiable activity still reached recommendations.",
-      data.bundle.canonicalPromise,
     ),
   );
 
-  const verdict = element("div", "verdict verdict-broken");
-  verdict.dataset.testid = "observe-verdict";
-  verdict.append(element("p", "verdict-eyebrow", "Result"));
-  // The contract pins `result` to "broken"; validation already rejected anything else.
-  verdict.append(element("p", "verdict-value", "BROKEN PROMISE"));
-  const code = element("code", "verdict-code");
-  code.textContent = data.bundle.observedContradiction.violationCode;
-  code.dataset.testid = "observe-violation-code";
-  verdict.append(code);
-
-  const rows = element("dl", "observe-rows");
-  for (const row of data.observeRows) {
-    rows.append(observeRow(row));
-  }
-
-  const contradiction = element("div", "observe-grid");
-  contradiction.append(rows, verdict);
-  section.append(contradiction);
-
-  section.append(renderBoundary(data));
-
-  const feed = element("div", "note-card");
-  feed.dataset.testid = "observe-feed-note";
-  feed.append(
-    element("p", "note-title", "Contextual recommendations kept working"),
+  // Three-beat causal sequence: OFF → 1 crossed → BROKEN PROMISE.
+  const sequence = element("div", "observe-sequence");
+  sequence.dataset.testid = "observe-sequence";
+  sequence.append(
+    causalBeat({
+      variant: "neutral",
+      eyebrow: "Personalization",
+      value: data.bundle.observedContradiction.scenario.toUpperCase(),
+      note: "chosen by the user · survives reload",
+      testId: "observe-beat-off",
+    }),
   );
-  feed.append(
-    element(
-      "p",
-      "note-body",
-      "The OFF experience still served a working contextual feed, so this is not a broken feature. It is a boundary that let identifiable activity through.",
-    ),
+  sequence.append(arrow("→", "seq-arrow"));
+  sequence.append(
+    causalBeat({
+      variant: "breach",
+      eyebrow: "Identifiable activity",
+      value: String(data.raceFacts.identifiableActivityRequests),
+      note: "crossed the service boundary while OFF",
+      valueTestId: "observe-activity-count",
+    }),
   );
-  feed.append(sourceNote(`${data.feedClause} · clause passed`));
-  section.append(feed);
+  sequence.append(arrow("→", "seq-arrow seq-arrow-breach"));
+  const verdict = causalBeat({
+    variant: "result",
+    eyebrow: "Result",
+    value: "BROKEN PROMISE",
+    note: "",
+    testId: "observe-verdict",
+    code: data.bundle.observedContradiction.violationCode,
+    codeTestId: "observe-violation-code",
+  });
+  sequence.append(verdict);
+  section.append(sequence);
 
+  // Compact system map + the negative control side by side.
+  const cols = element("div", "observe-cols");
+  cols.append(renderBoundaryStrip(data));
+  cols.append(renderNegativeControl(data));
+  section.append(cols);
+
+  section.append(renderEvidenceBasis(data));
   return section;
 }
 
-function renderBoundary(data: JudgeData): HTMLElement {
-  const wrap = element("div", "boundary");
-  wrap.dataset.testid = "observe-boundary";
+function renderBoundaryStrip(data: JudgeData): HTMLElement {
+  const strip = element("div", "boundary-strip");
+  strip.dataset.testid = "observe-boundary";
+  strip.append(element("p", "panel-eyebrow", "Where the boundary sits"));
 
+  const row = element("div", "boundary-row");
   const browser = element("div", "boundary-node");
   browser.append(element("p", "boundary-name", "Browser"));
   browser.append(element("p", "boundary-detail", "Signal Shelf · OFF"));
 
   const preference = element("div", "boundary-node");
   preference.append(element("p", "boundary-name", "Preference state"));
-  preference.append(
-    element("p", "boundary-detail", "Stored OFF · Backend OFF"),
-  );
+  preference.append(element("p", "boundary-detail", "Stored OFF · Backend OFF"));
 
   const service = element("div", "boundary-node boundary-node-service");
   service.append(element("p", "boundary-name", "Recommendation service"));
@@ -208,25 +233,84 @@ function renderBoundary(data: JudgeData): HTMLElement {
     element(
       "p",
       "boundary-detail",
-      `Received ${String(data.raceFacts.identifiableActivityReceipts)} identifiable activity`,
+      `Received ${String(data.raceFacts.identifiableActivityReceipts)} identifiable`,
     ),
   );
 
-  const crossing = element("div", "boundary-crossing");
-  crossing.dataset.testid = "boundary-crossing";
-  crossing.append(element("span", "boundary-arrow", "→"));
-  crossing.append(
-    element(
-      "span",
-      "boundary-crossing-label",
-      "identifiable activity crossed this boundary while the choice was OFF",
-    ),
-  );
+  row.append(browser, arrow("→", "boundary-arrow"), preference, arrow("→", "boundary-arrow boundary-arrow-breach"), service);
+  strip.append(row);
 
-  // The three nodes form one row; the crossing indicator spans beneath them.
-  wrap.append(browser, preference, service, crossing);
-  return wrap;
+  const chips = element("div", "state-chips");
+  for (const chip of ["Personalization · OFF", "Stored · OFF", "Backend · OFF"]) {
+    chips.append(element("span", "state-chip", chip));
+  }
+  const breach = element(
+    "span",
+    "state-chip state-chip-breach",
+    `Identifiable activity · ${String(data.raceFacts.identifiableActivityRequests)} ✕`,
+  );
+  chips.append(breach);
+  strip.append(chips);
+  return strip;
 }
+
+function renderNegativeControl(data: JudgeData): HTMLElement {
+  const card = element("div", "control-card");
+  card.dataset.testid = "observe-feed-note";
+  const head = element("div", "control-head");
+  const check = element("span", "control-check", "✓");
+  check.setAttribute("aria-hidden", "true");
+  head.append(check);
+  head.append(element("p", "control-title", "Contextual recommendations kept working"));
+  card.append(head);
+  card.append(
+    element(
+      "p",
+      "control-body",
+      "The OFF experience still served a working contextual feed — a boundary that let identifiable activity through, not a broken feature.",
+    ),
+  );
+  card.append(
+    element("p", "source-note", `${data.feedClause} · negative control · passed`),
+  );
+  return card;
+}
+
+function renderEvidenceBasis(data: JudgeData): HTMLElement {
+  const details = element("details", "evidence-basis");
+  details.dataset.testid = "observe-evidence-basis";
+  details.append(
+    element("summary", "evidence-summary", "Evidence basis · clause IDs & sources"),
+  );
+  const list = element("div", "evidence-list");
+
+  const promise = element("div", "evidence-row");
+  promise.append(element("span", "evidence-row-label", "Canonical promise"));
+  promise.append(element("span", "evidence-row-value", data.bundle.canonicalPromise));
+  list.append(promise);
+
+  for (const row of data.observeRows) {
+    const item = element("div", "evidence-row");
+    item.dataset.testid = "observe-row";
+    item.dataset.state = row.state;
+    item.append(element("span", "evidence-row-label", row.label));
+    const value = element("span", "evidence-row-value");
+    value.dataset.testid = `observe-value-${row.state}`;
+    value.textContent = row.value;
+    const source = element("span", "evidence-row-source", row.source);
+    item.append(value, source);
+    list.append(item);
+  }
+  details.append(list);
+  return details;
+}
+
+/* ---------------------------- Investigate ---------------------------- */
+
+const HYPOTHESIS_LABELS = {
+  supported: "Selected for replay",
+  not_selected: "Competing explanation",
+} as const;
 
 function hypothesisCard(hypothesis: {
   readonly id: string;
@@ -234,18 +318,20 @@ function hypothesisCard(hypothesis: {
   readonly result: "supported" | "not_selected";
 }): HTMLElement {
   const card = element("article", "hypothesis-card");
+  // The underlying result enum is preserved and still validated; only the
+  // rendered label is mapped to a neutral, pre-verdict term.
   card.dataset.result = hypothesis.result;
   card.dataset.testid = "hypothesis-card";
 
   const head = element("div", "hypothesis-head");
-  const id = element("span", "hypothesis-id", hypothesis.id);
+  head.append(element("span", "hypothesis-id", hypothesis.id));
   const status = element(
     "span",
     "hypothesis-status",
-    hypothesis.result === "supported" ? "Supported" : "Not selected",
+    HYPOTHESIS_LABELS[hypothesis.result],
   );
   status.dataset.testid = `hypothesis-status-${hypothesis.result}`;
-  head.append(id, status);
+  head.append(status);
 
   card.append(head);
   card.append(element("p", "hypothesis-statement", hypothesis.statement));
@@ -258,18 +344,52 @@ function renderInvestigate(data: JudgeData): HTMLElement {
     stageHeader(
       "Investigate",
       "More than one boundary could explain the contradiction.",
-      "The deterministic evaluator had already decided the promise was broken. GPT-5.6 was given a sanitized dossier and asked only to rank explanations and choose one registered replay.",
+      {
+        lede: "The deterministic evaluator had already decided the promise was broken. GPT-5.6 received a sanitized dossier and was asked only to rank explanations and choose one registered replay.",
+        aside: provenanceTag(
+          data.bundle.investigation.label,
+          "investigate-provenance",
+        ),
+      },
     ),
   );
-  section.append(
-    provenanceTag(data.bundle.investigation.label, "investigate-provenance"),
+
+  const fork = element("div", "fork");
+  fork.dataset.testid = "investigate-fork";
+
+  const top = element("div", "fork-top");
+  top.append(element("span", "fork-top-eyebrow", "Observed contradiction"));
+  top.append(
+    element(
+      "span",
+      "fork-top-value",
+      `Broken promise · ${data.bundle.observedContradiction.violationCode}`,
+    ),
   );
+  fork.append(top);
+  fork.append(element("p", "fork-split", "↙ two possible boundaries ↘"));
 
   const cards = element("div", "hypothesis-grid");
   for (const hypothesis of data.bundle.initialHypotheses) {
     cards.append(hypothesisCard(hypothesis));
   }
-  section.append(cards);
+  fork.append(cards);
+
+  const down = element("div", "fork-down");
+  down.append(arrow("↓", "fork-down-arrow"));
+  const chip = element("div", "registered-replay");
+  chip.dataset.testid = "registered-replay";
+  chip.append(element("span", "registered-replay-eyebrow", "Registered replay"));
+  chip.append(
+    element(
+      "span",
+      "registered-replay-title",
+      REPLAY_TITLES[data.bundle.investigation.selectedReplay],
+    ),
+  );
+  down.append(chip);
+  fork.append(down);
+  section.append(fork);
 
   const lanes = element("div", "authority-lanes");
   lanes.dataset.testid = "authority-lanes";
@@ -311,11 +431,7 @@ function laneCard(
   const card = element("article", "lane-card");
   card.dataset.kind = kind;
   card.append(
-    element(
-      "p",
-      "lane-kind",
-      kind === "model" ? "Model" : "Deterministic code",
-    ),
+    element("p", "lane-kind", kind === "model" ? "Model" : "Deterministic code"),
   );
   card.append(element("p", "lane-title", title));
   card.append(element("p", "lane-value", value));
@@ -323,26 +439,55 @@ function laneCard(
   return card;
 }
 
+/* ------------------------------ Replay ------------------------------- */
+
+interface ReplayEventLayout {
+  readonly side: "browser" | "service";
+  readonly crossing?: boolean;
+  readonly tag?: string;
+  readonly cardClass: string;
+}
+
+const REPLAY_EVENT_LAYOUT: Record<string, ReplayEventLayout> = {
+  collector_started: { side: "browser", cardClass: "ppa ppa-e1" },
+  identifiable_activity_received: {
+    side: "service",
+    crossing: true,
+    cardClass: "ppa ppa-e2",
+  },
+  preference_hydration_completed: {
+    side: "browser",
+    tag: "Hydrated too late",
+    cardClass: "ppa ppa-e3",
+  },
+};
+
 function renderReplay(data: JudgeData): HTMLElement {
   const section = element("section", "stage stage-replay");
   section.append(
     stageHeader(
       "Replay",
       "GPT-5.6 selected one registered replay to test the leading explanation.",
-      data.bundle.investigation.replayExpectation,
+      {
+        lede: data.bundle.investigation.replayExpectation,
+        aside: provenanceTag("Recorded authentic replay", "replay-provenance"),
+      },
     ),
   );
 
   const selected = element("div", "selected-replay");
   selected.dataset.testid = "selected-replay";
-  selected.append(element("p", "selected-replay-eyebrow", "Selected replay"));
-  selected.append(
+  const selectedMain = element("div", "selected-replay-main");
+  selectedMain.append(element("p", "selected-replay-eyebrow", "Selected replay"));
+  selectedMain.append(
     element(
       "p",
       "selected-replay-title",
       REPLAY_TITLES[data.bundle.investigation.selectedReplay],
     ),
   );
+  selected.append(selectedMain);
+  selected.append(element("span", "selected-replay-divider"));
   selected.append(
     element(
       "p",
@@ -352,43 +497,106 @@ function renderReplay(data: JudgeData): HTMLElement {
   );
   section.append(selected);
 
-  section.append(provenanceTag("Recorded authentic replay", "replay-provenance"));
-
-  const timeline = element("ol", "replay-timeline");
-  timeline.dataset.testid = "replay-timeline";
-  for (const [index, event] of data.bundle.investigation.observedTimeline.entries()) {
-    const item = element("li", "replay-event");
-    item.dataset.event = event;
-    item.dataset.testid = "replay-event";
-    if (event === "identifiable_activity_received") {
-      item.dataset.emphasis = "boundary";
-    }
-    item.append(element("span", "replay-index", String(index + 1).padStart(2, "0")));
-    const body = element("span", "replay-body");
-    body.append(element("strong", "replay-name", TIMELINE_TITLES[event]));
-    body.append(element("code", "replay-raw", event));
-    item.append(body);
-    timeline.append(item);
-  }
-  section.append(timeline);
-
-  const finding = element("div", "finding-card");
-  finding.dataset.testid = "replay-finding";
-  finding.append(element("p", "finding-eyebrow", "What the replay showed"));
-  finding.append(
-    element(
-      "p",
-      "finding-body",
-      "The replay confirmed that collection began before the saved OFF preference became authoritative.",
-    ),
-  );
-  finding.append(
-    element("p", "finding-recorded", data.bundle.investigation.postReplayResult),
-  );
-  section.append(finding);
-
+  section.append(renderFlightRecorder(data));
+  section.append(renderFlightRecorderCompact(data));
+  section.append(renderReplayFinding(data));
   return section;
 }
+
+function renderFlightRecorder(data: JudgeData): HTMLElement {
+  const rec = element("div", "flight-recorder");
+  rec.dataset.testid = "replay-recorder";
+  rec.setAttribute("aria-hidden", "true");
+
+  rec.append(element("div", "fr-side fr-side-browser"));
+  rec.append(element("div", "fr-side fr-side-service"));
+  rec.append(element("div", "fr-boundary"));
+  rec.append(element("p", "fr-label fr-label-browser", "Browser side"));
+  rec.append(element("p", "fr-label fr-label-service", "Recommendation-service side"));
+  rec.append(element("span", "fr-spine ppa ppa-spine"));
+
+  data.bundle.investigation.observedTimeline.forEach((event, index) => {
+    const layout = REPLAY_EVENT_LAYOUT[event];
+    if (layout === undefined) {
+      return;
+    }
+    const timecode = String(index + 1).padStart(2, "0");
+
+    const rail = element("span", "fr-timecode", timecode);
+    rail.dataset.event = event;
+    rec.append(rail);
+
+    if (layout.crossing === true) {
+      rec.append(element("span", "fr-cross-dot ppa ppa-dot"));
+      rec.append(element("span", "fr-cross-line ppa ppa-line"));
+      rec.append(element("span", "fr-cross-arrow ppa ppa-arrow"));
+    }
+
+    const card = element("div", `fr-event ${layout.cardClass}`);
+    card.dataset.event = event;
+    card.dataset.side = layout.side;
+    card.dataset.testid = "replay-event";
+    if (layout.crossing === true) {
+      card.dataset.emphasis = "boundary";
+    }
+
+    const cardHead = element("div", "fr-event-head");
+    cardHead.append(element("span", "fr-event-name", TIMELINE_TITLES[event]));
+    if (layout.tag !== undefined) {
+      cardHead.append(element("span", "fr-event-tag", layout.tag));
+    }
+    card.append(cardHead);
+    const raw =
+      layout.crossing === true ? `${event} · receipt ×${String(data.raceFacts.identifiableActivityReceipts)}` : event;
+    card.append(element("code", "fr-event-raw", raw));
+    rec.append(card);
+  });
+
+  return rec;
+}
+
+function renderFlightRecorderCompact(data: JudgeData): HTMLElement {
+  const list = element("div", "flight-recorder-compact");
+  list.dataset.testid = "replay-recorder-compact";
+  data.bundle.investigation.observedTimeline.forEach((event, index) => {
+    const layout = REPLAY_EVENT_LAYOUT[event];
+    if (layout === undefined) {
+      return;
+    }
+    const item = element("div", "fr-compact-item");
+    item.dataset.event = event;
+    item.dataset.testid = "replay-event-compact";
+    if (layout.crossing === true) {
+      item.dataset.emphasis = "boundary";
+    }
+    const badge =
+      layout.crossing === true
+        ? `${String(index + 1).padStart(2, "0")} · CROSSED → SERVICE`
+        : `${String(index + 1).padStart(2, "0")} · ${layout.side.toUpperCase()}`;
+    item.append(element("p", "fr-compact-badge", badge));
+    item.append(element("p", "fr-compact-name", TIMELINE_TITLES[event]));
+    if (layout.tag !== undefined) {
+      item.append(element("p", "fr-compact-tag", layout.tag));
+    }
+    list.append(item);
+  });
+  return list;
+}
+
+function renderReplayFinding(data: JudgeData): HTMLElement {
+  const finding = element("div", "replay-finding ppa ppa-finding");
+  finding.dataset.testid = "replay-finding";
+  const main = element("div", "replay-finding-main");
+  main.append(element("p", "replay-finding-eyebrow", "Startup-order explanation"));
+  main.append(element("p", "replay-finding-title", "Supported by recorded replay"));
+  finding.append(main);
+  finding.append(
+    element("p", "replay-finding-recorded", data.bundle.investigation.postReplayResult),
+  );
+  return finding;
+}
+
+/* ------------------------------ Repair ------------------------------- */
 
 function renderRepair(data: JudgeData): HTMLElement {
   const section = element("section", "stage stage-repair");
@@ -396,90 +604,148 @@ function renderRepair(data: JudgeData): HTMLElement {
     stageHeader(
       "Repair",
       "Source changes were allowed only after evidence supported the boundary.",
-      "PromiseProof then independently tested both the restricted behavior and the behavior that must keep working.",
+      {
+        aside: provenanceTag(data.bundle.repair.label, "repair-provenance"),
+      },
     ),
   );
-  section.append(provenanceTag(data.bundle.repair.label, "repair-provenance"));
 
-  const facts = element("dl", "repair-facts");
-  facts.dataset.testid = "repair-facts";
-  facts.append(factRow("Files changed", String(data.bundle.repair.changedPaths.length)));
-  facts.append(
-    factRow("Patch size", `${String(data.bundle.repair.patchBytes)} bytes`, "repair-patch-bytes"),
+  // Before/after ordering swap is the central visual.
+  const swap = element("div", "swap-card");
+  swap.dataset.testid = "repair-diff";
+  swap.append(
+    element("p", "swap-path", `${data.bundle.repair.changedPaths[0]} · initialization order`),
   );
-  // The contract pins `humanApproval` to "approved"; validation rejected anything else.
-  facts.append(factRow("Human approval", "Approved", "repair-approval"));
-  facts.append(factRow("Merged to main", "No — never automatic"));
-  facts.append(factRow("Environments", "Disposable candidate + verification worktrees"));
-  section.append(facts);
-
-  const diff = element("div", "diff-card");
-  diff.dataset.testid = "repair-diff";
-  diff.append(element("p", "diff-path", data.bundle.repair.changedPaths[0]));
-  const columns = element("div", "diff-columns");
-  columns.append(diffColumn("Before", ["runStartupCollector()", "hydratePreference()"], "before"));
-  columns.append(diffColumn("After", ["hydratePreference()", "runStartupCollector()"], "after"));
-  diff.append(columns);
-  diff.append(
+  const columns = element("div", "swap-columns");
+  columns.append(codeBlock("Before", ["runStartupCollector()", "hydratePreference()"], "before"));
+  const swapMark = element("div", "swap-indicator");
+  swapMark.setAttribute("aria-hidden", "true");
+  swapMark.append(element("span", "swap-glyph", "⇄"));
+  swapMark.append(element("span", "swap-glyph-label", "swap"));
+  columns.append(swapMark);
+  columns.append(codeBlock("After", ["hydratePreference()", "runStartupCollector()"], "after"));
+  swap.append(columns);
+  swap.append(
     element(
       "p",
-      "diff-note",
+      "swap-caption",
       "The order was the defect. The collector no longer runs before the saved preference is authoritative.",
     ),
   );
-  section.append(diff);
+  section.append(swap);
 
-  const regression = element("article", "note-card note-card-compact");
-  regression.dataset.testid = "repair-regression";
-  regression.append(element("p", "note-title", "Added regression test"));
-  const path = element("code", "note-code");
-  path.textContent = data.bundle.repair.changedPaths[1];
-  regression.append(path);
-  regression.append(
-    element(
-      "p",
-      "note-body",
-      "Runs the real browser journey and fails if collection ever starts before the saved OFF preference is restored.",
-    ),
-  );
-  section.append(regression);
+  const cols = element("div", "repair-cols");
+  cols.append(renderGuardrail(data));
+  cols.append(renderProofLock(data));
+  section.append(cols);
 
-  const evidence = element("details", "evidence-details");
-  evidence.dataset.testid = "repair-evidence-details";
-  const summary = element("summary", "evidence-summary", "Patch evidence");
-  evidence.append(summary);
-  const list = element("dl", "evidence-list");
-  list.append(factRow("Repair ID", data.bundle.repair.repairId));
-  list.append(factRow("Base commit", data.bundle.repair.baseCommit));
-  list.append(factRow("Patch SHA-256", data.bundle.repair.patchSha256, "repair-patch-digest"));
-  for (const changed of data.bundle.repair.changedPaths) {
-    list.append(factRow("Changed path", changed));
-  }
-  evidence.append(list);
-  section.append(evidence);
-
+  section.append(renderPatchEvidence(data));
   return section;
 }
 
-function diffColumn(
+function codeBlock(
   title: string,
   lines: readonly string[],
   kind: "before" | "after",
 ): HTMLElement {
-  const column = element("div", "diff-column");
-  column.dataset.kind = kind;
-  column.dataset.testid = `diff-${kind}`;
-  column.append(element("p", "diff-column-title", title));
-  const code = element("pre", "diff-code");
-  code.textContent = lines.join("\n");
-  column.append(code);
-  return column;
+  const block = element("div", "code-block");
+  block.dataset.kind = kind;
+  block.dataset.testid = `diff-${kind}`;
+  block.append(element("p", "code-block-head", title));
+  const pre = element("pre", "code-block-pre");
+  for (const [index, line] of lines.entries()) {
+    const row = element("span", "code-line");
+    row.append(element("span", "code-line-no", String(index + 1).padStart(2, "0")));
+    row.append(element("span", "code-line-text", line));
+    pre.append(row);
+  }
+  block.append(pre);
+  return block;
 }
 
-function factRow(label: string, value: string, testId?: string): HTMLElement {
-  const row = element("div", "fact-row");
-  row.append(element("dt", "fact-label", label));
-  const node = element("dd", "fact-value", value);
+function renderGuardrail(data: JudgeData): HTMLElement {
+  const panel = element("div", "guardrail");
+  panel.dataset.testid = "repair-guardrail";
+  panel.append(element("p", "panel-eyebrow", "Guardrails"));
+
+  const files = guardrailItem(`${String(data.bundle.repair.changedPaths.length)} files changed`);
+  panel.append(files);
+
+  const bytes = guardrailItem(
+    `${formatBytes(data.bundle.repair.patchBytes)}-byte patch`,
+  );
+  const bytesValue = bytes.querySelector<HTMLElement>(".guardrail-text");
+  if (bytesValue !== null) {
+    bytesValue.dataset.testid = "repair-patch-bytes";
+    bytesValue.dataset.bytes = String(data.bundle.repair.patchBytes);
+  }
+  panel.append(bytes);
+
+  // The contract pins `humanApproval` to "approved".
+  const approval = guardrailItem("Exact digest approved by a human");
+  const approvalText = approval.querySelector<HTMLElement>(".guardrail-text");
+  if (approvalText !== null) {
+    approvalText.dataset.testid = "repair-approval";
+    approvalText.dataset.approval = data.bundle.repair.humanApproval;
+  }
+  panel.append(approval);
+
+  panel.append(guardrailItem("No automatic merge"));
+  panel.append(guardrailItem("Disposable candidate + verification worktrees"));
+  return panel;
+}
+
+function guardrailItem(text: string): HTMLElement {
+  const item = element("div", "guardrail-item");
+  const marker = element("span", "guardrail-marker", "▪");
+  marker.setAttribute("aria-hidden", "true");
+  item.append(marker);
+  item.append(element("span", "guardrail-text", text));
+  return item;
+}
+
+function renderProofLock(data: JudgeData): HTMLElement {
+  const card = element("div", "proof-lock");
+  card.dataset.testid = "repair-proof-lock";
+
+  // A CSS/HTML-drawn padlock, never an emoji.
+  const badge = element("span", "proof-lock-badge");
+  badge.setAttribute("aria-hidden", "true");
+  const glyph = element("span", "lock-glyph");
+  glyph.append(element("span", "lock-shackle"));
+  glyph.append(element("span", "lock-body"));
+  badge.append(glyph);
+  card.append(badge);
+
+  const body = element("div", "proof-lock-body");
+  body.append(element("p", "proof-lock-title", "Regression test · proof-lock"));
+  const regression = element("code", "proof-lock-path");
+  regression.dataset.testid = "repair-regression";
+  regression.textContent = data.bundle.repair.changedPaths[1];
+  body.append(regression);
+  card.append(body);
+  return card;
+}
+
+function renderPatchEvidence(data: JudgeData): HTMLElement {
+  const details = element("details", "evidence-basis");
+  details.dataset.testid = "repair-evidence-details";
+  details.append(
+    element("summary", "evidence-summary", "Patch evidence · hashes & IDs"),
+  );
+  const list = element("div", "evidence-list");
+  list.append(evidenceLine("repairId", data.bundle.repair.repairId));
+  list.append(evidenceLine("baseCommit", data.bundle.repair.baseCommit));
+  list.append(evidenceLine("patchSha256", data.bundle.repair.patchSha256, "repair-patch-digest"));
+  list.append(evidenceLine("changedPaths", data.bundle.repair.changedPaths.join(" · ")));
+  details.append(list);
+  return details;
+}
+
+function evidenceLine(label: string, value: string, testId?: string): HTMLElement {
+  const row = element("div", "evidence-row");
+  row.append(element("span", "evidence-row-label", label));
+  const node = element("span", "evidence-row-value", value);
   if (testId !== undefined) {
     node.dataset.testid = testId;
   }
@@ -487,16 +753,35 @@ function factRow(label: string, value: string, testId?: string): HTMLElement {
   return row;
 }
 
+function formatBytes(value: number): string {
+  return value.toLocaleString("en-US");
+}
+
+/* ------------------------------- Prove ------------------------------- */
+
 function renderProve(data: JudgeData): HTMLElement {
   const section = element("section", "stage stage-prove");
-  section.append(
-    stageHeader(
-      "Prove",
-      "The unchanged verifier decided the result.",
-      "The approved patch was applied only in a fresh disposable worktree, then judged by the same Playwright journey and deterministic evaluator used on the broken state.",
-    ),
+
+  const groups = Object.values(data.bundle.verification.matrix);
+  const passing = groups.filter((value) => value === "pass").length;
+
+  const aside = element("div", "prove-head-aside");
+  const pill = element(
+    "span",
+    "groups-pill",
+    `${String(passing)} / ${String(groups.length)} VERIFICATION GROUPS PASS`,
   );
-  section.append(provenanceTag(data.bundle.verification.label, "prove-provenance"));
+  pill.dataset.testid = "prove-groups-pill";
+  aside.append(pill);
+  aside.append(provenanceTag(data.bundle.verification.label, "prove-provenance"));
+
+  section.append(
+    stageHeader("Prove", "APPROVED PATCH VERIFIED IN ISOLATION", {
+      titleTestId: "prove-headline",
+      lede: "The approved patch was applied only in a fresh disposable worktree, then judged by the same Playwright journey and deterministic evaluator used on the broken state.",
+      aside,
+    }),
+  );
 
   const matrix = element("div", "matrix");
   matrix.dataset.testid = "verification-matrix";
@@ -504,14 +789,12 @@ function renderProve(data: JudgeData): HTMLElement {
     const card = element("article", "matrix-row");
     card.dataset.testid = "matrix-row";
     card.dataset.key = row.key;
-
     card.append(element("p", "matrix-label", row.label));
     const criteria = element("ul", "matrix-criteria");
     for (const criterion of row.criteria) {
       criteria.append(element("li", "matrix-criterion", criterion));
     }
     card.append(criteria);
-
     const value = data.bundle.verification.matrix[row.key];
     const badge = element("p", "matrix-badge", value.toUpperCase());
     badge.dataset.value = value;
@@ -523,16 +806,13 @@ function renderProve(data: JudgeData): HTMLElement {
 
   const authority = element("div", "authority");
   authority.dataset.testid = "verification-authority";
-  authority.append(element("p", "authority-eyebrow", "Authority"));
-  authority.append(
-    element(
-      "p",
-      "authority-value",
-      "Unchanged Playwright and deterministic evaluator",
-    ),
+  const authorityMain = element("div", "authority-main");
+  authorityMain.append(element("p", "authority-eyebrow", "Authority"));
+  authorityMain.append(
+    element("p", "authority-value", "Unchanged Playwright and deterministic evaluator"),
   );
-  const raw = element("code", "authority-code");
-  raw.textContent = data.bundle.verification.authority;
+  authority.append(authorityMain);
+  const raw = element("code", "authority-code", data.bundle.verification.authority);
   raw.dataset.testid = "authority-code";
   authority.append(raw);
   section.append(authority);
@@ -546,23 +826,22 @@ function renderProve(data: JudgeData): HTMLElement {
   ]) {
     attribution.append(element("li", "attribution-item", line));
   }
-  const decisive = element("li", "attribution-item attribution-decisive", "None of them determined PASS.");
+  const decisive = element(
+    "li",
+    "attribution-item attribution-decisive",
+    "None of them determined PASS.",
+  );
   decisive.dataset.testid = "attribution-decisive";
   attribution.append(decisive);
   section.append(attribution);
 
-  const impact = element("div", "note-card");
-  impact.dataset.testid = "impact-statement";
-  impact.append(element("p", "note-title", "Why this matters"));
-  impact.append(
-    element(
-      "p",
-      "note-body",
-      "Product controls often cross UI, browser storage, network requests and backend state. A UI that displays OFF can still permit behavior elsewhere. PromiseProof gives product, QA and platform engineers one evidence trail for locating the inconsistent boundary and verifying that the repair did not disable allowed functionality.",
-    ),
+  const note = element(
+    "p",
+    "worktree-note",
+    "Applied only in a fresh disposable verification worktree. Main intentionally remains seeded-broken.",
   );
-  section.append(impact);
-
+  note.dataset.testid = "prove-worktree-note";
+  section.append(note);
   return section;
 }
 

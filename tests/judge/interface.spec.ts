@@ -84,8 +84,15 @@ test('renders all five stages from the strict judge bundle', async ({ page }) =>
     bundle.observedContradiction.violationCode,
   );
   await expect(page.getByTestId('observe-verdict')).toContainText('BROKEN PROMISE');
+  await expect(page.getByTestId('observe-beat-off')).toContainText('OFF');
+  // The prominent activity count and the collapsed evidence row are the same
+  // validated number rendered twice, never invented per view.
+  const beatCount = (await page.getByTestId('observe-activity-count').innerText()).trim();
+  // The evidence row lives inside a collapsed <details>; read textContent.
+  const rowCount = ((await page.getByTestId('observe-value-leak').textContent()) ?? '').trim();
+  expect(beatCount).toBe(rowCount);
+  expect(Number.parseInt(beatCount, 10)).toBeGreaterThan(0);
   await expect(page.getByTestId('observe-row')).toHaveCount(4);
-  await expect(page.getByTestId('observe-value-leak')).toContainText('1');
 
   expect(problems.consoleErrors).toEqual([]);
   expect(problems.pageErrors).toEqual([]);
@@ -171,7 +178,7 @@ test('the offline chip states that no live model call is made', async ({ page })
   await expect(page.getByTestId('offline-chip')).toContainText('no live model calls');
 });
 
-test('displays qualitative hypothesis status without inventing confidence', async ({ page }) => {
+test('Investigate uses neutral pre-verdict labels and never reveals a winner', async ({ page }) => {
   await openJudge(page, 'investigate');
 
   await expect(page.getByTestId('hypothesis-card')).toHaveCount(
@@ -180,17 +187,31 @@ test('displays qualitative hypothesis status without inventing confidence', asyn
   for (const hypothesis of bundle.initialHypotheses) {
     await expect(page.getByTestId('hypothesis-card').filter({ hasText: hypothesis.statement })).toHaveCount(1);
   }
-  await expect(page.getByTestId('hypothesis-status-supported')).toHaveCount(1);
-  await expect(page.getByTestId('hypothesis-status-not_selected')).toHaveCount(1);
+
+  // The underlying result enum is unchanged (proof the map is view-only)...
+  await expect(page.locator('.hypothesis-card[data-result="supported"]')).toHaveCount(1);
+  await expect(page.locator('.hypothesis-card[data-result="not_selected"]')).toHaveCount(1);
+  // ...but the visible label is neutral, not a pre-Replay verdict.
+  await expect(page.getByTestId('hypothesis-status-supported')).toHaveText('Selected for replay');
+  await expect(page.getByTestId('hypothesis-status-not_selected')).toHaveText('Competing explanation');
+  await expect(page.getByTestId('registered-replay')).toContainText('Inspect startup order');
+
+  const text = await stageText(page);
+  expect(text).not.toMatch(/\bSupported\b/u);
+  expect(text).not.toMatch(/\bNot selected\b/u);
+  // "Final deterministic verdict" is a legitimate authority-lane label; a winner
+  // is what must not be revealed here.
+  expect(text).not.toMatch(/\b(?:rejected|winner)\b/iu);
 
   // The bundle carries no confidence value, so no percentage may be rendered.
-  const text = await allStageText(page);
-  expect(text).not.toMatch(/\d+\s?%/u);
-  expect(text).not.toMatch(/\bconfidence\b/iu);
-  expect(text).not.toMatch(/\bprobability\b/iu);
+  const all = await allStageText(page);
+  expect(all).not.toMatch(/\d+\s?%/u);
+  expect(all).not.toMatch(/\bconfidence\b/iu);
+  expect(all).not.toMatch(/\bprobability\b/iu);
 });
 
-test('replay stage names the selected replay and the recorded timeline order', async ({ page }) => {
+test('replay flight-recorder shows the boundary crossing in recorded order', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
   await openJudge(page, 'replay');
 
   await expect(page.getByTestId('selected-replay')).toContainText('Inspect startup order');
@@ -203,6 +224,16 @@ test('replay stage names the selected replay and the recorded timeline order', a
   );
   expect(events).toEqual(bundle.investigation.observedTimeline);
 
+  // Event 02 is the money shot: it originates on the browser side and crosses
+  // to the recommendation service, drawn with a directional arrowhead.
+  const crossing = page.locator('.fr-event[data-emphasis="boundary"]');
+  await expect(crossing).toHaveCount(1);
+  await expect(crossing).toHaveAttribute('data-event', 'identifiable_activity_received');
+  await expect(crossing).toHaveAttribute('data-side', 'service');
+  await expect(page.locator('.fr-cross-arrow')).toHaveCount(1);
+  await expect(page.locator('.fr-cross-line')).toHaveCount(1);
+
+  await expect(page.getByTestId('replay-finding')).toContainText('Supported by recorded replay');
   await expect(page.getByTestId('replay-finding')).toContainText(
     bundle.investigation.postReplayResult,
   );
@@ -212,16 +243,50 @@ test('replay stage names the selected replay and the recorded timeline order', a
   expect(text).not.toMatch(/optimal replay|information gain|proof of causation|mathematically decisive|autonomous root-cause/iu);
 });
 
+test('the replay finding is gated behind the recorded reveal', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  await openJudge(page, 'replay');
+  // With motion, the finding reveals only after the timeline resolves.
+  const delay = await page
+    .getByTestId('replay-finding')
+    .evaluate((node) => window.getComputedStyle(node).animationDelay);
+  expect(Number.parseFloat(delay)).toBeGreaterThan(0.5);
+
+  // With reduced motion, the resolved end-state shows immediately (no animation).
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await openJudge(page, 'replay');
+  const reduced = await page
+    .getByTestId('replay-finding')
+    .evaluate((node) => window.getComputedStyle(node).animationName);
+  expect(reduced).toBe('none');
+  await expect(page.getByTestId('replay-finding')).toBeVisible();
+});
+
 test('repair metadata matches the validated bundle exactly', async ({ page }) => {
   await openJudge(page, 'repair');
 
-  await expect(page.getByTestId('repair-patch-bytes')).toHaveText(
-    `${String(bundle.repair.patchBytes)} bytes`,
-  );
-  await expect(page.getByTestId('repair-approval')).toHaveText('Approved');
+  // The order-swap is the primary visual: before runs the collector first,
+  // after hydrates first.
   await expect(page.getByTestId('diff-before')).toContainText('runStartupCollector()');
   await expect(page.getByTestId('diff-after')).toContainText('hydratePreference()');
+
+  // Guardrail facts come from the bundle (byte count carried as a data attr so
+  // the presentation format never drifts from the validated number).
+  await expect(page.getByTestId('repair-patch-bytes')).toHaveAttribute(
+    'data-bytes',
+    String(bundle.repair.patchBytes),
+  );
+  await expect(page.getByTestId('repair-patch-bytes')).toContainText('2,311');
+  await expect(page.getByTestId('repair-approval')).toHaveAttribute(
+    'data-approval',
+    bundle.repair.humanApproval,
+  );
   await expect(page.getByTestId('repair-regression')).toContainText(changedPath(1));
+
+  // The proof-lock is a drawn padlock, never an emoji.
+  await expect(page.getByTestId('repair-proof-lock')).toBeVisible();
+  const repairText = await stageText(page);
+  expect(repairText).not.toMatch(/[\u{1F500}-\u{1FAFF}\u{2600}-\u{27BF}\u{1F300}-\u{1F5FF}]/u);
 
   // The exact digest stays behind progressive disclosure.
   const details = page.getByTestId('repair-evidence-details');
@@ -233,6 +298,10 @@ test('repair metadata matches the validated bundle exactly', async ({ page }) =>
 
 test('the final matrix authority is deterministic and no model determines PASS', async ({ page }) => {
   await openJudge(page, 'prove');
+
+  await expect(page.getByTestId('prove-headline')).toHaveText(
+    'APPROVED PATCH VERIFIED IN ISOLATION',
+  );
 
   await expect(page.getByTestId('matrix-row')).toHaveCount(5);
   await expect(page.getByTestId('matrix-badge')).toHaveCount(5);
@@ -246,6 +315,13 @@ test('the final matrix authority is deterministic and no model determines PASS',
     bundle.verification.matrix.browser,
     bundle.verification.matrix.propagationControl,
   ]);
+
+  // The 5/5 pill is derived from the validated matrix, not hard-coded.
+  const groups = Object.values(bundle.verification.matrix);
+  const passing = groups.filter((value) => value === 'pass').length;
+  await expect(page.getByTestId('prove-groups-pill')).toHaveText(
+    `${String(passing)} / ${String(groups.length)} VERIFICATION GROUPS PASS`,
+  );
 
   await expect(page.getByTestId('authority-code')).toHaveText(bundle.verification.authority);
   await expect(page.getByTestId('verification-authority')).toContainText(
@@ -262,15 +338,20 @@ test('the final matrix authority is deterministic and no model determines PASS',
   }
 });
 
-test('states impact without claiming adoption or compliance', async ({ page }) => {
+test('Prove does not imply main or production was permanently repaired', async ({ page }) => {
   await openJudge(page, 'prove');
-  await expect(page.getByTestId('impact-statement')).toContainText(
-    'one evidence trail for locating the inconsistent boundary',
+  await expect(page.getByTestId('prove-worktree-note')).toContainText(
+    'Main intentionally remains seeded-broken',
+  );
+  await expect(page.getByTestId('prove-worktree-note')).toContainText(
+    'disposable verification worktree',
   );
 
   const text = await allStageText(page);
   expect(text).not.toMatch(/\bcompliance\b|\bcompliant\b|\bregulatory\b|\bGDPR\b|\bcertif/iu);
   expect(text).not.toMatch(/\bcustomers use\b|\bin production at\b|\bsaves \d/iu);
+  // Never claim the deployed app or main branch was fixed for good.
+  expect(text).not.toMatch(/\b(?:permanently|production) (?:fixed|repaired)\b/iu);
 });
 
 test('exposes no local absolute paths and no secret-shaped values', async ({ page }) => {
