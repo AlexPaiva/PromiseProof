@@ -178,7 +178,7 @@ test('the offline chip states that no live model call is made', async ({ page })
   await expect(page.getByTestId('offline-chip')).toContainText('no live model calls');
 });
 
-test('Investigate uses neutral pre-verdict labels and never reveals a winner', async ({ page }) => {
+test('Investigate uses neutral pre-replay labels and never infers a selected hypothesis', async ({ page }) => {
   await openJudge(page, 'investigate');
 
   await expect(page.getByTestId('hypothesis-card')).toHaveCount(
@@ -191,14 +191,19 @@ test('Investigate uses neutral pre-verdict labels and never reveals a winner', a
   // The underlying result enum is unchanged (proof the map is view-only)...
   await expect(page.locator('.hypothesis-card[data-result="supported"]')).toHaveCount(1);
   await expect(page.locator('.hypothesis-card[data-result="not_selected"]')).toHaveCount(1);
-  // ...but the visible label is neutral, not a pre-Replay verdict.
-  await expect(page.getByTestId('hypothesis-status-supported')).toHaveText('Selected for replay');
-  await expect(page.getByTestId('hypothesis-status-not_selected')).toHaveText('Competing explanation');
+  // ...but the visible labels remain neutral before the recorded replay.
+  await expect(page.getByTestId('hypothesis-status-supported')).toHaveText('Candidate explanation');
+  await expect(page.getByTestId('hypothesis-status-not_selected')).toHaveText('Alternative explanation');
   await expect(page.getByTestId('registered-replay')).toContainText('Inspect startup order');
 
   const text = await stageText(page);
+  expect(text).toContain('Two implementation boundaries can break the same promise.');
+  expect(text).toContain(
+    'For this recorded failure, GPT-5.6 ranked the candidate explanations and selected one registered replay.',
+  );
   expect(text).not.toMatch(/\bSupported\b/u);
   expect(text).not.toMatch(/\bNot selected\b/u);
+  expect(text).not.toMatch(/\bSelected for replay\b/u);
   // "Final deterministic verdict" is a legitimate authority-lane label; a winner
   // is what must not be revealed here.
   expect(text).not.toMatch(/\b(?:rejected|winner)\b/iu);

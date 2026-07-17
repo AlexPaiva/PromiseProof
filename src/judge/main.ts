@@ -308,8 +308,8 @@ function renderEvidenceBasis(data: JudgeData): HTMLElement {
 /* ---------------------------- Investigate ---------------------------- */
 
 const HYPOTHESIS_LABELS = {
-  supported: "Selected for replay",
-  not_selected: "Competing explanation",
+  supported: "Candidate explanation",
+  not_selected: "Alternative explanation",
 } as const;
 
 function hypothesisCard(hypothesis: {
@@ -318,8 +318,8 @@ function hypothesisCard(hypothesis: {
   readonly result: "supported" | "not_selected";
 }): HTMLElement {
   const card = element("article", "hypothesis-card");
-  // The underlying result enum is preserved and still validated; only the
-  // rendered label is mapped to a neutral, pre-verdict term.
+  // The underlying result enum is preserved and still validated; the view does
+  // not infer that a particular initial hypothesis was selected before replay.
   card.dataset.result = hypothesis.result;
   card.dataset.testid = "hypothesis-card";
 
@@ -343,9 +343,9 @@ function renderInvestigate(data: JudgeData): HTMLElement {
   section.append(
     stageHeader(
       "Investigate",
-      "More than one boundary could explain the contradiction.",
+      "Two implementation boundaries can break the same promise.",
       {
-        lede: "The deterministic evaluator had already decided the promise was broken. GPT-5.6 received a sanitized dossier and was asked only to rank explanations and choose one registered replay.",
+        lede: "For this recorded failure, GPT-5.6 ranked the candidate explanations and selected one registered replay.",
         aside: provenanceTag(
           data.bundle.investigation.label,
           "investigate-provenance",
