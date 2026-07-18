@@ -633,7 +633,13 @@ function renderReplay(data: JudgeData): HTMLElement {
 
   const toolbar = element("div", "replay-toolbar");
   toolbar.append(
-    element("p", "replay-toolbar-hint", "Watch the identifiable request cross the boundary:"),
+    labelWithInfo(
+      "p",
+      "replay-toolbar-hint",
+      "Watch the request cross before the saved preference finishes loading:",
+      "hydration",
+      "The timeline below calls this \"hydration\": reading the saved \"off\" preference into the running app before it acts. Here, collection starts before that finishes, so for a moment the app behaves as if personalization were on.",
+    ),
   );
   const playAgain = element("button", "replay-again", "Play the crossing");
   playAgain.type = "button";
@@ -1121,6 +1127,28 @@ function setUpHowItWorks(root: HTMLElement): void {
   modal.addEventListener("keydown", (event) => {
     if (event.key === "Escape") {
       setOpen(false);
+      return;
+    }
+    if (event.key !== "Tab") {
+      return;
+    }
+    // Trap focus inside the dialog while it is open.
+    const focusables = Array.from(
+      card.querySelectorAll<HTMLElement>(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+      ),
+    ).filter((el) => !el.hasAttribute("disabled"));
+    const first = focusables[0];
+    const last = focusables[focusables.length - 1];
+    if (first === undefined || last === undefined) {
+      return;
+    }
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      first.focus();
     }
   });
 }
@@ -1281,6 +1309,10 @@ function start(): void {
     stopPlaying();
     show("observe", { focus: true });
   });
+  // The controls ship disabled in static HTML so a blocked/slow bundle never
+  // shows working-looking buttons; JS enables them once wired (Previous/Next
+  // get their per-stage state from renderInto, Reset is always available now).
+  reset.disabled = false;
   window.addEventListener("hashchange", () => show(stageFromHash()));
 
   if (autoPlay) {

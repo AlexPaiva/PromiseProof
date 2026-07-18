@@ -75,7 +75,18 @@
         <ol id="judge-nav-list" class="judge-nav-list" data-testid="judge-nav"></ol>
       </nav>
 
-      <main id="judge-stage" class="judge-stage" data-testid="judge-stage" tabindex="-1"></main>
+      <main id="judge-stage" class="judge-stage" data-testid="judge-stage" tabindex="-1">
+        <div class="judge-fallback">
+          <p><strong>This walkthrough is interactive and needs JavaScript.</strong></p>
+          <p>
+            If it does not load, the same recorded, fingerprinted evidence is in
+            the
+            <a href="https://github.com/AlexPaiva/PromiseProof">GitHub repository</a>,
+            and a plain-language summary is on the
+            <a href="/">overview page</a>.
+          </p>
+        </div>
+      </main>
 
       <footer class="judge-footer">
         <div class="judge-stage-controls">
@@ -84,18 +95,21 @@
             id="judge-previous"
             class="judge-button"
             data-testid="judge-previous"
+            disabled
           >Previous step</button>
           <button
             type="button"
             id="judge-next"
             class="judge-button judge-button-primary"
             data-testid="judge-next"
+            disabled
           >Next step</button>
           <button
             type="button"
             id="judge-reset"
             class="judge-button judge-button-quiet"
             data-testid="judge-reset"
+            disabled
           >Reset</button>
         </div>
         <p class="judge-footnote">
