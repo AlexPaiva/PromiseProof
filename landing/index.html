@@ -1,0 +1,508 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="color-scheme" content="dark" />
+<meta name="description" content="PromiseProof turns a user-facing promise, 'off means off', into an executable check that a deterministic test, never a model, must sign off on. It finds which boundary breaks it, and you can recheck the verdict offline." />
+<link rel="icon" href="favicon.svg" type="image/svg+xml" />
+<link rel="icon" href="favicon.ico" sizes="32x32" />
+<link rel="apple-touch-icon" href="apple-touch-icon.png" />
+<meta property="og:type" content="website" />
+<meta property="og:title" content="PromiseProof: prove software keeps its promise" />
+<meta property="og:description" content="Prove your software keeps a promise to users, and find which boundary breaks it. A deterministic test, never a model, owns the verdict. OpenAI Build Week 2026." />
+<meta property="og:image" content="og-card.png" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="PromiseProof: prove software keeps its promise" />
+<meta name="twitter:description" content="Does your software keep its word to users? Prove it, and recheck it offline." />
+<meta name="twitter:image" content="og-card.png" />
+<title>PromiseProof: prove software keeps its promise</title>
+<style>
+:root{
+  --bg:#080b12; --bg2:#0c111c; --ink:#0b1220;
+  --paper:#f6f7fb; --paperline:#e4e8f0;
+  --blue:#3f6bf0; --blue-bright:#6f9bff; --red:#e5484d; --red-deep:#b3261e; --green:#2fa968; --green-bright:#5ad39a; --amber:#e0a63b;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  --sans:-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  --maxw:1080px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--sans);background:var(--bg);color:#e8edf6;line-height:1.55;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+a{color:inherit;text-decoration:none}
+.wrap{max-width:var(--maxw);margin:0 auto;padding:0 26px}
+.mono{font-family:var(--mono)}
+
+.progress{position:fixed;top:0;left:0;height:3px;width:0;background:linear-gradient(90deg,var(--blue),var(--green-bright));z-index:100;transition:width .1s linear}
+
+header{position:fixed;top:0;left:0;right:0;z-index:90;backdrop-filter:blur(10px);background:rgba(8,11,18,.72);border-bottom:1px solid rgba(255,255,255,.06)}
+.hd{display:flex;align-items:center;justify-content:space-between;height:60px}
+.brand{display:flex;align-items:center;gap:11px;font-weight:750;letter-spacing:-.01em}
+.mark{width:30px;height:30px;border-radius:8px;background:linear-gradient(160deg,#12203b,#0a1120);display:grid;place-items:center;gap:2px;grid-auto-flow:column;box-shadow:inset 0 0 0 1px rgba(255,255,255,.08)}
+.mark i{width:3.5px;border-radius:2px;display:block}
+.mark i:nth-child(1){height:9px;background:#8fb0ff}.mark i:nth-child(2){height:15px;background:var(--blue-bright)}.mark i:nth-child(3){height:11px;background:var(--green-bright)}
+.hd-r{display:flex;align-items:center;gap:16px;font-size:.85rem}
+.hd-r .pill{color:#aab6c8}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:9px 16px;border-radius:999px;font-weight:650;font-size:.86rem;cursor:pointer;border:1px solid transparent;transition:transform .15s,background .15s,border-color .15s}
+.btn-primary{background:var(--blue);color:#fff}.btn-primary:hover{background:#3560e0;transform:translateY(-1px)}
+.btn-ghost{border-color:rgba(255,255,255,.16);color:#dbe4f2}.btn-ghost:hover{border-color:rgba(255,255,255,.4);background:rgba(255,255,255,.04)}
+.ext::after{content:"\2197";font-size:.9em;opacity:.8}
+:focus-visible{outline:2px solid var(--blue-bright);outline-offset:3px;border-radius:6px}
+
+.hero{position:relative;padding:148px 0 88px;overflow:hidden}
+.hero::before{content:"";position:absolute;inset:0;background:radial-gradient(1000px 500px at 74% -5%,rgba(63,107,240,.2),transparent 60%),radial-gradient(700px 420px at 8% 25%,rgba(47,169,104,.09),transparent 60%);pointer-events:none}
+.eyebrow{display:inline-flex;align-items:center;gap:9px;font-family:var(--mono);font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;color:#93c2a8;border:1px solid rgba(90,211,154,.25);padding:6px 13px;border-radius:999px;margin-bottom:26px}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--green);animation:pulse 2.4s ease-out infinite}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(47,169,104,.45)}70%{box-shadow:0 0 0 7px rgba(47,169,104,0)}100%{box-shadow:0 0 0 0 rgba(47,169,104,0)}}
+h1.hero-h{font-size:clamp(2.5rem,6vw,4.3rem);line-height:1.03;letter-spacing:-.03em;font-weight:800;max-width:17ch;text-wrap:balance}
+h1.hero-h .g{background:linear-gradient(100deg,#9db8ff,#6f9bff 60%,#5ad39a);-webkit-background-clip:text;background-clip:text;color:transparent}
+.hero-sub{margin-top:26px;font-size:clamp(1.05rem,2vw,1.28rem);color:#bcc8db;max-width:54ch;line-height:1.5}
+.hero-sub b{color:#fff;font-weight:700}
+.hero-cta{margin-top:34px;display:flex;gap:14px;flex-wrap:wrap;align-items:center}
+.scrollcue{margin-top:34px;display:inline-flex;align-items:center;gap:10px;color:#7f8da3;font-size:.8rem}
+.scrollcue .arw{width:22px;height:22px;border-radius:50%;border:1px solid rgba(255,255,255,.2);display:grid;place-items:center;animation:bob 1.8s ease-in-out infinite}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(4px)}}
+
+/* hero content visible by default; JS opts into the entrance so it can never render blank */
+@keyframes heroIn{from{opacity:0;transform:translateY(20px);filter:blur(6px)}to{opacity:1;transform:none;filter:none}}
+html.js .hero .eyebrow,html.js .hero h1,html.js .hero-sub,html.js .hero-cta,html.js .hcard,html.js .scrollcue{opacity:0;animation:heroIn .85s cubic-bezier(.2,.6,.2,1) forwards}
+html.js .hero .eyebrow{animation-delay:.05s}html.js .hero h1{animation-delay:.16s}html.js .hero-sub{animation-delay:.3s}html.js .hero-cta{animation-delay:.44s}html.js .hcard{animation-delay:.58s}html.js .scrollcue{animation-delay:.72s}
+
+/* hero proof card: before FAIL -> after PASS, resolves on green, reproduce line */
+.hcard{margin-top:50px;border:1px solid rgba(255,255,255,.1);border-radius:16px;background:linear-gradient(180deg,rgba(18,26,42,.72),rgba(10,15,25,.72));overflow:hidden;box-shadow:0 30px 70px -40px rgba(0,0,0,.8)}
+.hcard-head{display:flex;justify-content:space-between;align-items:center;padding:12px 22px;border-bottom:1px solid rgba(255,255,255,.07);font-family:var(--mono);font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;color:#8ea3c4}
+.hcard-head .live{display:inline-flex;align-items:center;gap:7px;color:#8fb6a0}
+.hcard-head .live i{width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse 2.4s ease-out infinite}
+.hstates{display:grid;grid-template-columns:1fr auto 1fr}
+.hstate{padding:24px 24px}
+.hstate .hl{font-family:var(--mono);font-size:.62rem;letter-spacing:.12em;text-transform:uppercase;color:#8ea3c4}
+.hstate .hv{margin-top:9px;font-size:1.55rem;font-weight:800;display:flex;align-items:center;gap:9px;letter-spacing:-.01em}
+.hstate.before .hv{color:#ff8f93}.hstate.after .hv{color:var(--green-bright)}
+.hstate .hd{margin-top:5px;color:#aeb9cc;font-size:.92rem;max-width:26ch}
+.harrow{align-self:center;color:#6c7b93;font-size:1.2rem;padding:0 6px}
+.hcard-repro{border-top:1px solid rgba(255,255,255,.07);padding:15px 24px;font-family:var(--mono);font-size:.82rem;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.hcard-repro .cmd{color:#e8edf6}.hcard-repro .cmd .p{color:var(--blue-bright)}
+.hcard-repro .res{color:var(--green-bright);font-weight:700}
+.hcard-repro .rn{color:#7f8da3;font-size:.77rem}
+.hcard-prov{border-top:1px solid rgba(255,255,255,.06);padding:11px 24px;font-family:var(--mono);font-size:.68rem;color:#6a7a92;letter-spacing:.02em}
+.hcard-prov b{color:#9db4d0;font-weight:600}
+.cmp-sub{margin-top:14px;text-align:center;font-size:.98rem;color:#93a1b8;max-width:60ch;margin-left:auto;margin-right:auto}
+.light .cmp-sub{color:#48566b}
+
+section.band{padding:90px 0}
+.light{background:var(--paper);color:var(--ink)}
+.kick{font-family:var(--mono);font-size:.74rem;letter-spacing:.13em;text-transform:uppercase;color:var(--blue);font-weight:700}
+h2{font-size:clamp(1.9rem,4vw,2.8rem);line-height:1.08;letter-spacing:-.025em;font-weight:800;margin-top:14px;max-width:20ch;text-wrap:balance}
+.lead{margin-top:18px;font-size:1.1rem;max-width:64ch;color:#c3cddd}
+.light .lead{color:#4a5568}
+
+/* visible by default (renders without JS); JS opts into the entrance animation */
+[data-reveal]{opacity:1}
+html.js [data-reveal]{opacity:0;transform:translateY(24px);filter:blur(7px);transition:opacity .8s cubic-bezier(.2,.6,.2,1),transform .8s cubic-bezier(.2,.6,.2,1),filter .8s cubic-bezier(.2,.6,.2,1)}
+html.js [data-reveal].in{opacity:1;transform:none;filter:none}
+.d1{transition-delay:.09s}.d2{transition-delay:.18s}.d3{transition-delay:.27s}
+
+/* respect the viewer's motion preference: the promise this whole product is about */
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{animation-duration:.001ms !important;animation-iteration-count:1 !important;transition-duration:.001ms !important;scroll-behavior:auto !important}
+  html.js [data-reveal]{opacity:1 !important;transform:none !important;filter:none !important}
+  html.js .hero .eyebrow,html.js .hero h1,html.js .hero-sub,html.js .hero-cta,html.js .hcard,html.js .scrollcue{opacity:1 !important;animation:none !important}
+}
+
+/* problem: the boundary-leak story lives here now */
+.prob-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:44px}
+.pcard{border:1px solid var(--paperline);border-radius:16px;padding:26px;background:#fff;transition:transform .18s,box-shadow .18s}
+.pcard:hover{transform:translateY(-4px);box-shadow:0 18px 40px -22px rgba(11,18,32,.4)}
+.pcard h3{font-size:1.15rem;letter-spacing:-.01em}
+.pcard p{margin-top:8px;color:#4a5568;font-size:.98rem}
+.pcard .tag{font-family:var(--mono);font-size:.68rem;letter-spacing:.09em;text-transform:uppercase;color:#8a93a3}
+.pcard.bad{border-color:rgba(229,72,77,.3);background:linear-gradient(180deg,#fff,#fff6f6)}
+.track{margin-top:24px;position:relative;display:grid;grid-template-columns:1fr auto 1fr;align-items:stretch;border:1px solid var(--paperline);border-radius:14px;overflow:hidden;background:#fff}
+.track::before{content:"";position:absolute;top:50%;left:9%;right:9%;height:2px;background:#e7ebf2;transform:translateY(-50%)}
+.zone{padding:22px 22px;display:flex;flex-direction:column;gap:6px;justify-content:center;position:relative;z-index:2}
+.zone .zk{font-family:var(--mono);font-size:.6rem;letter-spacing:.12em;text-transform:uppercase;color:#8a93a3}
+.zone .zv{font-size:1.02rem;font-weight:700;color:var(--ink)}
+.zone.leak{background:#fff6f6}.zone.leak .zv{color:var(--red-deep)}
+.gate{width:0;border-left:2px dashed #cfd6e2;position:relative;z-index:3}
+.gate .gl{position:absolute;top:10px;left:50%;transform:translateX(-50%);white-space:nowrap;font-family:var(--mono);font-size:.54rem;letter-spacing:.1em;text-transform:uppercase;color:#8a93a3;background:#fff;padding:3px 7px;border-radius:5px;border:1px solid var(--paperline)}
+.packet{position:absolute;top:50%;left:9%;width:11px;height:11px;margin-top:-6px;border-radius:50%;background:var(--red);box-shadow:0 0 10px 2px rgba(229,72,77,.5);z-index:4;animation:travel 3.4s cubic-bezier(.55,0,.5,1) infinite}
+@keyframes travel{0%{left:9%;opacity:0;transform:scale(.5)}9%{opacity:1;transform:scale(1)}58%{left:83%;opacity:1}70%{left:83%;transform:scale(1.3)}84%{left:83%;opacity:.5}100%{left:83%;opacity:0}}
+
+.roles{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:44px}
+.role{border:1px solid rgba(255,255,255,.1);border-radius:16px;padding:24px;background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(255,255,255,0));transition:transform .18s,border-color .18s}
+.role:hover{transform:translateY(-4px);border-color:rgba(255,255,255,.22)}
+.role .num{width:32px;height:32px;border-radius:9px;display:grid;place-items:center;font-family:var(--mono);font-weight:700;font-size:.86rem}
+.role.propose .num{background:rgba(63,107,240,.16);color:var(--blue-bright)}
+.role.approve .num{background:rgba(224,166,59,.16);color:var(--amber)}
+.role.decide .num{background:rgba(47,169,104,.18);color:var(--green-bright)}
+.role h3{margin-top:14px;font-size:1.12rem}
+.role .who{font-family:var(--mono);font-size:.68rem;letter-spacing:.08em;text-transform:uppercase;margin-top:4px}
+.role.propose .who{color:var(--blue-bright)}.role.approve .who{color:var(--amber)}.role.decide .who{color:var(--green-bright)}
+.role p{margin-top:11px;color:#aab6c8;font-size:.93rem}
+.role.decide{border-color:rgba(47,169,104,.35);background:linear-gradient(180deg,rgba(47,169,104,.08),rgba(47,169,104,0))}
+
+.tl{margin-top:44px;position:relative}
+.tl-line{position:absolute;left:19px;top:8px;bottom:8px;width:2px;background:rgba(63,107,240,.18)}
+.tl-line span{position:absolute;left:0;top:0;width:100%;background:linear-gradient(180deg,var(--blue),var(--blue-bright));height:0;transition:height .2s linear}
+.step{position:relative;padding:0 0 22px 58px}
+.step .ico{position:absolute;left:0;top:0;width:40px;height:40px;border-radius:11px;background:#0e1524;border:1px solid rgba(255,255,255,.12);display:grid;place-items:center;font-family:var(--mono);font-weight:700;font-size:.82rem;color:#7f8da3;z-index:2;transition:background .35s,color .35s,border-color .35s,box-shadow .35s}
+.step.active .ico{background:var(--blue);color:#fff;border-color:var(--blue);box-shadow:0 0 0 4px rgba(63,107,240,.16)}
+.step h3{font-size:1.1rem;letter-spacing:-.01em;display:flex;gap:12px;align-items:baseline;flex-wrap:wrap}
+.step h3 .who{font-family:var(--mono);font-size:.62rem;letter-spacing:.07em;text-transform:uppercase;color:#7f8da3;font-weight:600}
+.step p{margin-top:6px;color:#aab6c8;font-size:.95rem;max-width:62ch}
+.redteam{margin-top:38px;border:1px solid rgba(255,255,255,.1);border-left:4px solid var(--amber);border-radius:14px;padding:22px 24px;background:rgba(224,166,59,.05)}
+.redteam .rt-k{font-family:var(--mono);font-size:.66rem;letter-spacing:.1em;text-transform:uppercase;color:var(--amber);margin-bottom:8px}
+.redteam p{color:#c3cddd;max-width:72ch;font-size:1rem}.redteam b{color:#fff}
+.pcard code{font-family:var(--mono);font-size:.8em;background:#f0f1f6;padding:1px 6px;border-radius:5px;color:var(--red-deep);word-break:break-all}
+
+/* proof */
+.bigcompare{margin-top:44px;display:grid;grid-template-columns:1fr auto 1fr;gap:8px;align-items:center;max-width:640px}
+.bc{padding:22px 26px;border-radius:16px;text-align:center}
+.bc.b{background:linear-gradient(180deg,#fff,#fff6f6);border:1px solid rgba(229,72,77,.3)}
+.bc.a{background:linear-gradient(180deg,#fff,#f1fbf6);border:1px solid rgba(47,169,104,.35)}
+.bc .n{font-family:var(--mono);font-size:3rem;font-weight:800;line-height:1;font-variant-numeric:tabular-nums}
+.bc.b .n{color:var(--red-deep)}.bc.a .n{color:var(--green)}
+.bc .v{margin-top:8px;font-family:var(--mono);font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;font-weight:700}
+.bc.b .v{color:var(--red-deep)}.bc.a .v{color:var(--green)}
+.bc .c{margin-top:6px;font-size:.86rem;color:#5a6678}
+.bcarrow{font-size:1.6rem;color:#aeb6c2}
+.plainproof{margin-top:26px;font-size:1.05rem;color:#3a4658;max-width:60ch}
+.plainproof b{color:var(--ink)}
+
+.reveal-more{margin-top:40px;border-top:1px solid var(--paperline);padding-top:34px}
+.reveal-more .rm-tag{font-family:var(--mono);font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;color:#8a93a3}
+.receipt{margin-top:18px;display:grid;grid-template-columns:1.15fr .85fr;gap:20px}
+@media(max-width:820px){.receipt{grid-template-columns:1fr}.bigcompare{max-width:none}}
+.term{background:#0b111c;border:1px solid rgba(255,255,255,.1);border-radius:14px;overflow:hidden;font-family:var(--mono);font-size:.8rem;box-shadow:0 24px 60px -34px rgba(0,0,0,.5)}
+.term-bar{display:flex;align-items:center;gap:7px;padding:11px 14px;border-bottom:1px solid rgba(255,255,255,.08);color:#8ea3c4;font-size:.66rem;letter-spacing:.08em;text-transform:uppercase}
+.term-bar .d{width:9px;height:9px;border-radius:50%;background:#2c3646}
+.term-bar .d.r{background:#e5484d}.term-bar .d.y{background:#e0a63b}.term-bar .d.g{background:#2fa968}
+.term-bar .tt{margin-left:8px}
+.term-body{padding:16px;color:#c8d3e6;line-height:1.7;overflow-x:auto}
+.term-body .del{color:#ff9296}.term-body .add{color:var(--green-bright)}.term-body .mut{color:#5f6f88}.term-body .file{color:#8fb0ff}
+.term-body .fail{color:#ff8f93;font-weight:700}.term-body .pass{color:var(--green-bright);font-weight:700}
+.rmeta{display:flex;flex-direction:column;gap:12px}
+.rcard{border:1px solid var(--paperline);border-radius:12px;background:#fff;padding:15px 17px}
+.rcard .rk{font-family:var(--mono);font-size:.62rem;letter-spacing:.09em;text-transform:uppercase;color:#8a93a3}
+.rcard .rv{margin-top:5px;font-family:var(--mono);font-size:.8rem;color:var(--ink);word-break:break-all;line-height:1.5}
+.matrix{margin-top:10px;width:100%;border-collapse:collapse;font-size:.88rem}
+.matrix td{padding:8px 4px;border-bottom:1px solid var(--paperline);color:#4a5568}
+.matrix td:last-child{text-align:right;font-family:var(--mono);color:var(--green);font-weight:700;white-space:nowrap}
+.matrix tr:last-child td{border-bottom:0}
+
+.cmp{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:44px}
+.col{border-radius:18px;padding:30px}
+.col.them{border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.02)}
+.col.us{border:1px solid rgba(63,107,240,.4);background:linear-gradient(180deg,rgba(63,107,240,.1),rgba(63,107,240,.02))}
+.col h3{font-size:1.15rem}
+.col .cap{font-family:var(--mono);font-size:.68rem;letter-spacing:.09em;text-transform:uppercase;color:#8ea3c4}
+.col.us .cap{color:var(--blue-bright)}
+.crow{display:flex;gap:12px;align-items:flex-start;margin-top:15px;font-size:.96rem;color:#c3cddd}
+.crow .i{flex:none;width:20px;height:20px;border-radius:50%;display:grid;place-items:center;font-size:.72rem;font-weight:800;margin-top:1px}
+.them .i{background:rgba(229,72,77,.16);color:#ff9296}
+.us .i{background:rgba(47,169,104,.2);color:var(--green-bright)}
+.cmp-punch{margin-top:34px;text-align:center;font-size:clamp(1.2rem,2.6vw,1.65rem);font-weight:800;letter-spacing:-.02em}
+.cmp-punch .hl{color:var(--green-bright)}
+
+.faq{margin-top:42px;display:flex;flex-direction:column;gap:12px}
+.qa{border:1px solid var(--paperline);border-radius:14px;background:#fff;overflow:hidden}
+.qa summary{list-style:none;cursor:pointer;padding:20px 24px;font-weight:650;font-size:1.02rem;display:flex;justify-content:space-between;align-items:center;gap:16px;color:var(--ink)}
+.qa summary::-webkit-details-marker{display:none}
+.qa summary .pl{flex:none;width:22px;height:22px;border-radius:50%;border:1px solid var(--paperline);display:grid;place-items:center;color:var(--blue);font-family:var(--mono);transition:transform .25s}
+.qa[open] summary .pl{transform:rotate(45deg)}
+.qa .ans{padding:0 24px 22px;color:#4a5568;font-size:.98rem;max-width:74ch}
+
+.final{text-align:center;padding:100px 0}
+.final h2{margin:0 auto;max-width:22ch;color:#fff}
+.final .lead{margin:20px auto 0}
+.final-cta{margin-top:34px;display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
+
+footer{border-top:1px solid rgba(255,255,255,.08);padding:54px 0 40px;color:#8794a8;font-size:.88rem;background:#070a10}
+.foot{display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:34px}
+.foot-brand .brand{color:#dce4f2;margin-bottom:14px}
+.foot-tag{max-width:34ch;line-height:1.5;color:#9aa8bf}
+.foot-col{display:flex;flex-direction:column;gap:11px}
+.foot-h{font-family:var(--mono);font-size:.64rem;letter-spacing:.12em;text-transform:uppercase;color:#66748c;margin-bottom:3px}
+.foot-col a{color:#b7c2d4;transition:color .15s}.foot-col a:hover{color:#fff}
+.foot-note{margin-top:34px;padding-top:22px;border-top:1px solid rgba(255,255,255,.06);color:#66748c;font-size:.8rem;line-height:1.55;max-width:76ch}
+
+@media(max-width:820px){
+  .prob-grid,.roles,.cmp{grid-template-columns:1fr}
+  .foot{grid-template-columns:1fr 1fr}
+  .track,.hstates,.bigcompare{grid-template-columns:1fr}
+  .track::before{display:none}
+  .gate{width:auto;border-left:0;border-top:2px dashed #cfd6e2}
+  .gate .gl{position:static;transform:none;display:inline-block;margin:8px 0}
+  .packet,.harrow,.bcarrow{display:none}
+  .hd-r .pill{display:none}
+}
+</style>
+</head>
+<body>
+<script>document.documentElement.className+=" js";</script>
+
+<div class="progress" id="prog"></div>
+
+<header>
+  <div class="wrap hd">
+    <div class="brand"><span class="mark"><i></i><i></i><i></i></span> PromiseProof</div>
+    <div class="hd-r">
+      <span class="pill mono">Build Week 2026 / Developer Tools</span>
+      <a class="btn btn-ghost" href="#how">How it works</a>
+      <a class="btn btn-primary ext" href="/walkthrough/">Open the walkthrough</a>
+    </div>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="wrap">
+    <span class="eyebrow"><span class="dot"></span> Does your software keep its word to users?</span>
+    <h1 class="hero-h">Software makes promises. <span class="g">PromiseProof proves they're kept.</span></h1>
+    <p class="hero-sub">PromiseProof turns a user-facing promise, the kind you make with "off means off" or "deleted means deleted," into an executable check that a deterministic test, <b>never a model</b>, must sign off on. This prototype runs one such promise across UI, storage, network and backend, and finds <b>which boundary breaks it</b>.</p>
+    <div class="hero-cta">
+      <a class="btn btn-primary ext" href="/walkthrough/">Open the interactive walkthrough</a>
+      <a class="btn btn-ghost" href="#how">See how it works &darr;</a>
+    </div>
+
+    <div class="hcard">
+      <div class="hcard-head"><span>The promise: with "off" on, nothing that identifies the user should reach recommendations</span><span class="live"><i></i> reproducible</span></div>
+      <div class="hstates">
+        <div class="hstate before">
+          <div class="hl">Broken on seeded main</div>
+          <div class="hv">&#10007; FAIL</div>
+          <div class="hd">1 request that could identify the user slipped through, with "off" selected.</div>
+        </div>
+        <div class="harrow">&rarr;</div>
+        <div class="hstate after">
+          <div class="hl">Approved patch, verified in isolation</div>
+          <div class="hv">&#10003; PASS</div>
+          <div class="hd">0 slipped through. The allowed behavior still works.</div>
+        </div>
+      </div>
+      <div class="hcard-repro">
+        <span class="cmd"><span class="p">$</span> npm run test:repair:offline</span>
+        <span class="res">&rarr; PASS</span>
+        <span class="rn">run it yourself, offline. same verdict, every time.</span>
+      </div>
+      <div class="hcard-prov">recorded authentic runs: <b>GPT-5.6</b> diagnosis (Responses API), <b>Codex</b> repair (SDK, thread <b>019f6b28&#8230;</b>), rechecked offline</div>
+    </div>
+
+    <div class="scrollcue"><span class="arw">&darr;</span> here is the promise it caught being broken</div>
+  </div>
+</section>
+
+<section class="band light" id="problem">
+  <div class="wrap">
+    <span class="kick" data-reveal>The promise that broke</span>
+    <h2 data-reveal>A user turned it off. The app said "off." It wasn't.</h2>
+    <p class="lead" data-reveal>Software makes promises to users all the time. "We don't track you when this is off." "Deleted means deleted." They break silently, in the gaps between services, and nobody notices until it is a headline.</p>
+    <div class="prob-grid">
+      <div class="pcard" data-reveal>
+        <div class="tag">What the user did</div>
+        <h3>Turned personalization OFF, everywhere they could see</h3>
+        <p>The toggle, the saved setting, the backend flag. All off, and still off after a reload. They trust that means their activity stays private.</p>
+      </div>
+      <div class="pcard bad d1" data-reveal>
+        <div class="tag">What actually happened</div>
+        <h3>One request that could identify them still reached recommendations</h3>
+        <p>The app started collecting activity a split second <b>before</b> it finished loading the saved "off" setting. For that blink it behaved as if personalization were on, and a request that could identify the user escaped, exactly what the promise was meant to prevent.</p>
+      </div>
+    </div>
+    <div class="track" data-reveal>
+      <div class="zone"><span class="zk">Browser</span><span class="zv">Personalization OFF</span></div>
+      <div class="gate"><span class="gl">should block</span></div>
+      <div class="zone leak"><span class="zk">Recommendation service</span><span class="zv">Got 1 identifying request</span></div>
+      <span class="packet"></span>
+    </div>
+  </div>
+</section>
+
+<section class="band" id="how">
+  <div class="wrap">
+    <span class="kick" data-reveal>How it works</span>
+    <h2 data-reveal>You state the promise. A test, never a model, says if it's kept.</h2>
+    <p class="lead" data-reveal>The hard part is refusing to let the thing that could be wrong, a model, be the thing that says the promise holds. PromiseProof keeps three roles, and they never blur.</p>
+    <div class="roles">
+      <div class="role propose" data-reveal>
+        <div class="num">1</div><div class="who">You</div>
+        <h3>State the promise as a check</h3>
+        <p>Express what your software promises users, "off means off", as a check PromiseProof runs against a real browser journey and its network traffic, not against the model's word.</p>
+      </div>
+      <div class="role approve d1" data-reveal>
+        <div class="num">2</div><div class="who">GPT-5.6, bounded</div>
+        <h3>Find where it broke</h3>
+        <p>When the promise fails, GPT-5.6 reads the recorded evidence and ranks a short, fixed list of possible causes it is allowed to choose from, without changing anything. It then runs exactly one controlled replay that shows which layer actually broke, UI, storage, network or backend. It investigates; it never gets the verdict.</p>
+      </div>
+      <div class="role decide d2" data-reveal>
+        <div class="num">3</div><div class="who">A fixed test</div>
+        <h3>Own the verdict</h3>
+        <p>Deterministic code, never a model, returns PASS or FAIL on whether the promise held. The AI can diagnose it, and even fix it, but only the test decides it is kept.</p>
+      </div>
+    </div>
+    <div class="tl" id="tl" style="margin-top:50px">
+      <div class="tl-line"><span id="tlfill"></span></div>
+      <div class="step" data-reveal><div class="ico">01</div><h3>Observe <span class="who">automatic check</span></h3><p>Personalization is off, yet one identifying request crossed to recommendations. Verdict: broken promise.</p></div>
+      <div class="step" data-reveal><div class="ico">02</div><h3>Investigate <span class="who">GPT-5.6, read only</span></h3><p>GPT-5.6 reads the evidence and ranks the likely causes. Top suspect: the app collects before it finishes loading the saved setting.</p></div>
+      <div class="step" data-reveal><div class="ico">03</div><h3>Replay <span class="who">recorded</span></h3><p>A replay runs the exact startup order and captures it: collection started, the request crossed, and only then did the setting finish loading. Too late.</p></div>
+      <div class="step" data-reveal><div class="ico">04</div><h3>Repair <span class="who">Codex, then a human</span></h3><p>Codex works only inside a throwaway copy and touches two files: load the saved setting before collecting, and add a test that locks the order in. A human approves that exact patch.</p></div>
+      <div class="step" data-reveal><div class="ico">05</div><h3>Prove <span class="who">the same fixed test</span></h3><p>In a fresh copy, the unchanged test runs again. The off case passes, a control with personalization on still works, and the promise holds.</p></div>
+    </div>
+    <div class="redteam" data-reveal>
+      <div class="rt-k">The part that's easy to miss</div>
+      <p>Codex did not just write the patch. It <b>red-teamed the design</b> and found a way the model's own output could smuggle in a verdict. So the final investigation schema has <b>no verdict field at all</b>, and project code rejects any authoritative outcome language. The model literally cannot say "it's fixed."</p>
+    </div>
+  </div>
+</section>
+
+<section class="band light" id="proof">
+  <div class="wrap">
+    <span class="kick" data-reveal>The proof</span>
+    <h2 data-reveal>Not a claim. A result you can reproduce.</h2>
+    <div class="bigcompare" data-reveal>
+      <div class="bc b"><div class="n">1</div><div class="v">Before &#10007; FAIL</div><div class="c">identifying request leaked</div></div>
+      <div class="bcarrow">&rarr;</div>
+      <div class="bc a"><div class="n">0</div><div class="v">After &#10003; PASS</div><div class="c">leaked, feature still works</div></div>
+    </div>
+    <p class="plainproof" data-reveal>In plain terms: on a fresh isolated copy, the approved patch took the check from FAIL to PASS, and you can re-run that same check yourself and get the same verdict every time. <b>Authentic once, and deterministically rechecked offline.</b></p>
+
+    <div class="reveal-more">
+      <span class="rm-tag" data-reveal>For the skeptic, here is the actual evidence</span>
+      <div class="receipt">
+        <div class="term" data-reveal>
+          <div class="term-bar"><span class="d r"></span><span class="d y"></span><span class="d g"></span><span class="tt">the approved patch (abridged), src/client/main.ts</span></div>
+          <div class="term-body">
+<span class="mut">  // startup order, in the affected path</span><br>
+<span class="del">-   setStatus("Collector starting with the in-memory default...");</span><br>
+<span class="del">-   await runStartupCollector();   // collected first (the leak)</span><br>
+<span class="del">-   await hydratePreference();</span><br>
+<span class="add">+   setStatus("Restoring the saved preference before collection...");</span><br>
+<span class="add">+   await hydratePreference();     // load the saved "off" first</span><br>
+<span class="add">+   await runStartupCollector();   // only then collect</span><br>
+<span class="file">+ new tests/regression/initialization-order.spec.ts</span>  <span class="mut">// locks the order in</span><br>
+<span class="mut">  // exact bytes covered by the fingerprint at right</span>
+          </div>
+        </div>
+        <div class="rmeta">
+          <div class="rcard" data-reveal><div class="rk">Approved patch fingerprint</div><div class="rv">62e2924d0d5c6d88&#8230;83557f7</div><div class="rk" style="margin-top:8px">so nobody can quietly swap the fix</div></div>
+          <div class="rcard d1" data-reveal><div class="rk">The repair, an authentic Codex run</div><div class="rv">model gpt-5.6-sol<br>via openai-codex-sdk 0.144.4<br>logged: thread 019f6b28&#8230;</div></div>
+          <div class="rcard d2" data-reveal>
+            <div class="rk">The judge-facing checks, all pass</div>
+            <table class="matrix">
+              <tr><td>OFF (the promise)</td><td>PASS</td></tr>
+              <tr><td>Reload</td><td>PASS</td></tr>
+              <tr><td>ON control</td><td>PASS</td></tr>
+              <tr><td>Propagation control</td><td>PASS</td></tr>
+            </table>
+            <div class="rk" style="margin-top:9px">ON is supposed to work: it staying green proves the check flags the real leak without failing code that is actually fine.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="band light" id="breadth" style="border-top:1px solid var(--paperline)">
+  <div class="wrap">
+    <span class="kick" data-reveal>Not a one-trick fixture</span>
+    <h2 data-reveal>One promise. Two ways it breaks. The same machinery tells them apart.</h2>
+    <p class="lead" data-reveal>The demo app carries two independent faults that violate different clauses of the same "off means off" promise. They have different failure signatures, and the investigation names each one on its own.</p>
+    <div class="prob-grid">
+      <div class="pcard bad" data-reveal>
+        <div class="tag">Fault 1, repaired above</div>
+        <h3>A startup-order race</h3>
+        <p>Collection fires before the saved "off" preference loads, so one identifying request escapes. Signature: <code>PP_IDENTIFIABLE_EVENT_LEAK</code>. Diagnosis: inspect the startup order.</p>
+      </div>
+      <div class="pcard bad d1" data-reveal>
+        <div class="tag">Fault 2, independent control</div>
+        <h3>A write that does not stick</h3>
+        <p>The "off" write returns an OK receipt, yet a separate read still comes back ON. A test that checked only the write would pass; the replayed write-then-read catches it. Signature: <code>PP_PREFERENCE_NOT_PERSISTED</code>.</p>
+      </div>
+    </div>
+    <p class="cmp-sub" data-reveal>Same promise, two clauses, two signatures, two diagnoses, one evaluator. That is the difference between a fixed demo and a method.</p>
+  </div>
+</section>
+
+<section class="band" id="compare" style="background:var(--bg2)">
+  <div class="wrap">
+    <span class="kick" data-reveal>Why you can trust the verdict</span>
+    <h2 data-reveal>A model can say the promise holds. This lets you check for yourself.</h2>
+    <p class="lead" data-reveal>The trustworthy part is not that a model ran. It is what you can verify without taking anyone's word for it.</p>
+    <div class="roles">
+      <div class="role decide" data-reveal><div class="num">&check;</div><h3>A deterministic test owns it</h3><p>An unchanged Playwright journey and a fixed evaluator, not a model, return PASS or FAIL on whether the promise held.</p></div>
+      <div class="role decide d1" data-reveal><div class="num">&check;</div><h3>The run is authentic, and logged</h3><p>The GPT-5.6 diagnosis and the Codex repair really happened once, recorded with thread ids and the approved patch's fingerprint.</p></div>
+      <div class="role decide d2" data-reveal><div class="num">&check;</div><h3>You recheck it offline</h3><p>One command re-applies the approved patch to a fresh copy and re-runs the same check. Same verdict, every time.</p></div>
+    </div>
+    <p class="cmp-punch" data-reveal>Authentic once. <span class="hl">Deterministically rechecked offline.</span></p>
+    <p class="cmp-sub" data-reveal>This prototype demonstrates one "off means off" promise. The same pattern could extend to promises like "deleted means deleted."</p>
+  </div>
+</section>
+
+<section class="band light" id="faq">
+  <div class="wrap">
+    <span class="kick" data-reveal>Common questions</span>
+    <h2 data-reveal>The things a skeptic asks first.</h2>
+    <div class="faq">
+      <details class="qa" data-reveal><summary>What counts as a promise?<span class="pl">+</span></summary><div class="ans">A promise is any guarantee your software makes to users that you can express as a check, like "off means off" or "deleted means deleted." PromiseProof runs that check against a real browser journey and its network traffic, so the promise is judged by what actually happened, not by what a model claims. This prototype demonstrates one such promise, "off means off," across UI, storage, network and backend state. Its demo app also carries a second, independent fault that violates a different clause of the same promise, with its own distinct failure signature.</div></details>
+      <details class="qa" data-reveal><summary>How do I know the verdict isn't just the AI's opinion?<span class="pl">+</span></summary><div class="ans">Because the AI never gives the verdict. An unchanged Playwright journey and a fixed evaluator run the check against reproducible evidence and return PASS or FAIL. GPT-5.6 only investigates, read only, ranking a set of registered candidate causes; if a fix is needed a human approves the exact patch by its fingerprint; the test alone decides the promise is kept.</div></details>
+      <details class="qa" data-reveal><summary>Is the run real, or cached?<span class="pl">+</span></summary><div class="ans">The diagnosis is a recorded authentic GPT-5.6 run through OpenAI's Responses API. The repair is a recorded authentic Codex SDK run, version 0.144.4, one Codex turn, with a logged thread id and the approved patch's fingerprint. It happened once. The offline command replays that recorded evidence and re-runs the check, so the verdict is the same every time. The point is not that a model runs live; it is that the result is authentic and deterministically repeatable.</div></details>
+    </div>
+  </div>
+</section>
+
+<section class="band final" style="background:var(--bg2)">
+  <div class="wrap">
+    <span class="kick" data-reveal style="display:block;text-align:center">Explore it yourself</span>
+    <h2 data-reveal>The verdict isn't ours to give. That's the point.</h2>
+    <p class="lead" data-reveal>Step through the live walkthrough, or read the reproducible evidence in the repo. Then decide for yourself.</p>
+    <div class="final-cta">
+      <a class="btn btn-primary ext" href="/walkthrough/" data-reveal>Open the interactive walkthrough</a>
+      <a class="btn btn-ghost" href="https://github.com/AlexPaiva/PromiseProof" data-reveal>Read the evidence on GitHub</a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="foot">
+      <div class="foot-brand">
+        <div class="brand"><span class="mark"><i></i><i></i><i></i></span> PromiseProof</div>
+        <p class="foot-tag">A fixed test, never the AI, decides whether software keeps its promise.</p>
+      </div>
+      <div class="foot-col">
+        <span class="foot-h">Explore</span>
+        <a href="#problem">The promise that broke</a>
+        <a href="#how">How it works</a>
+        <a href="#proof">The proof</a>
+        <a href="#compare">The difference</a>
+      </div>
+      <div class="foot-col">
+        <span class="foot-h">Project</span>
+        <a href="/walkthrough/">Interactive walkthrough</a>
+        <a href="https://github.com/AlexPaiva/PromiseProof">GitHub repository</a>
+        <a href="#faq">Questions</a>
+      </div>
+    </div>
+    <p class="foot-note">Signal Shelf is a demo app built to make one broken promise visible; scope is a single synthetic initialization-order repair. The diagnosis is a recorded authentic GPT-5.6 run (Responses API); the repair is a recorded authentic Codex SDK run. The approved patch was verified in a disposable worktree while canonical main stays seeded-broken, and this page replays the recorded, fingerprinted result with no live model calls. Built for OpenAI Build Week 2026, Developer Tools.</p>
+  </div>
+</footer>
+
+<script>
+const prog=document.getElementById('prog');
+addEventListener('scroll',()=>{const h=document.documentElement;prog.style.width=(h.scrollTop/(h.scrollHeight-h.clientHeight)*100)+'%';},{passive:true});
+function smoothTo(y){if(matchMedia('(prefers-reduced-motion: reduce)').matches){scrollTo(0,y);return;}
+  const start=pageYOffset,dist=y-start,dur=Math.min(1000,Math.max(420,Math.abs(dist)*0.42)),t0=performance.now();
+  function ease(t){return t<.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2;}
+  function step(now){const p=Math.min(1,(now-t0)/dur);scrollTo(0,start+dist*ease(p));if(p<1)requestAnimationFrame(step);}
+  requestAnimationFrame(step);}
+document.querySelectorAll('a[href^="#"]').forEach(a=>a.addEventListener('click',e=>{
+  const id=a.getAttribute('href');if(!id||id.length<2)return;const t=document.querySelector(id);if(!t)return;
+  e.preventDefault();smoothTo(t.getBoundingClientRect().top+pageYOffset-72);
+}));
+const io=new IntersectionObserver((es)=>{es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target);}})},{threshold:.14});
+document.querySelectorAll('[data-reveal]').forEach(el=>io.observe(el));
+const tl=document.getElementById('tl'),fill=document.getElementById('tlfill'),steps=[...document.querySelectorAll('#tl .step')];
+addEventListener('scroll',()=>{if(!tl)return;const r=tl.getBoundingClientRect();const seen=Math.min(r.height,Math.max(0,innerHeight*0.55-r.top));fill.style.height=(seen/r.height*100)+'%';},{passive:true});
+steps.forEach(s=>new IntersectionObserver((es,ob)=>{es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('active');ob.disconnect();}})},{threshold:.5,rootMargin:'0px 0px -30% 0px'}).observe(s));
+</script>
+
+</body>
+</html>

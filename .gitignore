@@ -24,3 +24,8 @@ artifacts/*.tmp-*
 
 # Generated static-deploy bundle for the /judge page (rebuild from dist/client).
 promiseproof-judge.zip
+
+# Generated combined-site bundle (rebuild with `npm run build:site`) and local
+# backups of previously deployed sites — neither belongs in version control.
+promiseproof-site.zip
+site-backups/
