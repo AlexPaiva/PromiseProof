@@ -82,23 +82,29 @@ pre {
   gap: 12px;
 }
 
+/* Logo badge — mirrors the favicon so the brand reads consistently in the
+   header, the browser tab, and any social/share preview. */
 .judge-mark {
   display: grid;
-  grid-template-columns: repeat(3, 5px);
+  grid-template-columns: repeat(3, 4px);
   gap: 3px;
   align-items: end;
+  padding: 8px 8px 7px;
+  background: var(--navy);
+  border-radius: 9px;
+  box-shadow: 0 4px 12px -4px rgb(14 22 33 / 30%);
 }
 
 .judge-mark span {
   display: block;
-  width: 5px;
+  width: 4px;
   border-radius: 2px;
-  background: var(--blue);
+  background: #3f6bf0;
 }
 
-.judge-mark span:nth-child(1) { height: 11px; }
-.judge-mark span:nth-child(2) { height: 18px; }
-.judge-mark span:nth-child(3) { height: 8px; background: var(--breach); }
+.judge-mark span:nth-child(1) { height: 9px; }
+.judge-mark span:nth-child(2) { height: 15px; }
+.judge-mark span:nth-child(3) { height: 7px; background: #e0554d; }
 
 .judge-brand-text {
   display: flex;
@@ -215,6 +221,63 @@ pre {
   gap: 15px;
 }
 
+/* Stage-to-stage crossfade: the host eases the old content out, the content is
+   swapped while invisible (so height never jumps), then the new content eases
+   in. */
+.judge-stage {
+  transition:
+    opacity 0.36s cubic-bezier(0.22, 0.61, 0.36, 1),
+    transform 0.36s cubic-bezier(0.22, 0.61, 0.36, 1);
+  will-change: opacity, transform;
+}
+
+.judge-stage.is-leaving {
+  opacity: 0;
+  transform: translateY(-8px);
+  transition:
+    opacity 0.16s ease,
+    transform 0.16s ease;
+}
+
+.judge-stage.is-entering {
+  opacity: 0;
+  transform: translateY(14px);
+  transition: none;
+}
+
+/* Every stage cascades its blocks in on arrival. renderInto() builds a fresh
+   .stage node on each navigation, so this replays for every step, not just the
+   first load. This is the motion the eye actually reads as "it animated". */
+.stage > * {
+  animation: ppStageChild 0.52s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+}
+.stage > *:nth-child(1) {
+  animation-delay: 0.04s;
+}
+.stage > *:nth-child(2) {
+  animation-delay: 0.11s;
+}
+.stage > *:nth-child(3) {
+  animation-delay: 0.18s;
+}
+.stage > *:nth-child(4) {
+  animation-delay: 0.25s;
+}
+.stage > *:nth-child(n + 5) {
+  animation-delay: 0.32s;
+}
+
+@keyframes ppStageChild {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
 .stage-header {
   display: flex;
   align-items: flex-start;
@@ -232,11 +295,28 @@ pre {
 
 .stage-eyebrow {
   margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
   font-family: var(--mono);
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
   font-size: 0.69rem;
   font-weight: 700;
+}
+
+.stage-step {
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--muted);
+  background: var(--canvas);
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  padding: 3px 9px;
+  font-variant-numeric: tabular-nums;
+}
+
+.stage-eyebrow-label {
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
   color: var(--blue);
 }
 
@@ -267,6 +347,93 @@ pre {
   color: var(--ink-soft);
   font-size: 0.78rem;
   font-weight: 600;
+}
+
+/* --------------------- explainer tooltips (?) ---------------------- */
+
+.info {
+  position: relative;
+  display: inline-flex;
+  vertical-align: middle;
+  margin-left: 5px;
+}
+
+.info-dot {
+  width: 15px;
+  height: 15px;
+  padding: 0;
+  border-radius: 50%;
+  border: 1px solid var(--line-strong);
+  background: var(--surface);
+  color: var(--muted);
+  font-family: var(--font);
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: help;
+  display: grid;
+  place-items: center;
+}
+
+.info-dot:hover,
+.info-dot:focus-visible {
+  border-color: var(--blue);
+  color: var(--blue);
+  background: var(--blue-soft);
+}
+
+.info-pop {
+  position: absolute;
+  top: calc(100% + 8px);
+  z-index: 70;
+  width: max-content;
+  max-width: 250px;
+  padding: 9px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--line-strong);
+  background: var(--ink);
+  color: #fff;
+  font-family: var(--font);
+  font-size: 0.74rem;
+  font-weight: 500;
+  line-height: 1.45;
+  letter-spacing: normal;
+  text-transform: none;
+  box-shadow: 0 12px 30px -10px rgb(14 22 33 / 45%);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-4px);
+  pointer-events: none;
+}
+
+.info-pop-start { left: -6px; }
+.info-pop-end { right: -6px; }
+
+.info-pop::before {
+  content: "";
+  position: absolute;
+  bottom: 100%;
+  width: 8px;
+  height: 8px;
+  background: var(--ink);
+  border-left: 1px solid var(--line-strong);
+  border-top: 1px solid var(--line-strong);
+  transform: translateY(50%) rotate(45deg);
+}
+
+.info-pop-start::before { left: 11px; }
+.info-pop-end::before { right: 11px; }
+
+.info-dot:hover + .info-pop,
+.info-dot:focus + .info-pop,
+.info:hover .info-pop {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.info-pop {
+  transition: opacity 140ms ease, transform 140ms ease;
 }
 
 .panel-eyebrow {
@@ -1297,6 +1464,11 @@ pre {
   gap: 8px;
 }
 
+.groups-pill-wrap {
+  display: inline-flex;
+  align-items: center;
+}
+
 .groups-pill {
   display: inline-flex;
   align-items: center;
@@ -1506,6 +1678,165 @@ pre {
   color: var(--muted);
 }
 
+/* -------------------- topbar actions + how-it-works ---------------- */
+
+.judge-topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.judge-how-button {
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--ink);
+  background: var(--ink);
+  color: #fff;
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.judge-how-button {
+  transition: transform 120ms ease, background-color 120ms ease;
+}
+.judge-how-button:hover {
+  transform: translateY(-1px);
+  background: #1b2838;
+}
+
+.judge-modal[hidden] {
+  display: none;
+}
+
+.judge-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+
+.judge-modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgb(14 22 33 / 55%);
+  backdrop-filter: blur(2px);
+}
+
+.judge-modal-card {
+  position: relative;
+  width: min(540px, 100%);
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: 0 30px 80px -20px rgb(14 22 33 / 45%);
+  padding: 30px 32px 26px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.judge-modal-title {
+  margin: 0 0 2px;
+  font-size: 1.45rem;
+  font-weight: 750;
+  letter-spacing: -0.02em;
+}
+
+.judge-modal-text {
+  margin: 0;
+  font-size: 0.92rem;
+  line-height: 1.6;
+  color: var(--ink-soft);
+}
+
+.judge-modal-text:last-of-type {
+  font-weight: 650;
+  color: var(--ink);
+}
+
+.judge-modal-close {
+  align-self: flex-start;
+  margin-top: 8px;
+}
+
+.judge-modal-card {
+  animation: ppPop 0.22s ease both;
+}
+
+/* --------------------------- fork code chip ------------------------ */
+
+.fork-top-code {
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  color: var(--breach);
+  background: var(--surface);
+  border: 1px solid var(--breach-line);
+  border-radius: 6px;
+  padding: 3px 8px;
+}
+
+/* --------------------------- replay toolbar ------------------------ */
+
+.replay-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.replay-toolbar-hint {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--ink-soft);
+}
+
+.replay-again {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 16px;
+  border-radius: 999px;
+  border: 1px solid var(--blue);
+  background: var(--blue-soft);
+  color: var(--blue);
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.replay-again::before {
+  content: "";
+  width: 0;
+  height: 0;
+  border-top: 5px solid transparent;
+  border-bottom: 5px solid transparent;
+  border-left: 8px solid var(--blue);
+}
+
+.replay-again {
+  transition: transform 120ms ease, background-color 120ms ease;
+}
+.replay-again:hover {
+  transform: translateY(-1px);
+  background: #e3ebfe;
+}
+
+.replay-slot {
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+}
+
 /* ------------------------------ focus ------------------------------ */
 
 :where(button, summary, a, [tabindex]):focus-visible {
@@ -1546,9 +1877,14 @@ pre {
   100% { box-shadow: 0 0 0 12px rgb(179 38 30 / 0%); }
 }
 
+@keyframes ppStageIn {
+  from { opacity: 0; transform: translateY(9px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
 /*
- * One Replay reveal, once per mount. The authored default (below) is the
- * resolved end-state, so reduced motion simply shows everything immediately.
+ * One Replay reveal, once per mount. The classes below play the recorded
+ * timeline in, each landing on its resolved end-state.
  */
 .ppa-spine { animation: ppDrawY 0.8s ease both; animation-delay: 0.2s; }
 .ppa-e1 { animation: ppRise 0.5s ease both; animation-delay: 0.3s; }
@@ -1559,28 +1895,91 @@ pre {
 .ppa-e3 { animation: ppRise 0.5s ease both; animation-delay: 1.35s; }
 .ppa-finding { animation: ppRise 0.6s ease both; animation-delay: 1.65s; }
 
-@media (prefers-reduced-motion: no-preference) {
-  /* Only footer controls carry a hover transition; nav state is instant. */
-  .judge-button {
-    transition:
-      background-color 120ms ease,
-      border-color 120ms ease,
-      color 120ms ease;
-  }
+/* Footer controls and card surfaces carry restrained hover feedback; the
+   highlighted-stage nav state itself is applied instantly in JS so it can
+   never lag the rendered stage. */
+.judge-button {
+  transition:
+    transform 120ms ease,
+    background-color 120ms ease,
+    border-color 120ms ease,
+    color 120ms ease;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .ppa {
-    animation: none !important;
-  }
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-    scroll-behavior: auto !important;
-  }
+.judge-button-primary:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+.judge-button:not(.judge-button-primary):hover:not(:disabled) {
+  border-color: var(--line-strong);
+  background: var(--canvas);
+}
+
+/* Interactive evidence cards lift subtly under the cursor. */
+.matrix-row,
+.hypothesis-card,
+.lane-card,
+.control-card,
+.guardrail,
+.proof-lock,
+.boundary-node,
+.code-block,
+.attribution-item,
+.registered-replay {
+  transition:
+    transform 150ms ease,
+    box-shadow 150ms ease,
+    border-color 150ms ease;
+}
+
+.matrix-row:hover,
+.hypothesis-card:hover,
+.lane-card:hover,
+.control-card:hover,
+.guardrail:hover,
+.proof-lock:hover,
+.code-block:hover,
+.registered-replay:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 14px 30px -12px rgb(14 22 33 / 22%);
+}
+
+.boundary-node:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 22px -12px rgb(14 22 33 / 20%);
+}
+
+.attribution-item:hover {
+  transform: translateY(-2px);
+}
+
+.evidence-summary {
+  transition: background-color 140ms ease, color 140ms ease;
+}
+
+.evidence-summary:hover {
+  background: var(--canvas);
+  color: var(--ink);
+}
+
+/* Guided auto-play progress bar (opt-in via ?play=1). */
+.judge-progress {
+  position: fixed;
+  inset: 0 0 auto 0;
+  height: 3px;
+  z-index: 60;
+  display: none;
+  background: rgb(31 79 216 / 14%);
+}
+
+#judge-root[data-playing="true"] .judge-progress {
+  display: block;
+}
+
+.judge-progress-fill {
+  height: 100%;
+  width: 0;
+  background: var(--blue);
 }
 
 /* ---------------------------- responsive --------------------------- */

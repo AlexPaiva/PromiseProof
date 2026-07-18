@@ -86,10 +86,13 @@ function required<T extends HTMLElement>(selector: string): T {
   return node;
 }
 
+const STAGE_COUNT = 5;
+
 function stageHeader(
   eyebrow: string,
   title: string,
   options: {
+    readonly step?: number;
     readonly lede?: string;
     readonly titleTestId?: string;
     readonly aside?: HTMLElement;
@@ -97,7 +100,20 @@ function stageHeader(
 ): HTMLElement {
   const header = element("header", "stage-header");
   const main = element("div", "stage-head-main");
-  main.append(element("p", "stage-eyebrow", eyebrow));
+
+  const eyebrowRow = element("p", "stage-eyebrow");
+  if (options.step !== undefined) {
+    eyebrowRow.append(
+      element(
+        "span",
+        "stage-step",
+        `Step ${String(options.step)} / ${String(STAGE_COUNT)}`,
+      ),
+    );
+  }
+  eyebrowRow.append(element("span", "stage-eyebrow-label", eyebrow));
+  main.append(eyebrowRow);
+
   const title1 = element("h1", "stage-title", title);
   if (options.titleTestId !== undefined) {
     title1.dataset.testid = options.titleTestId;
@@ -122,6 +138,40 @@ function provenanceTag(text: string, testId: string): HTMLElement {
 function arrow(text: string, className: string): HTMLElement {
   const node = element("span", className, text);
   node.setAttribute("aria-hidden", "true");
+  return node;
+}
+
+let infoCounter = 0;
+
+/**
+ * A small, keyboard-accessible "?" that reveals a plain-language explanation of
+ * a domain term on hover or focus. Hidden by default, so it never clutters a
+ * still; it only appears when a presenter hovers it in the walkthrough video.
+ */
+function infoDot(term: string, explanation: string, align: "start" | "end" = "start"): HTMLElement {
+  const wrap = element("span", "info");
+  const id = `info-tip-${String((infoCounter += 1))}`;
+  const button = element("button", "info-dot", "?");
+  button.type = "button";
+  button.setAttribute("aria-label", `Explain: ${term}`);
+  button.setAttribute("aria-describedby", id);
+  const pop = element("span", `info-pop info-pop-${align}`, explanation);
+  pop.id = id;
+  pop.setAttribute("role", "tooltip");
+  wrap.append(button, pop);
+  return wrap;
+}
+
+function labelWithInfo(
+  tag: keyof HTMLElementTagNameMap,
+  className: string,
+  text: string,
+  term: string,
+  explanation: string,
+  align: "start" | "end" = "start",
+): HTMLElement {
+  const node = element(tag, className);
+  node.append(document.createTextNode(text), infoDot(term, explanation, align));
   return node;
 }
 
@@ -165,6 +215,10 @@ function renderObserve(data: JudgeData): HTMLElement {
     stageHeader(
       "Observe",
       "Personalization was OFF. Identifiable activity still reached recommendations.",
+      {
+        step: 1,
+        lede: "The user's choice was OFF everywhere they could see. Watch what still crossed to the recommendation service.",
+      },
     ),
   );
 
@@ -176,7 +230,7 @@ function renderObserve(data: JudgeData): HTMLElement {
       variant: "neutral",
       eyebrow: "Personalization",
       value: data.bundle.observedContradiction.scenario.toUpperCase(),
-      note: "chosen by the user · survives reload",
+      note: "The user turned it off, and it stays off after a reload.",
       testId: "observe-beat-off",
     }),
   );
@@ -216,16 +270,24 @@ function renderObserve(data: JudgeData): HTMLElement {
 function renderBoundaryStrip(data: JudgeData): HTMLElement {
   const strip = element("div", "boundary-strip");
   strip.dataset.testid = "observe-boundary";
-  strip.append(element("p", "panel-eyebrow", "Where the boundary sits"));
+  strip.append(
+    labelWithInfo(
+      "p",
+      "panel-eyebrow",
+      "Where the boundary sits",
+      "Service boundary",
+      "The line between the browser and the recommendation service. Identifiable activity crossing it while personalization is OFF is the broken promise.",
+    ),
+  );
 
   const row = element("div", "boundary-row");
   const browser = element("div", "boundary-node");
   browser.append(element("p", "boundary-name", "Browser"));
-  browser.append(element("p", "boundary-detail", "Signal Shelf · OFF"));
+  browser.append(element("p", "boundary-detail", "The app the user sees says OFF"));
 
   const preference = element("div", "boundary-node");
-  preference.append(element("p", "boundary-name", "Preference state"));
-  preference.append(element("p", "boundary-detail", "Stored OFF · Backend OFF"));
+  preference.append(element("p", "boundary-name", "Saved preference"));
+  preference.append(element("p", "boundary-detail", "Storage and backend both say OFF"));
 
   const service = element("div", "boundary-node boundary-node-service");
   service.append(element("p", "boundary-name", "Recommendation service"));
@@ -233,7 +295,7 @@ function renderBoundaryStrip(data: JudgeData): HTMLElement {
     element(
       "p",
       "boundary-detail",
-      `Received ${String(data.raceFacts.identifiableActivityReceipts)} identifiable`,
+      `Still received ${String(data.raceFacts.identifiableActivityReceipts)} identifiable request`,
     ),
   );
 
@@ -241,13 +303,13 @@ function renderBoundaryStrip(data: JudgeData): HTMLElement {
   strip.append(row);
 
   const chips = element("div", "state-chips");
-  for (const chip of ["Personalization · OFF", "Stored · OFF", "Backend · OFF"]) {
+  for (const chip of ["Personalization OFF", "Storage OFF", "Backend OFF"]) {
     chips.append(element("span", "state-chip", chip));
   }
   const breach = element(
     "span",
     "state-chip state-chip-breach",
-    `Identifiable activity · ${String(data.raceFacts.identifiableActivityRequests)} ✕`,
+    `${String(data.raceFacts.identifiableActivityRequests)} identifiable request got through`,
   );
   chips.append(breach);
   strip.append(chips);
@@ -261,17 +323,29 @@ function renderNegativeControl(data: JudgeData): HTMLElement {
   const check = element("span", "control-check", "✓");
   check.setAttribute("aria-hidden", "true");
   head.append(check);
-  head.append(element("p", "control-title", "Contextual recommendations kept working"));
+  head.append(
+    labelWithInfo(
+      "p",
+      "control-title",
+      "Contextual recommendations kept working",
+      "Contextual recommendations",
+      "These are recommendations chosen without any user identity. This is the mode OFF is meant to use, and it kept working.",
+    ),
+  );
   card.append(head);
   card.append(
     element(
       "p",
       "control-body",
-      "The OFF experience still served a working contextual feed — a boundary that let identifiable activity through, not a broken feature.",
+      "So the feature itself is fine. Recommendations still work with personalization off. The only problem is that one identifiable request slipped across the boundary.",
     ),
   );
   card.append(
-    element("p", "source-note", `${data.feedClause} · negative control · passed`),
+    element(
+      "p",
+      "source-note",
+      "This is the control that proves a fix cannot simply switch recommendations off.",
+    ),
   );
   return card;
 }
@@ -280,7 +354,7 @@ function renderEvidenceBasis(data: JudgeData): HTMLElement {
   const details = element("details", "evidence-basis");
   details.dataset.testid = "observe-evidence-basis";
   details.append(
-    element("summary", "evidence-summary", "Evidence basis · clause IDs & sources"),
+    element("summary", "evidence-summary", "Show the underlying checks and sources"),
   );
   const list = element("div", "evidence-list");
 
@@ -345,6 +419,7 @@ function renderInvestigate(data: JudgeData): HTMLElement {
       "Investigate",
       "Two implementation boundaries can break the same promise.",
       {
+        step: 2,
         lede: "For this recorded failure, GPT-5.6 ranked the candidate explanations and selected one registered replay.",
         aside: provenanceTag(
           data.bundle.investigation.label,
@@ -358,16 +433,13 @@ function renderInvestigate(data: JudgeData): HTMLElement {
   fork.dataset.testid = "investigate-fork";
 
   const top = element("div", "fork-top");
-  top.append(element("span", "fork-top-eyebrow", "Observed contradiction"));
-  top.append(
-    element(
-      "span",
-      "fork-top-value",
-      `Broken promise · ${data.bundle.observedContradiction.violationCode}`,
-    ),
-  );
+  top.append(element("span", "fork-top-eyebrow", "What we know"));
+  top.append(element("span", "fork-top-value", "The promise is broken"));
+  const code = element("code", "fork-top-code");
+  code.textContent = data.bundle.observedContradiction.violationCode;
+  top.append(code);
   fork.append(top);
-  fork.append(element("p", "fork-split", "↙ two possible boundaries ↘"));
+  fork.append(element("p", "fork-split", "But two different code paths could explain it"));
 
   const cards = element("div", "hypothesis-grid");
   for (const hypothesis of data.bundle.initialHypotheses) {
@@ -379,7 +451,15 @@ function renderInvestigate(data: JudgeData): HTMLElement {
   down.append(arrow("↓", "fork-down-arrow"));
   const chip = element("div", "registered-replay");
   chip.dataset.testid = "registered-replay";
-  chip.append(element("span", "registered-replay-eyebrow", "Registered replay"));
+  chip.append(
+    labelWithInfo(
+      "span",
+      "registered-replay-eyebrow",
+      "Registered replay",
+      "Registered replay",
+      "A small, pre-approved diagnostic the model can ask for by name. It cannot run arbitrary code. Our own code runs the check and records what happened.",
+    ),
+  );
   chip.append(
     element(
       "span",
@@ -404,7 +484,7 @@ function renderInvestigate(data: JudgeData): HTMLElement {
   lanes.append(
     laneCard(
       "Model diagnostic proposal",
-      "Ranked explanations · one replay request",
+      "Ranked the explanations, asked for one replay",
       "A proposal only. It cannot decide the outcome.",
       "model",
     ),
@@ -469,6 +549,7 @@ function renderReplay(data: JudgeData): HTMLElement {
       "Replay",
       "GPT-5.6 selected one registered replay to test the leading explanation.",
       {
+        step: 3,
         lede: data.bundle.investigation.replayExpectation,
         aside: provenanceTag("Recorded authentic replay", "replay-provenance"),
       },
@@ -478,7 +559,15 @@ function renderReplay(data: JudgeData): HTMLElement {
   const selected = element("div", "selected-replay");
   selected.dataset.testid = "selected-replay";
   const selectedMain = element("div", "selected-replay-main");
-  selectedMain.append(element("p", "selected-replay-eyebrow", "Selected replay"));
+  selectedMain.append(
+    labelWithInfo(
+      "p",
+      "selected-replay-eyebrow",
+      "Selected replay",
+      "Who runs the replay",
+      "The model only names the replay. Our own code runs it and records the order of events. The model never runs or checks it.",
+    ),
+  );
   selectedMain.append(
     element(
       "p",
@@ -497,9 +586,29 @@ function renderReplay(data: JudgeData): HTMLElement {
   );
   section.append(selected);
 
-  section.append(renderFlightRecorder(data));
-  section.append(renderFlightRecorderCompact(data));
-  section.append(renderReplayFinding(data));
+  const toolbar = element("div", "replay-toolbar");
+  toolbar.append(
+    element("p", "replay-toolbar-hint", "Watch the identifiable request cross the boundary:"),
+  );
+  const playAgain = element("button", "replay-again", "Play the crossing");
+  playAgain.type = "button";
+  playAgain.dataset.testid = "replay-again";
+  toolbar.append(playAgain);
+  section.append(toolbar);
+
+  // The reveal is a fresh CSS animation on mount, so re-rendering these nodes
+  // replays it on demand — the crossing is the one moment judges should see move.
+  const slot = element("div", "replay-slot");
+  const fill = (): void => {
+    slot.replaceChildren(
+      renderFlightRecorder(data),
+      renderFlightRecorderCompact(data),
+      renderReplayFinding(data),
+    );
+  };
+  fill();
+  playAgain.addEventListener("click", fill);
+  section.append(slot);
   return section;
 }
 
@@ -547,7 +656,9 @@ function renderFlightRecorder(data: JudgeData): HTMLElement {
     }
     card.append(cardHead);
     const raw =
-      layout.crossing === true ? `${event} · receipt ×${String(data.raceFacts.identifiableActivityReceipts)}` : event;
+      layout.crossing === true
+        ? `${event}  (${String(data.raceFacts.identifiableActivityReceipts)} receipt recorded)`
+        : event;
     card.append(element("code", "fr-event-raw", raw));
     rec.append(card);
   });
@@ -571,8 +682,8 @@ function renderFlightRecorderCompact(data: JudgeData): HTMLElement {
     }
     const badge =
       layout.crossing === true
-        ? `${String(index + 1).padStart(2, "0")} · CROSSED → SERVICE`
-        : `${String(index + 1).padStart(2, "0")} · ${layout.side.toUpperCase()}`;
+        ? `${String(index + 1).padStart(2, "0")}  crossed to the service`
+        : `${String(index + 1).padStart(2, "0")}  ${layout.side}`;
     item.append(element("p", "fr-compact-badge", badge));
     item.append(element("p", "fr-compact-name", TIMELINE_TITLES[event]));
     if (layout.tag !== undefined) {
@@ -605,6 +716,8 @@ function renderRepair(data: JudgeData): HTMLElement {
       "Repair",
       "Source changes were allowed only after evidence supported the boundary.",
       {
+        step: 4,
+        lede: "Codex could change exactly two files, in a throwaway checkout. The whole fix is a two-line reorder, nothing more.",
         aside: provenanceTag(data.bundle.repair.label, "repair-provenance"),
       },
     ),
@@ -614,7 +727,7 @@ function renderRepair(data: JudgeData): HTMLElement {
   const swap = element("div", "swap-card");
   swap.dataset.testid = "repair-diff";
   swap.append(
-    element("p", "swap-path", `${data.bundle.repair.changedPaths[0]} · initialization order`),
+    element("p", "swap-path", `In ${data.bundle.repair.changedPaths[0]}, the startup order`),
   );
   const columns = element("div", "swap-columns");
   columns.append(codeBlock("Before", ["runStartupCollector()", "hydratePreference()"], "before"));
@@ -688,10 +801,23 @@ function renderGuardrail(data: JudgeData): HTMLElement {
     approvalText.dataset.testid = "repair-approval";
     approvalText.dataset.approval = data.bundle.repair.humanApproval;
   }
+  approval.append(
+    infoDot(
+      "Patch digest",
+      "A SHA-256 fingerprint of the exact diff. A human approves this precise hash; any different patch is rejected.",
+    ),
+  );
   panel.append(approval);
 
   panel.append(guardrailItem("No automatic merge"));
-  panel.append(guardrailItem("Disposable candidate + verification worktrees"));
+  const worktrees = guardrailItem("Disposable candidate + verification worktrees");
+  worktrees.append(
+    infoDot(
+      "Disposable worktree",
+      "A throwaway Git checkout. The fix is applied and tested there and never touches the main branch.",
+    ),
+  );
+  panel.append(worktrees);
   return panel;
 }
 
@@ -718,7 +844,7 @@ function renderProofLock(data: JudgeData): HTMLElement {
   card.append(badge);
 
   const body = element("div", "proof-lock-body");
-  body.append(element("p", "proof-lock-title", "Regression test · proof-lock"));
+  body.append(element("p", "proof-lock-title", "A new regression test locks the fix in"));
   const regression = element("code", "proof-lock-path");
   regression.dataset.testid = "repair-regression";
   regression.textContent = data.bundle.repair.changedPaths[1];
@@ -731,13 +857,13 @@ function renderPatchEvidence(data: JudgeData): HTMLElement {
   const details = element("details", "evidence-basis");
   details.dataset.testid = "repair-evidence-details";
   details.append(
-    element("summary", "evidence-summary", "Patch evidence · hashes & IDs"),
+    element("summary", "evidence-summary", "Show the patch hashes and IDs"),
   );
   const list = element("div", "evidence-list");
   list.append(evidenceLine("repairId", data.bundle.repair.repairId));
   list.append(evidenceLine("baseCommit", data.bundle.repair.baseCommit));
   list.append(evidenceLine("patchSha256", data.bundle.repair.patchSha256, "repair-patch-digest"));
-  list.append(evidenceLine("changedPaths", data.bundle.repair.changedPaths.join(" · ")));
+  list.append(evidenceLine("changedPaths", data.bundle.repair.changedPaths.join(", ")));
   details.append(list);
   return details;
 }
@@ -772,11 +898,21 @@ function renderProve(data: JudgeData): HTMLElement {
     `${String(passing)} / ${String(groups.length)} VERIFICATION GROUPS PASS`,
   );
   pill.dataset.testid = "prove-groups-pill";
-  aside.append(pill);
+  const pillWrap = element("span", "groups-pill-wrap");
+  pillWrap.append(
+    pill,
+    infoDot(
+      "Verification groups",
+      "Five independent checks: OFF, reload, ON, zero browser errors, and the second defect left untouched. All five must hold for a green result.",
+      "end",
+    ),
+  );
+  aside.append(pillWrap);
   aside.append(provenanceTag(data.bundle.verification.label, "prove-provenance"));
 
   section.append(
     stageHeader("Prove", "APPROVED PATCH VERIFIED IN ISOLATION", {
+      step: 5,
       titleTestId: "prove-headline",
       lede: "The approved patch was applied only in a fresh disposable worktree, then judged by the same Playwright journey and deterministic evaluator used on the broken state.",
       aside,
@@ -807,7 +943,15 @@ function renderProve(data: JudgeData): HTMLElement {
   const authority = element("div", "authority");
   authority.dataset.testid = "verification-authority";
   const authorityMain = element("div", "authority-main");
-  authorityMain.append(element("p", "authority-eyebrow", "Authority"));
+  authorityMain.append(
+    labelWithInfo(
+      "p",
+      "authority-eyebrow",
+      "Authority",
+      "Unchanged verifier",
+      "The same Playwright journey and deterministic evaluator used on the broken state decides the result. No model gets a vote.",
+    ),
+  );
   authorityMain.append(
     element("p", "authority-value", "Unchanged Playwright and deterministic evaluator"),
   );
@@ -862,6 +1006,70 @@ function stageFromHash(): StageId {
   return isStageId(raw) ? raw : "observe";
 }
 
+// Per-stage dwell times (ms) for the opt-in cinematic auto-play used to record
+// a hands-free walkthrough. Replay dwells longest so its reveal can resolve.
+const PLAY_DWELL: Record<StageId, number> = {
+  observe: 5200,
+  investigate: 6200,
+  replay: 9000,
+  repair: 6400,
+  prove: 8000,
+};
+
+const HOW_IT_WORKS: readonly string[] = [
+  "PromiseProof checks whether a product keeps a promise it makes to users. Here, someone turned personalization off, so no identifiable activity should reach the recommendation service.",
+  "This page is a recording. Nothing on it calls an AI live. GPT-5.6 and Codex already did their work, and you are watching what they did, one step at a time.",
+  "GPT-5.6 read the evidence and ranked where the leak might be. Codex proposed a small, tightly limited fix. A human approved the exact patch. Then the same automated tests that caught the bug decided whether the fix actually worked.",
+  "The whole point: the AI can propose, but it never gets to declare its own work correct.",
+];
+
+function setUpHowItWorks(root: HTMLElement): void {
+  const button = root.querySelector<HTMLButtonElement>("#judge-how");
+  if (button === null) {
+    return;
+  }
+
+  const modal = element("div", "judge-modal");
+  modal.dataset.testid = "judge-modal";
+  modal.setAttribute("role", "dialog");
+  modal.setAttribute("aria-modal", "true");
+  modal.setAttribute("aria-labelledby", "judge-modal-title");
+  modal.hidden = true;
+
+  const backdrop = element("div", "judge-modal-backdrop");
+  const card = element("div", "judge-modal-card");
+  const heading = element("h2", "judge-modal-title", "How this works");
+  heading.id = "judge-modal-title";
+  card.append(heading);
+  for (const paragraph of HOW_IT_WORKS) {
+    card.append(element("p", "judge-modal-text", paragraph));
+  }
+  const close = element("button", "judge-button judge-button-primary judge-modal-close", "Got it");
+  close.type = "button";
+  card.append(close);
+  modal.append(backdrop, card);
+  root.append(modal);
+
+  const setOpen = (open: boolean): void => {
+    modal.hidden = !open;
+    button.setAttribute("aria-expanded", String(open));
+    if (open) {
+      close.focus();
+    } else {
+      button.focus();
+    }
+  };
+
+  button.addEventListener("click", () => setOpen(true));
+  close.addEventListener("click", () => setOpen(false));
+  backdrop.addEventListener("click", () => setOpen(false));
+  modal.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") {
+      setOpen(false);
+    }
+  });
+}
+
 function start(): void {
   const root = required<HTMLElement>("#judge-root");
   const stageHost = required<HTMLElement>("#judge-stage");
@@ -873,6 +1081,49 @@ function start(): void {
   const data = loadJudgeData();
   let current: StageId = stageFromHash();
 
+  const autoPlay = new URLSearchParams(window.location.search).get("play") === "1";
+  const progress = element("div", "judge-progress");
+  progress.dataset.testid = "judge-progress";
+  const progressFill = element("div", "judge-progress-fill");
+  progress.append(progressFill);
+  root.prepend(progress);
+  let playing = false;
+  let playTimer = 0;
+
+  setUpHowItWorks(root);
+
+  function stopPlaying(): void {
+    if (!playing) {
+      return;
+    }
+    playing = false;
+    window.clearTimeout(playTimer);
+    root.dataset.playing = "false";
+    progressFill.style.transition = "none";
+    progressFill.style.width = "0%";
+  }
+
+  function playTick(stage: StageId): void {
+    if (!playing) {
+      return;
+    }
+    const ms = PLAY_DWELL[stage];
+    progressFill.style.transition = "none";
+    progressFill.style.width = "0%";
+    void progressFill.offsetWidth; // reflow so the fill restarts each stage
+    progressFill.style.transition = `width ${String(ms)}ms linear`;
+    progressFill.style.width = "100%";
+    playTimer = window.setTimeout(() => {
+      const nextStage = STAGE_ORDER[STAGE_ORDER.indexOf(stage) + 1];
+      if (nextStage === undefined) {
+        stopPlaying();
+        return;
+      }
+      show(nextStage);
+      playTick(nextStage);
+    }, ms);
+  }
+
   const navButtons = new Map<StageId, HTMLButtonElement>();
   for (const [index, stage] of STAGES.entries()) {
     const item = element("li", "judge-nav-item");
@@ -883,6 +1134,7 @@ function start(): void {
     button.append(element("span", "judge-nav-index", String(index + 1)));
     button.append(element("span", "judge-nav-label", stage.label));
     button.addEventListener("click", () => {
+      stopPlaying();
       show(stage.id);
     });
     item.append(button);
@@ -890,32 +1142,68 @@ function start(): void {
     navButtons.set(stage.id, button);
   }
 
-  function show(stage: StageId, options: { focus?: boolean } = {}): void {
-    current = stage;
-    const index = STAGE_ORDER.indexOf(stage);
-    const definition = STAGES[index];
+  let firstRender = true;
+  let swapTimer = 0;
+
+  function renderInto(stage: StageId, focus: boolean): void {
+    const definition = STAGES[STAGE_ORDER.indexOf(stage)];
     if (definition === undefined) {
       return;
     }
-
-    root.dataset.stage = stage;
     stageHost.replaceChildren(definition.render(data));
+    // Marks that the DOM now holds THIS stage — the signal transitions settle on.
+    root.dataset.rendered = stage;
+    if (focus) {
+      stageHost.focus();
+    }
+  }
 
+  function show(stage: StageId, options: { focus?: boolean } = {}): void {
+    current = stage;
+    const index = STAGE_ORDER.indexOf(stage);
+    if (STAGES[index] === undefined) {
+      return;
+    }
+
+    // Navigation + routing state is applied instantly so the highlighted step
+    // never lags the content, even mid-transition.
+    root.dataset.stage = stage;
     for (const [id, button] of navButtons) {
       const isCurrent = id === stage;
       button.dataset.current = String(isCurrent);
       button.setAttribute("aria-current", isCurrent ? "step" : "false");
     }
-
     previous.disabled = index === 0;
     next.disabled = index === STAGE_ORDER.length - 1;
-
     if (window.location.hash !== `#${stage}`) {
       window.history.replaceState(null, "", `#${stage}`);
     }
-    if (options.focus === true) {
-      stageHost.focus();
+
+    window.clearTimeout(swapTimer);
+    const focus = options.focus === true;
+    // The stage cross-fade runs on every navigation after the first paint: the
+    // old content eases out, the DOM is swapped while invisible, then the new
+    // content eases in.
+    const animate = !firstRender && stageHost.firstElementChild !== null;
+    firstRender = false;
+
+    if (!animate) {
+      stageHost.classList.remove("is-leaving", "is-entering");
+      renderInto(stage, focus);
+      return;
     }
+
+    // Ease the outgoing content out, swap, then ease the incoming content in —
+    // a real crossfade instead of a hard cut.
+    stageHost.classList.remove("is-entering");
+    stageHost.classList.add("is-leaving");
+    swapTimer = window.setTimeout(() => {
+      renderInto(stage, focus);
+      stageHost.classList.remove("is-leaving");
+      stageHost.classList.add("is-entering");
+      void stageHost.offsetWidth; // commit the entered-from state before releasing
+      stageHost.classList.remove("is-entering");
+    }, 160);
   }
 
   function step(delta: number): void {
@@ -926,12 +1214,28 @@ function start(): void {
     }
   }
 
-  previous.addEventListener("click", () => step(-1));
-  next.addEventListener("click", () => step(1));
-  reset.addEventListener("click", () => show("observe", { focus: true }));
+  previous.addEventListener("click", () => {
+    stopPlaying();
+    step(-1);
+  });
+  next.addEventListener("click", () => {
+    stopPlaying();
+    step(1);
+  });
+  reset.addEventListener("click", () => {
+    stopPlaying();
+    show("observe", { focus: true });
+  });
   window.addEventListener("hashchange", () => show(stageFromHash()));
 
-  show(current);
+  if (autoPlay) {
+    playing = true;
+    root.dataset.playing = "true";
+    show("observe");
+    playTick("observe");
+  } else {
+    show(current);
+  }
   root.dataset.ready = "true";
 }
 

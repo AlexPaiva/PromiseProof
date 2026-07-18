@@ -5,11 +5,42 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="color-scheme" content="light" />
     <meta name="referrer" content="no-referrer" />
+    <meta name="theme-color" content="#0e1621" />
     <meta
       name="description"
-      content="PromiseProof — experiment-guided debugging for broken product promises. Recorded, no-key judge walkthrough."
+      content="PromiseProof shows how a product broke a promise to users, then proves the fix without letting any AI grade its own work. A recorded, no-key, five-stage walkthrough: Observe, Investigate, Replay, Repair, Prove."
     />
-    <title>PromiseProof · Find the boundary that broke the promise</title>
+    <title>PromiseProof: find the boundary that broke the promise</title>
+
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" href="/favicon.ico" sizes="32x32" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="PromiseProof" />
+    <meta
+      property="og:title"
+      content="PromiseProof: find the boundary that broke the promise"
+    />
+    <meta
+      property="og:description"
+      content="A user turned personalization off, yet identifiable activity still reached the recommendation service. GPT-5.6 proposed the diagnosis, Codex proposed a two-file fix, a human approved the exact patch, and unchanged tests decided whether it actually worked."
+    />
+    <meta property="og:image" content="/og-card.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="PromiseProof: find the boundary that broke the promise." />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta
+      name="twitter:title"
+      content="PromiseProof: find the boundary that broke the promise"
+    />
+    <meta
+      name="twitter:description"
+      content="Find the boundary that broke a product promise, and prove the fix without letting AI grade its own work."
+    />
+    <meta name="twitter:image" content="/og-card.png" />
   </head>
   <body>
     <div id="judge-root" class="judge-shell" data-testid="judge-root" data-stage="observe">
@@ -23,10 +54,20 @@
             <small>Find the boundary that broke the promise.</small>
           </span>
         </div>
-        <p class="judge-offline-chip" data-testid="offline-chip">
-          <span class="judge-dot" aria-hidden="true"></span>
-          Recorded evidence · no live model calls
-        </p>
+        <div class="judge-topbar-actions">
+          <p class="judge-offline-chip" data-testid="offline-chip">
+            <span class="judge-dot" aria-hidden="true"></span>
+            Recorded run, no live model calls
+          </p>
+          <button
+            type="button"
+            id="judge-how"
+            class="judge-how-button"
+            data-testid="judge-how"
+            aria-haspopup="dialog"
+            aria-expanded="false"
+          >How it works</button>
+        </div>
       </header>
 
       <nav class="judge-nav" aria-label="Journey stages">
@@ -57,8 +98,8 @@
           >Reset</button>
         </div>
         <p class="judge-footnote">
-          Experiment-guided debugging for broken product promises. Synthetic
-          Signal Shelf journey.
+          A recorded walkthrough on a synthetic app, Signal Shelf, built to make
+          this one broken promise visible.
         </p>
       </footer>
     </div>
