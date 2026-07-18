@@ -211,6 +211,29 @@ function causalBeat(input: {
 
 function renderObserve(data: JudgeData): HTMLElement {
   const section = element("section", "stage stage-observe");
+
+  // Landing frame: a cold judge lands here first, so state what PromiseProof is
+  // and its one differentiator before the example, without a separate screen.
+  const intro = element("div", "observe-intro");
+  intro.append(element("p", "observe-intro-kicker", "What PromiseProof does"));
+  const lead = element("p", "observe-intro-lead");
+  lead.append(
+    document.createTextNode(
+      "It proves whether software keeps a promise to its users, and a ",
+    ),
+    element("strong", "observe-intro-hl", "deterministic test, never an AI,"),
+    document.createTextNode(" decides pass or fail."),
+  );
+  intro.append(lead);
+  intro.append(
+    element(
+      "p",
+      "observe-intro-sub",
+      "Below is one real promise caught being broken, then proven fixed, in five steps. The model can propose the fix; it never gets to grade its own work.",
+    ),
+  );
+  section.append(intro);
+
   section.append(
     stageHeader(
       "Observe",

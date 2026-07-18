@@ -1,30 +1,34 @@
 :root {
-  --ink: #0e1621;
+  /* Palette aligned to the PromiseProof landing page so the walkthrough reads as
+     the same product: same blue, green, red, amber, and the same system type
+     stack (no webfonts, so the two never fall back differently). */
+  --ink: #0b1220;
   --ink-soft: #3d4a59;
   --muted: #5d6b7a;
   --faint: #8a97a5;
-  --line: #e3e7ec;
+  --line: #e4e8f0;
   --line-strong: #cfd6de;
   --surface: #ffffff;
-  --canvas: #f5f7f9;
-  --panel: #f7f9fb;
+  --canvas: #f6f7fb;
+  --panel: #f6f7fb;
   --breach: #b3261e;
   --breach-soft: #fdf0ef;
   --breach-line: #f3c7c3;
-  --blue: #1f4fd8;
+  --blue: #3f6bf0;
   --blue-soft: #eef2fe;
   --blue-line: #cdd9fb;
-  --pass: #04653c;
+  --pass: #0f7a45;
   --pass-soft: #eaf6f0;
-  --navy: #0e1621;
+  --navy: #0b1220;
   --navy-soft: #9fb0c4;
+  --amber: #e0a63b;
   --radius: 15px;
   --radius-md: 12px;
   --radius-sm: 10px;
   --radius-xs: 8px;
-  --shadow: 0 1px 2px rgb(14 22 33 / 6%), 0 10px 30px -6px rgb(14 22 33 / 7%);
-  --font: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
-  --mono: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
+  --shadow: 0 1px 2px rgb(11 18 32 / 6%), 0 10px 30px -6px rgb(11 18 32 / 7%);
+  --font: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
 }
 
 *,
@@ -80,6 +84,45 @@ pre {
   display: flex;
   align-items: center;
   gap: 12px;
+  text-decoration: none;
+  color: inherit;
+  border-radius: 10px;
+}
+
+.judge-brand:hover .judge-brand-text strong {
+  color: var(--blue);
+}
+
+.judge-brand:focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: 3px;
+}
+
+/* Quiet "back to the landing" affordance, styled like the offline chip so the
+   topbar reads as one row of controls. */
+.judge-home-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 13px;
+  border-radius: 999px;
+  border: 1px solid var(--line-strong);
+  background: var(--surface);
+  color: var(--ink-soft);
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.judge-home-link:hover {
+  border-color: var(--blue);
+  color: var(--blue);
+}
+
+.judge-home-link:focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: 2px;
 }
 
 /* Logo badge — mirrors the favicon so the brand reads consistently in the
@@ -99,12 +142,12 @@ pre {
   display: block;
   width: 4px;
   border-radius: 2px;
-  background: #3f6bf0;
 }
 
-.judge-mark span:nth-child(1) { height: 9px; }
-.judge-mark span:nth-child(2) { height: 15px; }
-.judge-mark span:nth-child(3) { height: 7px; background: #e0554d; }
+/* Same three bars as the landing-page mark (blue, bright blue, bright green). */
+.judge-mark span:nth-child(1) { height: 9px; background: #8fb0ff; }
+.judge-mark span:nth-child(2) { height: 15px; background: #6f9bff; }
+.judge-mark span:nth-child(3) { height: 11px; background: #5ad39a; }
 
 .judge-brand-text {
   display: flex;
@@ -219,6 +262,56 @@ pre {
   display: flex;
   flex-direction: column;
   gap: 15px;
+}
+
+/* When a stage is scrolled into view on navigation (Next/Previous focus, or a
+   shorter viewport), leave a comfortable gap above it instead of landing the
+   heading nearly flush to the top. */
+.judge-stage {
+  scroll-margin-top: 88px;
+}
+
+/* Landing frame at the top of the first (Observe) stage. */
+.observe-intro {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 15px 20px;
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--blue);
+  border-radius: var(--radius);
+  background: var(--blue-soft);
+}
+
+.observe-intro-kicker {
+  margin: 0;
+  font-family: var(--mono);
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--blue);
+}
+
+.observe-intro-lead {
+  margin: 0;
+  max-width: 72ch;
+  font-size: 1.06rem;
+  font-weight: 600;
+  line-height: 1.45;
+  color: var(--ink);
+}
+
+.observe-intro-hl {
+  color: var(--blue);
+}
+
+.observe-intro-sub {
+  margin: 0;
+  max-width: 76ch;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: var(--ink-soft);
 }
 
 /* Stage-to-stage crossfade: the host eases the old content out, the content is
@@ -359,16 +452,16 @@ pre {
 }
 
 .info-dot {
-  width: 15px;
-  height: 15px;
+  width: 17px;
+  height: 17px;
   padding: 0;
   border-radius: 50%;
-  border: 1px solid var(--line-strong);
-  background: var(--surface);
-  color: var(--muted);
+  border: 1px solid var(--blue);
+  background: var(--blue-soft);
+  color: var(--blue);
   font-family: var(--font);
-  font-size: 10px;
-  font-weight: 700;
+  font-size: 11px;
+  font-weight: 800;
   line-height: 1;
   cursor: help;
   display: grid;
@@ -378,8 +471,8 @@ pre {
 .info-dot:hover,
 .info-dot:focus-visible {
   border-color: var(--blue);
-  color: var(--blue);
-  background: var(--blue-soft);
+  color: #fff;
+  background: var(--blue);
 }
 
 .info-pop {

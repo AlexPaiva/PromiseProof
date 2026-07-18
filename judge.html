@@ -45,7 +45,7 @@
   <body>
     <div id="judge-root" class="judge-shell" data-testid="judge-root" data-stage="observe">
       <header class="judge-topbar">
-        <div class="judge-brand">
+        <a class="judge-brand" href="/" aria-label="Back to the PromiseProof overview">
           <span class="judge-mark" aria-hidden="true">
             <span></span><span></span><span></span>
           </span>
@@ -53,8 +53,9 @@
             <strong>PromiseProof</strong>
             <small>Find the boundary that broke the promise.</small>
           </span>
-        </div>
+        </a>
         <div class="judge-topbar-actions">
+          <a class="judge-home-link" href="/" data-testid="judge-home">&larr; Overview</a>
           <p class="judge-offline-chip" data-testid="offline-chip">
             <span class="judge-dot" aria-hidden="true"></span>
             Recorded run, no live model calls
@@ -98,8 +99,8 @@
           >Reset</button>
         </div>
         <p class="judge-footnote">
-          A recorded walkthrough on a synthetic app, Signal Shelf, built to make
-          this one broken promise visible.
+          Signal Shelf is a demo app built to make this one broken promise
+          visible. The whole walkthrough is a recorded run.
         </p>
       </footer>
     </div>
