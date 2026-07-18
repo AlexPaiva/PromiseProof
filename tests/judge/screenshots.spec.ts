@@ -13,6 +13,18 @@ const MOBILE = { width: 390, height: 844 } as const;
 
 const STAGES = ['observe', 'investigate', 'replay', 'repair', 'prove'] as const;
 
+async function settleStage(page: import('@playwright/test').Page): Promise<void> {
+  const host = page.getByTestId('judge-stage');
+  // Wait for the crossfade to finish, then for every remaining animation/
+  // transition in the stage (including the Replay reveal) to resolve.
+  await expect(host).not.toHaveClass(/is-leaving|is-entering/u);
+  await host.evaluate((node) =>
+    Promise.all(
+      node.getAnimations({ subtree: true }).map((a) => a.finished.catch(() => undefined)),
+    ),
+  );
+}
+
 async function settleReplayReveal(page: import('@playwright/test').Page): Promise<void> {
   // The Replay reveal is a one-time timed animation; wait for the resolved frame.
   await page
@@ -37,6 +49,8 @@ test('capture judge stages', async ({ page }) => {
   for (const stage of STAGES) {
     await page.goto(`/judge#${stage}`);
     await expect(page.getByTestId('judge-root')).toHaveAttribute('data-stage', stage);
+    await expect(page.getByTestId('judge-root')).toHaveAttribute('data-rendered', stage);
+    await settleStage(page);
     if (stage === 'replay') {
       await settleReplayReveal(page);
     }

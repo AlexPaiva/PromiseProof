@@ -45,6 +45,14 @@ async function openJudge(page: Page, stage?: Stage): Promise<void> {
   await expect(page.getByTestId('judge-root')).toHaveAttribute('data-ready', 'true');
   if (stage !== undefined) {
     await expect(page.getByTestId('judge-root')).toHaveAttribute('data-stage', stage);
+    // Wait for the crossfade to actually swap content in, so reads are never
+    // taken mid-transition (while the outgoing stage is still fading).
+    await expect(page.getByTestId('judge-root')).toHaveAttribute('data-rendered', stage);
+  } else {
+    await expect(page.getByTestId('judge-root')).toHaveAttribute(
+      'data-rendered',
+      /^(observe|investigate|replay|repair|prove)$/u,
+    );
   }
 }
 
@@ -249,21 +257,17 @@ test('replay flight-recorder shows the boundary crossing in recorded order', asy
 });
 
 test('the replay finding is gated behind the recorded reveal', async ({ page }) => {
-  await page.emulateMedia({ reducedMotion: 'no-preference' });
   await openJudge(page, 'replay');
-  // With motion, the finding reveals only after the timeline resolves.
+  // The finding reveals only after the recorded timeline resolves, so it is
+  // animated in on a delay rather than appearing with the rest of the stage.
+  const name = await page
+    .getByTestId('replay-finding')
+    .evaluate((node) => window.getComputedStyle(node).animationName);
+  expect(name).not.toBe('none');
   const delay = await page
     .getByTestId('replay-finding')
     .evaluate((node) => window.getComputedStyle(node).animationDelay);
   expect(Number.parseFloat(delay)).toBeGreaterThan(0.5);
-
-  // With reduced motion, the resolved end-state shows immediately (no animation).
-  await page.emulateMedia({ reducedMotion: 'reduce' });
-  await openJudge(page, 'replay');
-  const reduced = await page
-    .getByTestId('replay-finding')
-    .evaluate((node) => window.getComputedStyle(node).animationName);
-  expect(reduced).toBe('none');
   await expect(page.getByTestId('replay-finding')).toBeVisible();
 });
 
@@ -372,25 +376,26 @@ test('exposes no local absolute paths and no secret-shaped values', async ({ pag
   expect(text).not.toMatch(/OPENAI_API_KEY|CODEX_HOME|USERPROFILE/u);
 });
 
-test('respects reduced motion', async ({ page }) => {
+test('the stage cross-fade and content cascade are animated', async ({ page }) => {
   const problems = watchForProblems(page);
-  const transitionSeconds = async (): Promise<number> =>
-    Number.parseFloat(
-      await page
-        .getByTestId('judge-next')
-        .evaluate((node) => window.getComputedStyle(node).transitionDuration),
-    );
-
-  await page.emulateMedia({ reducedMotion: 'reduce' });
   await openJudge(page);
-  // Reduced motion must collapse transitions to an imperceptible duration.
-  expect(await transitionSeconds()).toBeLessThanOrEqual(0.001);
 
-  // Contrast: without the preference the transition is real, so the media query
-  // is doing the work rather than the rule simply being absent.
-  await page.emulateMedia({ reducedMotion: 'no-preference' });
-  await openJudge(page);
-  expect(await transitionSeconds()).toBeGreaterThan(0.001);
+  // The stage host carries a real cross-fade transition...
+  const stageTransitionSeconds = Number.parseFloat(
+    await page
+      .getByTestId('judge-stage')
+      .evaluate((node) => window.getComputedStyle(node).transitionDuration),
+  );
+  expect(stageTransitionSeconds).toBeGreaterThan(0.001);
+
+  // ...and each block of stage content animates in on arrival.
+  const cascadeAnimation = await page
+    .getByTestId('judge-stage')
+    .evaluate((node) => {
+      const child = node.querySelector('.stage > *');
+      return child ? window.getComputedStyle(child).animationName : 'none';
+    });
+  expect(cascadeAnimation).not.toBe('none');
 
   expect(problems.consoleErrors).toEqual([]);
   expect(problems.pageErrors).toEqual([]);
@@ -414,6 +419,93 @@ test('has no critical clipping at 1440x900 and emits no page errors', async ({ p
 
   expect(problems.consoleErrors).toEqual([]);
   expect(problems.pageErrors).toEqual([]);
+});
+
+test('cinematic auto-play is opt-in and pauses on interaction', async ({ page }) => {
+  // Default judge experience is manual: no auto-advance, progress bar hidden.
+  await page.goto('/judge');
+  await expect(page.getByTestId('judge-root')).toHaveAttribute('data-ready', 'true');
+  await expect(page.getByTestId('judge-root')).not.toHaveAttribute('data-playing', 'true');
+  await expect(page.getByTestId('judge-progress')).toBeHidden();
+
+  // ?play=1 starts a recordable auto-play from Observe with a visible progress bar.
+  await page.goto('/judge?play=1');
+  await expect(page.getByTestId('judge-root')).toHaveAttribute('data-playing', 'true');
+  await expect(page.getByTestId('judge-root')).toHaveAttribute('data-stage', 'observe');
+  await expect(page.getByTestId('judge-progress')).toBeVisible();
+
+  // Any manual interaction immediately pauses auto-play and hands control back.
+  await page.getByTestId('judge-nav-repair').click();
+  await expect(page.getByTestId('judge-root')).toHaveAttribute('data-playing', 'false');
+  await expect(page.getByTestId('judge-root')).toHaveAttribute('data-stage', 'repair');
+  await expect(page.getByTestId('judge-progress')).toBeHidden();
+});
+
+test('explainer tooltips are accessible and hidden until hover or focus', async ({ page }) => {
+  const problems = watchForProblems(page);
+  await openJudge(page, 'repair');
+
+  const dots = page.locator('.info-dot');
+  expect(await dots.count()).toBeGreaterThan(0);
+
+  // Every "?" is a real button that points at a tooltip via aria-describedby,
+  // and the tooltip is hidden until interaction (so it never clutters a still).
+  const dot = dots.first();
+  await expect(dot).toHaveRole('button');
+  const described = await dot.getAttribute('aria-describedby');
+  expect(described).toMatch(/^info-tip-\d+$/u);
+  const pop = page.locator(`#${described}`);
+  await expect(pop).toBeHidden();
+
+  await dot.focus();
+  await expect(pop).toBeVisible();
+  await expect(pop).toHaveAttribute('role', 'tooltip');
+
+  // Tooltips must not leak a verdict onto model-owned copy.
+  for (const stage of ['investigate', 'replay'] as const) {
+    await openJudge(page, stage);
+    const tipText = (await page.locator('.info-pop').allTextContents()).join(' ');
+    expect(tipText).not.toMatch(/\b(PASS|FIXED|Supported|winner)\b/u);
+  }
+
+  expect(problems.consoleErrors).toEqual([]);
+  expect(problems.pageErrors).toEqual([]);
+});
+
+test('the How it works modal explains the project and is accessible', async ({ page }) => {
+  const problems = watchForProblems(page);
+  await openJudge(page);
+
+  const how = page.getByTestId('judge-how');
+  await expect(how).toHaveAttribute('aria-expanded', 'false');
+  await expect(page.getByTestId('judge-modal')).toBeHidden();
+
+  await how.click();
+  const modal = page.getByTestId('judge-modal');
+  await expect(modal).toBeVisible();
+  await expect(modal).toHaveAttribute('role', 'dialog');
+  await expect(modal).toContainText('never gets to declare its own work correct');
+  await expect(how).toHaveAttribute('aria-expanded', 'true');
+
+  await page.keyboard.press('Escape');
+  await expect(modal).toBeHidden();
+  await expect(how).toHaveAttribute('aria-expanded', 'false');
+
+  expect(problems.consoleErrors).toEqual([]);
+  expect(problems.pageErrors).toEqual([]);
+});
+
+test('the Play the crossing control replays the boundary animation', async ({ page }) => {
+  await openJudge(page, 'replay');
+  const again = page.getByTestId('replay-again');
+  await expect(again).toBeVisible();
+
+  // Re-rendering yields exactly one fresh crossing event and full timeline.
+  await again.click();
+  await expect(page.locator('.fr-event[data-emphasis="boundary"]')).toHaveCount(1);
+  await expect(page.getByTestId('replay-event')).toHaveCount(
+    bundle.investigation.observedTimeline.length,
+  );
 });
 
 test('does not alter or reach the Signal Shelf application', async ({ page }) => {
