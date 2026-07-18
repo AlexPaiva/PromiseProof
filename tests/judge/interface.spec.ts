@@ -206,9 +206,9 @@ test('Investigate uses neutral pre-replay labels and never infers a selected hyp
 
   const text = await stageText(page);
   expect(text).toContain('Two implementation boundaries can break the same promise.');
-  expect(text).toContain(
-    'For this recorded failure, GPT-5.6 ranked the candidate explanations and selected one registered replay.',
-  );
+  // The lede must keep the model neutral: it ranks and asks, it does not decide.
+  expect(text).toContain('GPT-5.6 ranks the candidates, read only');
+  expect(text).toContain('it never decides the verdict');
   expect(text).not.toMatch(/\bSupported\b/u);
   expect(text).not.toMatch(/\bNot selected\b/u);
   expect(text).not.toMatch(/\bSelected for replay\b/u);

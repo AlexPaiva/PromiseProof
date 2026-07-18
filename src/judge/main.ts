@@ -129,11 +129,25 @@ function stageHeader(
   return header;
 }
 
-function provenanceTag(text: string, testId: string): HTMLElement {
+function provenanceTag(
+  text: string,
+  testId: string,
+  explanation?: string,
+): HTMLElement {
   const tag = element("p", "provenance-tag", text);
   tag.dataset.testid = testId;
-  return tag;
+  if (explanation === undefined) {
+    return tag;
+  }
+  // The "?" lives beside the badge, not inside it, so the badge keeps its exact
+  // recorded-run label while still offering a plain-language explanation.
+  const wrap = element("div", "provenance-wrap");
+  wrap.append(tag, infoDot(text, explanation, "end"));
+  return wrap;
 }
+
+const RECORDED_RUN_EXPLANATION =
+  "This step really ran once and was recorded with response ids and fingerprints. The page replays that recording, so it never contacts a model while you browse.";
 
 function arrow(text: string, className: string): HTMLElement {
   const node = element("span", className, text);
@@ -443,10 +457,11 @@ function renderInvestigate(data: JudgeData): HTMLElement {
       "Two implementation boundaries can break the same promise.",
       {
         step: 2,
-        lede: "For this recorded failure, GPT-5.6 ranked the candidate explanations and selected one registered replay.",
+        lede: "The deterministic check already knows the promise broke, but two code paths could explain how. GPT-5.6 ranks the candidates, read only, then asks for one pre-registered replay to gather the evidence. It proposes; it never decides the verdict.",
         aside: provenanceTag(
           data.bundle.investigation.label,
           "investigate-provenance",
+          RECORDED_RUN_EXPLANATION,
         ),
       },
     ),
@@ -574,7 +589,11 @@ function renderReplay(data: JudgeData): HTMLElement {
       {
         step: 3,
         lede: data.bundle.investigation.replayExpectation,
-        aside: provenanceTag("Recorded authentic replay", "replay-provenance"),
+        aside: provenanceTag(
+          "Recorded authentic replay",
+          "replay-provenance",
+          RECORDED_RUN_EXPLANATION,
+        ),
       },
     ),
   );
@@ -741,7 +760,11 @@ function renderRepair(data: JudgeData): HTMLElement {
       {
         step: 4,
         lede: "Codex could change exactly two files, in a throwaway checkout. The whole fix is a two-line reorder, nothing more.",
-        aside: provenanceTag(data.bundle.repair.label, "repair-provenance"),
+        aside: provenanceTag(
+          data.bundle.repair.label,
+          "repair-provenance",
+          RECORDED_RUN_EXPLANATION,
+        ),
       },
     ),
   );
@@ -931,7 +954,13 @@ function renderProve(data: JudgeData): HTMLElement {
     ),
   );
   aside.append(pillWrap);
-  aside.append(provenanceTag(data.bundle.verification.label, "prove-provenance"));
+  aside.append(
+    provenanceTag(
+      data.bundle.verification.label,
+      "prove-provenance",
+      "The check was re-run offline from the pinned repository and produced the same result, so anyone can reproduce it without a network.",
+    ),
+  );
 
   section.append(
     stageHeader("Prove", "APPROVED PATCH VERIFIED IN ISOLATION", {
