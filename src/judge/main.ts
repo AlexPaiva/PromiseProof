@@ -59,7 +59,10 @@ const MATRIX_ROWS: readonly {
   {
     key: "propagationControl",
     label: "CONTROL",
-    criteria: ["Propagation defect remains independently detectable"],
+    criteria: [
+      "Second, unrelated seeded bug still caught",
+      "the write that does not stick, still flagged",
+    ],
   },
 ];
 
@@ -235,7 +238,7 @@ function renderObserve(data: JudgeData): HTMLElement {
     document.createTextNode(
       "It proves whether software keeps a promise to its users, and a ",
     ),
-    element("strong", "observe-intro-hl", "deterministic test, never an AI,"),
+    element("strong", "observe-intro-hl", "deterministic test, never a model,"),
     document.createTextNode(" decides pass or fail."),
   );
   intro.append(lead);
@@ -759,7 +762,7 @@ function renderRepair(data: JudgeData): HTMLElement {
       "Source changes were allowed only after evidence supported the boundary.",
       {
         step: 4,
-        lede: "Codex could change exactly two files, in a throwaway checkout. The whole fix is a two-line reorder, nothing more.",
+        lede: "Codex could change exactly two files, in a throwaway checkout. The behavioral fix is a two-line reorder; the patch also adds a regression test that locks the order in.",
         aside: provenanceTag(
           data.bundle.repair.label,
           "repair-provenance",

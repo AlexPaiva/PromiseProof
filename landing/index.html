@@ -72,7 +72,8 @@ html.js .hero .eyebrow{animation-delay:.05s}html.js .hero h1{animation-delay:.16
 .hcard{margin-top:50px;border:1px solid rgba(255,255,255,.1);border-radius:16px;background:linear-gradient(180deg,rgba(18,26,42,.72),rgba(10,15,25,.72));overflow:hidden;box-shadow:0 30px 70px -40px rgba(0,0,0,.8)}
 .hcard-head{display:flex;justify-content:space-between;align-items:center;padding:12px 22px;border-bottom:1px solid rgba(255,255,255,.07);font-family:var(--mono);font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;color:#8ea3c4}
 .hcard-head .live{display:inline-flex;align-items:center;gap:7px;color:#8fb6a0}
-.hcard-head .live i{width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse 2.4s ease-out infinite}
+.hcard-head .live i{width:6px;height:6px;border-radius:50%;background:var(--green)}
+.hcard-promise{padding:15px 22px 3px;font-size:1rem;line-height:1.45;color:#dbe4f2;max-width:62ch}
 .hstates{display:grid;grid-template-columns:1fr auto 1fr}
 .hstate{padding:24px 24px}
 .hstate .hl{font-family:var(--mono);font-size:.62rem;letter-spacing:.12em;text-transform:uppercase;color:#8ea3c4}
@@ -196,17 +197,6 @@ html.js [data-reveal].in{opacity:1;transform:none;filter:none}
 .matrix td:last-child{text-align:right;font-family:var(--mono);color:var(--green);font-weight:700;white-space:nowrap}
 .matrix tr:last-child td{border-bottom:0}
 
-.cmp{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:44px}
-.col{border-radius:18px;padding:30px}
-.col.them{border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.02)}
-.col.us{border:1px solid rgba(63,107,240,.4);background:linear-gradient(180deg,rgba(63,107,240,.1),rgba(63,107,240,.02))}
-.col h3{font-size:1.15rem}
-.col .cap{font-family:var(--mono);font-size:.68rem;letter-spacing:.09em;text-transform:uppercase;color:#8ea3c4}
-.col.us .cap{color:var(--blue-bright)}
-.crow{display:flex;gap:12px;align-items:flex-start;margin-top:15px;font-size:.96rem;color:#c3cddd}
-.crow .i{flex:none;width:20px;height:20px;border-radius:50%;display:grid;place-items:center;font-size:.72rem;font-weight:800;margin-top:1px}
-.them .i{background:rgba(229,72,77,.16);color:#ff9296}
-.us .i{background:rgba(47,169,104,.2);color:var(--green-bright)}
 
 .faq{margin-top:42px;display:flex;flex-direction:column;gap:12px}
 .qa{border:1px solid var(--paperline);border-radius:14px;background:#fff;overflow:hidden}
@@ -231,7 +221,7 @@ footer{border-top:1px solid rgba(255,255,255,.08);padding:54px 0 40px;color:#879
 .foot-note{margin-top:34px;padding-top:22px;border-top:1px solid rgba(255,255,255,.06);color:#66748c;font-size:.8rem;line-height:1.6}
 
 @media(max-width:820px){
-  .prob-grid,.roles,.cmp{grid-template-columns:1fr}
+  .prob-grid,.roles{grid-template-columns:1fr}
   .foot{grid-template-columns:1fr 1fr}
   .track,.hstates,.bigcompare{grid-template-columns:1fr}
   .track::before{display:none}
@@ -262,26 +252,27 @@ footer{border-top:1px solid rgba(255,255,255,.08);padding:54px 0 40px;color:#879
   <div class="wrap">
     <span class="eyebrow"><span class="dot"></span> Does your software keep its word to users?</span>
     <h1 class="hero-h">Software makes promises. <span class="g">PromiseProof proves they're kept.</span></h1>
-    <p class="hero-sub">PromiseProof turns a user-facing promise, the kind you make with "off means off" or "deleted means deleted," into an executable check that a deterministic test, <b>never a model</b>, must sign off on. This prototype runs one such promise across UI, storage, network and backend, and finds <b>which boundary breaks it</b>.</p>
+    <p class="hero-sub">PromiseProof turns a user-facing promise, the kind you make with "off means off" or "deleted means deleted," into an executable check that a deterministic test, <b>never a model</b>, decides. This prototype runs one such promise across UI, storage, network and backend, and finds <b>which boundary breaks it</b>.</p>
     <div class="hero-cta">
-      <a class="btn btn-primary ext" href="/walkthrough/">Open the interactive walkthrough</a>
+      <a class="btn btn-primary ext" href="/walkthrough/">Open the walkthrough</a>
       <a class="btn btn-ghost" href="#how">See how it works &darr;</a>
     </div>
 
     <div class="hcard">
-      <div class="hcard-head"><span>The promise: with "off" on, nothing that identifies the user should reach recommendations</span><span class="live"><i></i> reproducible</span></div>
+      <div class="hcard-head"><span>The promise</span><span class="live"><i></i> reproducible</span></div>
+      <div class="hcard-promise">When personalization is off, nothing that identifies the user should reach recommendations.</div>
       <div class="hstates">
         <div class="hstate before">
-          <div class="hl">Broken on seeded main</div>
+          <div class="hl">Broken on main (bug left in on purpose)</div>
           <div class="hv">&#10007; FAIL</div>
-          <div class="hmetric"><b class="r">1</b> <span>identifying request reached recommendations</span></div>
+          <div class="hmetric"><b class="r">1</b> <span>identifiable request reached recommendations</span></div>
           <div class="hd">while the user had personalization off</div>
         </div>
         <div class="harrow">&rarr;</div>
         <div class="hstate after">
           <div class="hl">Approved patch, verified in isolation</div>
           <div class="hv">&#10003; PASS</div>
-          <div class="hmetric"><b class="g">0</b> <span>identifying requests reached recommendations</span></div>
+          <div class="hmetric"><b class="g">0</b> <span>identifiable requests reached recommendations</span></div>
           <div class="hd">and the allowed behavior still works</div>
         </div>
       </div>
@@ -317,7 +308,7 @@ footer{border-top:1px solid rgba(255,255,255,.08);padding:54px 0 40px;color:#879
     <div class="track" data-reveal>
       <div class="zone"><span class="zk">Browser</span><span class="zv">Personalization OFF</span></div>
       <div class="gate"><span class="gl">should block</span></div>
-      <div class="zone leak"><span class="zk">Recommendation service</span><span class="zv">Got 1 identifying request</span></div>
+      <div class="zone leak"><span class="zk">Recommendation service</span><span class="zv">Got 1 identifiable request</span></div>
       <span class="packet"></span>
     </div>
   </div>
@@ -337,17 +328,17 @@ footer{border-top:1px solid rgba(255,255,255,.08);padding:54px 0 40px;color:#879
       <div class="role approve d1" data-reveal>
         <div class="num"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5L21 21"/></svg></div><div class="who">GPT-5.6, bounded</div>
         <h3>Find where it broke</h3>
-        <p>When the promise fails, GPT-5.6 reads the recorded evidence and ranks a short, fixed list of possible causes it is allowed to choose from, without changing anything. It then runs exactly one controlled replay that shows which layer actually broke, UI, storage, network or backend. It investigates; it never gets the verdict.</p>
+        <p>When the promise fails, GPT-5.6 reads the recorded evidence and ranks a short, fixed list of possible causes it is allowed to choose from, without changing anything. It then asks for exactly one controlled replay, which PromiseProof runs, showing which layer actually broke, UI, storage, network or backend. It investigates; it never gets the verdict.</p>
       </div>
       <div class="role decide d2" data-reveal>
         <div class="num"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l7 2.5v5.5c0 4.2-2.9 7-7 8.5-4.1-1.5-7-4.3-7-8.5V5.5z"/><path d="M9 12l2 2 4-4"/></svg></div><div class="who">A fixed test</div>
         <h3>Own the verdict</h3>
-        <p>Deterministic code, never a model, returns PASS or FAIL on whether the promise held. The AI can diagnose it, and even fix it, but only the test decides it is kept.</p>
+        <p>Deterministic code, never a model, returns PASS or FAIL on whether the promise held. A model can diagnose it, and even fix it, but only the test decides it is kept.</p>
       </div>
     </div>
     <div class="tl" id="tl" style="margin-top:50px">
       <div class="tl-line"><span id="tlfill"></span></div>
-      <div class="step" data-reveal><div class="ico">01</div><h3>Observe <span class="who">automatic check</span></h3><p>Personalization is off, yet one identifying request crossed to recommendations. Verdict: broken promise.</p></div>
+      <div class="step" data-reveal><div class="ico">01</div><h3>Observe <span class="who">automatic check</span></h3><p>Personalization is off, yet one identifiable request crossed to recommendations. Verdict: broken promise.</p></div>
       <div class="step" data-reveal><div class="ico">02</div><h3>Investigate <span class="who">GPT-5.6, read only</span></h3><p>GPT-5.6 reads the evidence and ranks the likely causes. Top suspect: the app collects before it finishes loading the saved setting.</p></div>
       <div class="step" data-reveal><div class="ico">03</div><h3>Replay <span class="who">recorded</span></h3><p>A replay runs the exact startup order and captures it: collection started, the request crossed, and only then did the setting finish loading. Too late.</p></div>
       <div class="step" data-reveal><div class="ico">04</div><h3>Repair <span class="who">Codex, then a human</span></h3><p>Codex works only inside a throwaway copy and touches two files: load the saved setting before collecting, and add a test that locks the order in. A human approves that exact patch.</p></div>
@@ -355,7 +346,7 @@ footer{border-top:1px solid rgba(255,255,255,.08);padding:54px 0 40px;color:#879
     </div>
     <div class="redteam" data-reveal>
       <div class="rt-k">The part that's easy to miss</div>
-      <p>Codex did not just write the patch. It <b>red-teamed the design</b> and found a way the model's own output could smuggle in a verdict. So the final investigation schema has <b>no verdict field at all</b>, and project code rejects any authoritative outcome language. The model literally cannot say "it's fixed."</p>
+      <p>During development, Codex did more than write the two-file repair: it <b>red-teamed the design</b> and found a way a model's own output could smuggle in a verdict. So the final investigation schema has <b>no verdict field at all</b>, and project code rejects any authoritative outcome language. A model literally cannot say "it's fixed."</p>
     </div>
   </div>
 </section>
@@ -365,9 +356,9 @@ footer{border-top:1px solid rgba(255,255,255,.08);padding:54px 0 40px;color:#879
     <span class="kick" data-reveal>The proof</span>
     <h2 data-reveal>Not a claim. A result you can reproduce.</h2>
     <div class="bigcompare" data-reveal>
-      <div class="bc b"><div class="n">1</div><div class="v">Before &#10007; FAIL</div><div class="c">identifying request leaked</div></div>
+      <div class="bc b"><div class="n">1</div><div class="v">Before &#10007; FAIL</div><div class="c">identifiable request leaked</div></div>
       <div class="bcarrow">&rarr;</div>
-      <div class="bc a"><div class="n">0</div><div class="v">After &#10003; PASS</div><div class="c">leaked, feature still works</div></div>
+      <div class="bc a"><div class="n">0</div><div class="v">After &#10003; PASS</div><div class="c">none leaked, feature still works</div></div>
     </div>
     <p class="plainproof" data-reveal>In plain terms: on a fresh isolated copy, the approved patch took the check from FAIL to PASS, and you can re-run that same check yourself and get the same verdict every time. <b>Authentic once, and deterministically rechecked offline.</b></p>
 
@@ -397,9 +388,10 @@ footer{border-top:1px solid rgba(255,255,255,.08);padding:54px 0 40px;color:#879
               <tr><td>OFF (the promise)</td><td>PASS</td></tr>
               <tr><td>Reload</td><td>PASS</td></tr>
               <tr><td>ON control</td><td>PASS</td></tr>
-              <tr><td>Propagation control</td><td>PASS</td></tr>
+              <tr><td>Browser (0 errors)</td><td>PASS</td></tr>
+              <tr><td>Second bug still caught</td><td>PASS</td></tr>
             </table>
-            <div class="rk" style="margin-top:9px">ON and the propagation row are no-fault controls: they must stay green, proving the check flags the real leak without failing code that is fine. The separate propagation fault shown further down is deliberately left red.</div>
+            <div class="rk" style="margin-top:9px">ON is the positive control: it must stay green, proving the check flags the real leak without failing code that is fine. "Second bug still caught" confirms the fix did not hide the app's other seeded fault, the write that does not stick (shown below).</div>
           </div>
         </div>
       </div>
@@ -416,7 +408,7 @@ footer{border-top:1px solid rgba(255,255,255,.08);padding:54px 0 40px;color:#879
       <div class="pcard bad" data-reveal>
         <div class="tag">Fault 1, repaired above</div>
         <h3>A startup-order race</h3>
-        <p>Collection fires before the saved "off" preference loads, so one identifying request escapes. Signature: <code>PP_IDENTIFIABLE_EVENT_LEAK</code>. Diagnosis: inspect the startup order.</p>
+        <p>Collection fires before the saved "off" preference loads, so one identifiable request escapes. Signature: <code>PP_IDENTIFIABLE_EVENT_LEAK</code>. Diagnosis: inspect the startup order.</p>
       </div>
       <div class="pcard bad d1" data-reveal>
         <div class="tag">Fault 2, independent control</div>
@@ -424,7 +416,7 @@ footer{border-top:1px solid rgba(255,255,255,.08);padding:54px 0 40px;color:#879
         <p>The "off" write returns an OK receipt, yet a separate read still comes back ON. A test that checked only the write would pass; the replayed write-then-read catches it. Signature: <code>PP_PREFERENCE_NOT_PERSISTED</code>.</p>
       </div>
     </div>
-    <p class="cmp-sub" data-reveal>Same promise, two clauses, two signatures, two diagnoses, one evaluator. That is the difference between a fixed demo and a method.</p>
+    <p class="cmp-sub" data-reveal>Same promise, two clauses, two signatures, two diagnoses, one evaluator. That is the difference between a rigged one-off and a reusable method.</p>
   </div>
 </section>
 
@@ -454,9 +446,9 @@ footer{border-top:1px solid rgba(255,255,255,.08);padding:54px 0 40px;color:#879
   <div class="wrap">
     <span class="kick" data-reveal style="display:block;text-align:center">Explore it yourself</span>
     <h2 data-reveal>The verdict isn't ours to give. That's the point.</h2>
-    <p class="lead" data-reveal>Step through the live walkthrough, or read the reproducible evidence in the repo. Then decide for yourself.</p>
+    <p class="lead" data-reveal>Step through the interactive walkthrough, or read the reproducible evidence in the repo. Then decide for yourself.</p>
     <div class="final-cta">
-      <a class="btn btn-primary ext" href="/walkthrough/" data-reveal>Open the interactive walkthrough</a>
+      <a class="btn btn-primary ext" href="/walkthrough/" data-reveal>Open the walkthrough</a>
       <a class="btn btn-ghost" href="https://github.com/AlexPaiva/PromiseProof" data-reveal>Read the evidence on GitHub</a>
     </div>
   </div>
@@ -474,7 +466,7 @@ footer{border-top:1px solid rgba(255,255,255,.08);padding:54px 0 40px;color:#879
         <a href="#problem">The promise that broke</a>
         <a href="#how">How it works</a>
         <a href="#proof">The proof</a>
-        <a href="#compare">The difference</a>
+        <a href="#compare">Why trust it</a>
       </div>
       <div class="foot-col">
         <span class="foot-h">Project</span>
