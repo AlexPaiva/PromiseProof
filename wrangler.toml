@@ -1,15 +1,12 @@
-# Deploys the combined PromiseProof site (landing at / , walkthrough at /walkthrough/)
-# as a static-assets Worker. Reusing the existing worker name replaces the current
-# site in place at the SAME url: https://promiseproof-judge.alex0paiva0.workers.dev/
+# Deploys the combined PromiseProof site (landing at / , walkthrough at
+# /walkthrough/) as a static-assets Worker, in place at the live url:
+#   https://promiseproof.alex0paiva0.workers.dev/
 #
+#   Rebuild:  npm run build:site
 #   Deploy:   npx wrangler deploy
 #   (first run opens a browser once to log in to your Cloudflare account)
-#
-# To use a cleaner url instead, change `name` to "promiseproof" and redeploy;
-# the site then lives at https://promiseproof.alex0paiva0.workers.dev/
-# (the old promiseproof-judge worker stays until you delete it in the dashboard).
 
-name = "promiseproof-judge"
+name = "promiseproof"
 compatibility_date = "2025-06-01"
 
 [assets]
