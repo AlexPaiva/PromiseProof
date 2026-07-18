@@ -60,6 +60,22 @@ pre {
   background: #dfe6fb;
 }
 
+/* Respect the viewer's motion preference, matching the landing page: a product
+   about honoring a user's stated choice must honor this one. Entrance, crossfade
+   and looping motion collapse to near-instant (kept non-zero so the crossfade's
+   transitionend sequencing still fires); stage content lands fully visible, and
+   the user-triggered "Play the crossing" replay still works when clicked. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
 /* ------------------------------ shell ------------------------------ */
 
 .judge-shell {
@@ -72,12 +88,18 @@ pre {
   gap: 18px;
 }
 
+/* Dark header bar, echoing the landing page header, so the walkthrough reads as
+   the same product and the dark-to-light transition from the landing is smooth. */
 .judge-topbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 20px;
+  gap: 16px;
   flex-wrap: wrap;
+  background: #0b1220;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  padding: 12px 16px;
 }
 
 .judge-brand {
@@ -90,7 +112,7 @@ pre {
 }
 
 .judge-brand:hover .judge-brand-text strong {
-  color: var(--blue);
+  color: #6f9bff;
 }
 
 .judge-brand:focus-visible {
@@ -106,9 +128,9 @@ pre {
   gap: 6px;
   padding: 7px 13px;
   border-radius: 999px;
-  border: 1px solid var(--line-strong);
-  background: var(--surface);
-  color: var(--ink-soft);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  background: rgba(255, 255, 255, 0.05);
+  color: #e2e8f2;
   font-size: 0.8rem;
   font-weight: 600;
   text-decoration: none;
@@ -116,8 +138,9 @@ pre {
 }
 
 .judge-home-link:hover {
-  border-color: var(--blue);
-  color: var(--blue);
+  border-color: #6f9bff;
+  color: #fff;
+  background: rgba(111, 155, 255, 0.16);
 }
 
 .judge-home-link:focus-visible {
@@ -133,9 +156,9 @@ pre {
   gap: 3px;
   align-items: end;
   padding: 8px 8px 7px;
-  background: var(--navy);
+  background: linear-gradient(160deg, #12203b, #0a1120);
   border-radius: 9px;
-  box-shadow: 0 4px 12px -4px rgb(14 22 33 / 30%);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08), 0 4px 12px -4px rgba(0, 0, 0, 0.5);
 }
 
 .judge-mark span {
@@ -158,10 +181,11 @@ pre {
 .judge-brand-text strong {
   font-size: 1.02rem;
   letter-spacing: -0.01em;
+  color: #fff;
 }
 
 .judge-brand-text small {
-  color: var(--muted);
+  color: #9fb0c4;
   font-size: 0.8rem;
 }
 
@@ -171,10 +195,10 @@ pre {
   align-items: center;
   gap: 8px;
   padding: 7px 13px;
-  border: 1px solid var(--line-strong);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 999px;
-  background: var(--surface);
-  color: var(--ink-soft);
+  background: rgba(255, 255, 255, 0.03);
+  color: #aab6c8;
   font-size: 0.8rem;
   font-weight: 500;
 }
@@ -184,7 +208,7 @@ pre {
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: var(--muted);
+  background: #7f8da3;
 }
 
 /* ---------------------------- navigation --------------------------- */
@@ -1783,9 +1807,9 @@ pre {
 .judge-how-button {
   padding: 8px 14px;
   border-radius: 999px;
-  border: 1px solid var(--ink);
-  background: var(--ink);
-  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.04);
+  color: #e2e8f2;
   font: inherit;
   font-size: 0.8rem;
   font-weight: 600;
@@ -1793,11 +1817,12 @@ pre {
 }
 
 .judge-how-button {
-  transition: transform 120ms ease, background-color 120ms ease;
+  transition: transform 120ms ease, background-color 120ms ease, border-color 120ms ease;
 }
 .judge-how-button:hover {
   transform: translateY(-1px);
-  background: #1b2838;
+  border-color: rgba(255, 255, 255, 0.4);
+  background: rgba(255, 255, 255, 0.09);
 }
 
 .judge-modal[hidden] {

@@ -4,6 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <meta name="color-scheme" content="dark" />
+<meta name="theme-color" content="#080b12" />
 <meta name="description" content="PromiseProof turns a user-facing promise, 'off means off', into an executable check that a deterministic test, never a model, must sign off on. It finds which boundary breaks it, and you can recheck the verdict offline." />
 <link rel="icon" href="favicon.svg" type="image/svg+xml" />
 <link rel="icon" href="favicon.ico" sizes="32x32" />
@@ -77,7 +78,10 @@ html.js .hero .eyebrow{animation-delay:.05s}html.js .hero h1{animation-delay:.16
 .hstate .hl{font-family:var(--mono);font-size:.62rem;letter-spacing:.12em;text-transform:uppercase;color:#8ea3c4}
 .hstate .hv{margin-top:9px;font-size:1.55rem;font-weight:800;display:flex;align-items:center;gap:9px;letter-spacing:-.01em}
 .hstate.before .hv{color:#ff8f93}.hstate.after .hv{color:var(--green-bright)}
-.hstate .hd{margin-top:5px;color:#aeb9cc;font-size:.92rem;max-width:26ch}
+.hstate .hmetric{margin-top:13px;display:flex;align-items:baseline;gap:10px;color:#c3cddd;font-size:.9rem;line-height:1.3;max-width:23ch}
+.hstate .hmetric b{font-size:1.85rem;font-weight:800;letter-spacing:-.02em;line-height:1}
+.hstate .hmetric b.r{color:#ff8f93}.hstate .hmetric b.g{color:var(--green-bright)}
+.hstate .hd{margin-top:9px;color:#8093a8;font-size:.8rem;max-width:28ch}
 .harrow{align-self:center;color:#6c7b93;font-size:1.2rem;padding:0 6px}
 .hcard-repro{border-top:1px solid rgba(255,255,255,.07);padding:15px 24px;font-family:var(--mono);font-size:.82rem;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
 .hcard-repro .cmd{color:#e8edf6}.hcard-repro .cmd .p{color:var(--blue-bright)}
@@ -106,6 +110,8 @@ html.js [data-reveal].in{opacity:1;transform:none;filter:none}
   *,*::before,*::after{animation-duration:.001ms !important;animation-iteration-count:1 !important;transition-duration:.001ms !important;scroll-behavior:auto !important}
   html.js [data-reveal]{opacity:1 !important;transform:none !important;filter:none !important}
   html.js .hero .eyebrow,html.js .hero h1,html.js .hero-sub,html.js .hero-cta,html.js .hcard,html.js .scrollcue{opacity:1 !important;animation:none !important}
+  /* calm state must still be meaningful: park the leaked request past the gate, in the service it should never have reached */
+  .packet{left:83% !important;opacity:1 !important;transform:none !important;animation:none !important}
 }
 
 /* problem: the boundary-leak story lives here now */
@@ -267,13 +273,15 @@ footer{border-top:1px solid rgba(255,255,255,.08);padding:54px 0 40px;color:#879
         <div class="hstate before">
           <div class="hl">Broken on seeded main</div>
           <div class="hv">&#10007; FAIL</div>
-          <div class="hd">1 request that could identify the user slipped through, with "off" selected.</div>
+          <div class="hmetric"><b class="r">1</b> <span>identifying request reached recommendations</span></div>
+          <div class="hd">while the user had personalization off</div>
         </div>
         <div class="harrow">&rarr;</div>
         <div class="hstate after">
           <div class="hl">Approved patch, verified in isolation</div>
           <div class="hv">&#10003; PASS</div>
-          <div class="hd">0 slipped through. The allowed behavior still works.</div>
+          <div class="hmetric"><b class="g">0</b> <span>identifying requests reached recommendations</span></div>
+          <div class="hd">and the allowed behavior still works</div>
         </div>
       </div>
       <div class="hcard-repro">
@@ -436,6 +444,7 @@ footer{border-top:1px solid rgba(255,255,255,.08);padding:54px 0 40px;color:#879
       <details class="qa" data-reveal><summary>What counts as a promise?<span class="pl">+</span></summary><div class="ans">A promise is any guarantee your software makes to users that you can express as a check, like "off means off" or "deleted means deleted." PromiseProof runs that check against a real browser journey and its network traffic, so the promise is judged by what actually happened, not by what a model claims. This prototype demonstrates one such promise, "off means off," across UI, storage, network and backend state. Its demo app also carries a second, independent fault that violates a different clause of the same promise, with its own distinct failure signature.</div></details>
       <details class="qa" data-reveal><summary>How do I know the verdict isn't just the AI's opinion?<span class="pl">+</span></summary><div class="ans">Because the AI never gives the verdict. An unchanged Playwright journey and a fixed evaluator run the check against reproducible evidence and return PASS or FAIL. GPT-5.6 only investigates, read only, ranking a set of registered candidate causes; if a fix is needed a human approves the exact patch by its fingerprint; the test alone decides the promise is kept.</div></details>
       <details class="qa" data-reveal><summary>Is the run real, or cached?<span class="pl">+</span></summary><div class="ans">The diagnosis is a recorded authentic GPT-5.6 run through OpenAI's Responses API. The repair is a recorded authentic Codex SDK run, version 0.144.4, one Codex turn, with a logged thread id and the approved patch's fingerprint. It happened once. The offline command replays that recorded evidence and re-runs the check, so the verdict is the same every time. The point is not that a model runs live; it is that the result is authentic and deterministically repeatable.</div></details>
+      <details class="qa" data-reveal><summary>What if GPT-5.6's diagnosis is wrong?<span class="pl">+</span></summary><div class="ans">It does not change the verdict. GPT-5.6 only proposes a cause and runs one registered replay, which supports or weakens that guess with recorded evidence. The unchanged test decides pass or fail on its own. If the diagnosis had been wrong, the approved fix would not have taken the check from FAIL to PASS, and the test would still say FAIL. A wrong guess cannot fake a passing result.</div></details>
     </div>
   </div>
 </section>
