@@ -21,3 +21,6 @@ BUILD_WEEK_HANDOFF.md
 
 # Atomic receipt writes should never be staged after an interrupted process.
 artifacts/*.tmp-*
+
+# Generated static-deploy bundle for the /judge page (rebuild from dist/client).
+promiseproof-judge.zip
