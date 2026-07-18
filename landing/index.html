@@ -10,7 +10,7 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png" />
 <meta property="og:type" content="website" />
 <meta property="og:title" content="PromiseProof: prove software keeps its promise" />
-<meta property="og:description" content="Prove your software keeps a promise to users, and find which boundary breaks it. A deterministic test, never a model, owns the verdict. OpenAI Build Week 2026." />
+<meta property="og:description" content="A prototype that proves one user-facing promise, &quot;off means off,&quot; is kept, and finds which boundary breaks it. A deterministic test, never a model, owns the verdict. OpenAI Build Week 2026." />
 <meta property="og:image" content="og-card.png" />
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:title" content="PromiseProof: prove software keeps its promise" />
@@ -200,8 +200,6 @@ html.js [data-reveal].in{opacity:1;transform:none;filter:none}
 .crow .i{flex:none;width:20px;height:20px;border-radius:50%;display:grid;place-items:center;font-size:.72rem;font-weight:800;margin-top:1px}
 .them .i{background:rgba(229,72,77,.16);color:#ff9296}
 .us .i{background:rgba(47,169,104,.2);color:var(--green-bright)}
-.cmp-punch{margin-top:34px;text-align:center;font-size:clamp(1.2rem,2.6vw,1.65rem);font-weight:800;letter-spacing:-.02em}
-.cmp-punch .hl{color:var(--green-bright)}
 
 .faq{margin-top:42px;display:flex;flex-direction:column;gap:12px}
 .qa{border:1px solid var(--paperline);border-radius:14px;background:#fff;overflow:hidden}
@@ -344,7 +342,7 @@ footer{border-top:1px solid rgba(255,255,255,.08);padding:54px 0 40px;color:#879
       <div class="step" data-reveal><div class="ico">02</div><h3>Investigate <span class="who">GPT-5.6, read only</span></h3><p>GPT-5.6 reads the evidence and ranks the likely causes. Top suspect: the app collects before it finishes loading the saved setting.</p></div>
       <div class="step" data-reveal><div class="ico">03</div><h3>Replay <span class="who">recorded</span></h3><p>A replay runs the exact startup order and captures it: collection started, the request crossed, and only then did the setting finish loading. Too late.</p></div>
       <div class="step" data-reveal><div class="ico">04</div><h3>Repair <span class="who">Codex, then a human</span></h3><p>Codex works only inside a throwaway copy and touches two files: load the saved setting before collecting, and add a test that locks the order in. A human approves that exact patch.</p></div>
-      <div class="step" data-reveal><div class="ico">05</div><h3>Prove <span class="who">the same fixed test</span></h3><p>In a fresh copy, the unchanged test runs again. The off case passes, a control with personalization on still works, and the promise holds.</p></div>
+      <div class="step" data-reveal><div class="ico">05</div><h3>Prove <span class="who">the untouched journey decides</span></h3><p>In a fresh copy, the pre-existing Playwright journey and its evaluator, neither touched by the patch, run again. The off case passes, a control with personalization on still works, and the promise holds. The patch also adds a regression test, but that new test is not the judge; the unchanged one is.</p></div>
     </div>
     <div class="redteam" data-reveal>
       <div class="rt-k">The part that's easy to miss</div>
@@ -392,7 +390,7 @@ footer{border-top:1px solid rgba(255,255,255,.08);padding:54px 0 40px;color:#879
               <tr><td>ON control</td><td>PASS</td></tr>
               <tr><td>Propagation control</td><td>PASS</td></tr>
             </table>
-            <div class="rk" style="margin-top:9px">ON is supposed to work: it staying green proves the check flags the real leak without failing code that is actually fine.</div>
+            <div class="rk" style="margin-top:9px">ON and the propagation row are no-fault controls: they must stay green, proving the check flags the real leak without failing code that is fine. The separate propagation fault shown further down is deliberately left red.</div>
           </div>
         </div>
       </div>
@@ -421,18 +419,12 @@ footer{border-top:1px solid rgba(255,255,255,.08);padding:54px 0 40px;color:#879
   </div>
 </section>
 
-<section class="band" id="compare" style="background:var(--bg2)">
+<section class="band" id="compare" style="background:var(--bg2);padding:70px 0">
   <div class="wrap">
     <span class="kick" data-reveal>Why you can trust the verdict</span>
     <h2 data-reveal>A model can say the promise holds. This lets you check for yourself.</h2>
-    <p class="lead" data-reveal>The trustworthy part is not that a model ran. It is what you can verify without taking anyone's word for it.</p>
-    <div class="roles">
-      <div class="role decide" data-reveal><div class="num">&check;</div><h3>A deterministic test owns it</h3><p>An unchanged Playwright journey and a fixed evaluator, not a model, return PASS or FAIL on whether the promise held.</p></div>
-      <div class="role decide d1" data-reveal><div class="num">&check;</div><h3>The run is authentic, and logged</h3><p>The GPT-5.6 diagnosis and the Codex repair really happened once, recorded with thread ids and the approved patch's fingerprint.</p></div>
-      <div class="role decide d2" data-reveal><div class="num">&check;</div><h3>You recheck it offline</h3><p>One command re-applies the approved patch to a fresh copy and re-runs the same check. Same verdict, every time.</p></div>
-    </div>
-    <p class="cmp-punch" data-reveal>Authentic once. <span class="hl">Deterministically rechecked offline.</span></p>
-    <p class="cmp-sub" data-reveal>This prototype demonstrates one "off means off" promise. The same pattern could extend to promises like "deleted means deleted."</p>
+    <p class="lead" data-reveal>The trustworthy part is not that a model ran, but that you never take its word for it: the run is authentic and logged, an unchanged test alone returns the verdict, and one offline command rechecks it on a fresh copy, shown above.</p>
+    <p class="cmp-sub" data-reveal style="text-align:left;margin-left:0;max-width:64ch">This prototype demonstrates one "off means off" promise. The same pattern could extend to promises like "deleted means deleted."</p>
   </div>
 </section>
 
