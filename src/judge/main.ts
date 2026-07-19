@@ -480,7 +480,7 @@ function renderInvestigate(data: JudgeData): HTMLElement {
   code.textContent = data.bundle.observedContradiction.violationCode;
   top.append(code);
   fork.append(top);
-  fork.append(element("p", "fork-split", "But two different code paths could explain it"));
+  fork.append(element("p", "fork-split", "GPT-5.6 ranked two registered explanations for it"));
 
   const cards = element("div", "hypothesis-grid");
   for (const hypothesis of data.bundle.initialHypotheses) {
@@ -509,6 +509,13 @@ function renderInvestigate(data: JudgeData): HTMLElement {
     ),
   );
   down.append(chip);
+  down.append(
+    element(
+      "p",
+      "replay-caption",
+      "A registered replay is one allowlisted factual experiment the model can request; deterministic code runs it and records the facts. This recorded replay confirms the leading explanation — it does not decide the verdict.",
+    ),
+  );
   fork.append(down);
   section.append(fork);
 

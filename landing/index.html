@@ -54,9 +54,11 @@ header{position:fixed;top:0;left:0;right:0;z-index:90;backdrop-filter:blur(10px)
 .eyebrow{display:inline-flex;align-items:center;gap:9px;font-family:var(--mono);font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;color:#93c2a8;border:1px solid rgba(90,211,154,.25);padding:6px 13px;border-radius:999px;margin-bottom:26px}
 .dot{width:7px;height:7px;border-radius:50%;background:var(--green);animation:pulse 2.4s ease-out infinite}
 @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(47,169,104,.45)}70%{box-shadow:0 0 0 7px rgba(47,169,104,0)}100%{box-shadow:0 0 0 0 rgba(47,169,104,0)}}
-h1.hero-h{font-size:clamp(2.5rem,6vw,4.3rem);line-height:1.03;letter-spacing:-.03em;font-weight:800;max-width:17ch;text-wrap:balance}
+h1.hero-h{font-size:clamp(2.3rem,5.4vw,3.9rem);line-height:1.05;letter-spacing:-.03em;font-weight:800;max-width:20ch;text-wrap:balance}
 h1.hero-h .g{background:linear-gradient(100deg,#9db8ff,#6f9bff 60%,#5ad39a);-webkit-background-clip:text;background-clip:text;color:transparent}
-.hero-sub{margin-top:26px;font-size:clamp(1.05rem,2vw,1.28rem);color:#bcc8db;max-width:54ch;line-height:1.5}
+.hero-sub{margin-top:26px;font-size:clamp(1.05rem,2vw,1.28rem);color:#bcc8db;max-width:56ch;line-height:1.5}
+.hero-contrast{margin-top:20px;font-size:1rem;line-height:1.5;color:#93a8c2;max-width:58ch;border-left:2px solid rgba(90,211,154,.45);padding-left:14px}
+.hero-contrast b{color:#cdd8e8}
 .hero-sub b{color:#fff;font-weight:700}
 .hero-cta{margin-top:34px;display:flex;gap:14px;flex-wrap:wrap;align-items:center}
 .scrollcue{margin-top:34px;display:inline-flex;align-items:center;gap:10px;color:#7f8da3;font-size:.8rem}
@@ -65,7 +67,7 @@ h1.hero-h .g{background:linear-gradient(100deg,#9db8ff,#6f9bff 60%,#5ad39a);-web
 
 /* hero content visible by default; JS opts into the entrance so it can never render blank */
 @keyframes heroIn{from{opacity:0;transform:translateY(20px);filter:blur(6px)}to{opacity:1;transform:none;filter:none}}
-html.js .hero .eyebrow,html.js .hero h1,html.js .hero-sub,html.js .hero-cta,html.js .hcard,html.js .scrollcue{opacity:0;animation:heroIn .85s cubic-bezier(.2,.6,.2,1) forwards}
+html.js .hero .eyebrow,html.js .hero h1,html.js .hero-sub,html.js .hero-contrast,html.js .hero-cta,html.js .hcard,html.js .scrollcue{opacity:0;animation:heroIn .85s cubic-bezier(.2,.6,.2,1) forwards}
 html.js .hero .eyebrow{animation-delay:.05s}html.js .hero h1{animation-delay:.16s}html.js .hero-sub{animation-delay:.3s}html.js .hero-cta{animation-delay:.44s}html.js .hcard{animation-delay:.58s}html.js .scrollcue{animation-delay:.72s}
 
 /* hero proof card: before FAIL -> after PASS, resolves on green, reproduce line */
@@ -250,9 +252,10 @@ footer{border-top:1px solid rgba(255,255,255,.08);padding:54px 0 40px;color:#879
 
 <section class="hero">
   <div class="wrap">
-    <span class="eyebrow"><span class="dot"></span> Does your software keep its word to users?</span>
-    <h1 class="hero-h">Software makes promises. <span class="g">PromiseProof proves they're kept.</span></h1>
-    <p class="hero-sub">PromiseProof turns a user-facing promise, the kind you make with "off means off" or "deleted means deleted," into an executable check that a deterministic test, <b>never a model</b>, decides. This prototype runs one such promise across UI, storage, network and backend, and finds <b>which boundary breaks it</b>.</p>
+    <span class="eyebrow"><span class="dot"></span> A user turned personalization off. One identifiable request still crossed.</span>
+    <h1 class="hero-h">When software breaks a promise, the AI that repairs it <span class="g">doesn't get the final word.</span></h1>
+    <p class="hero-sub">PromiseProof turns one "off means off" promise into cross-system evidence. GPT-5.6 ranks registered explanations and selects one bounded replay; PromiseProof runs it. Codex proposes a constrained two-file repair, a human approves the exact patch, and an unchanged Playwright journey and deterministic evaluator, <b>never a model</b>, decide PASS.</p>
+    <p class="hero-contrast">Monitoring can tell you a promise broke. PromiseProof carries the failure through bounded diagnosis, constrained repair, and independent verification.</p>
     <div class="hero-cta">
       <a class="btn btn-primary ext" href="/walkthrough/">Open the walkthrough</a>
       <a class="btn btn-ghost" href="#how">See how it works &darr;</a>
@@ -346,7 +349,7 @@ footer{border-top:1px solid rgba(255,255,255,.08);padding:54px 0 40px;color:#879
     </div>
     <div class="redteam" data-reveal>
       <div class="rt-k">The part that's easy to miss</div>
-      <p>During development, Codex did more than write the two-file repair: it <b>red-teamed the design</b> and found a way a model's own output could smuggle in a verdict. So the final investigation schema has <b>no verdict field at all</b>, and project code rejects any authoritative outcome language. A model literally cannot say "it's fixed."</p>
+      <p>During development, Codex did more than write the two-file repair: it <b>red-teamed the design</b> and found a way a model's own output could smuggle in a verdict. So <b>accepted model output cannot carry a verdict</b>: the final investigation schema has no verdict field, and project code rejects authoritative outcome language.</p>
     </div>
   </div>
 </section>
@@ -436,7 +439,7 @@ footer{border-top:1px solid rgba(255,255,255,.08);padding:54px 0 40px;color:#879
     <div class="faq">
       <details class="qa" data-reveal><summary>What counts as a promise?<span class="pl">+</span></summary><div class="ans">A promise is any guarantee your software makes to users that you can express as a check, like "off means off" or "deleted means deleted." PromiseProof runs that check against a real browser journey and its network traffic, so the promise is judged by what actually happened, not by what a model claims. This prototype demonstrates one such promise, "off means off," across UI, storage, network and backend state. Its demo app also carries a second, independent fault that violates a different clause of the same promise, with its own distinct failure signature.</div></details>
       <details class="qa" data-reveal><summary>How do I know the verdict isn't just the AI's opinion?<span class="pl">+</span></summary><div class="ans">Because the AI never gives the verdict. An unchanged Playwright journey and a fixed evaluator run the check against reproducible evidence and return PASS or FAIL. GPT-5.6 only investigates, read only, ranking a set of registered candidate causes; if a fix is needed a human approves the exact patch by its fingerprint; the test alone decides the promise is kept.</div></details>
-      <details class="qa" data-reveal><summary>Is the run real, or cached?<span class="pl">+</span></summary><div class="ans">The diagnosis is a recorded authentic GPT-5.6 run through OpenAI's Responses API. The repair is a recorded authentic Codex SDK run, version 0.144.4, one Codex turn, with a logged thread id and the approved patch's fingerprint. It happened once. The offline command replays that recorded evidence and re-runs the check, so the verdict is the same every time. The point is not that a model runs live; it is that the result is authentic and deterministically repeatable.</div></details>
+      <details class="qa" data-reveal><summary>Is the run real, or cached?<span class="pl">+</span></summary><div class="ans">The diagnosis is a recorded authentic GPT-5.6 run through OpenAI's Responses API. The repair is a recorded authentic Codex SDK run, version 0.144.4, one Codex turn, with a logged thread id and the approved patch's fingerprint. It happened once. The offline command replays that recorded evidence and re-runs the check, so the verdict is deterministically reproducible. The repository fingerprints the retained artifacts and verifies their internal consistency against the approved patch and verification receipts; this is repository-level integrity evidence, not third-party provider attestation.</div></details>
       <details class="qa" data-reveal><summary>What if GPT-5.6's diagnosis is wrong?<span class="pl">+</span></summary><div class="ans">It does not change the verdict. GPT-5.6 only proposes a cause and runs one registered replay, which supports or weakens that guess with recorded evidence. The unchanged test decides pass or fail on its own. If the diagnosis had been wrong, the approved fix would not have taken the check from FAIL to PASS, and the test would still say FAIL. A wrong guess cannot fake a passing result.</div></details>
     </div>
   </div>

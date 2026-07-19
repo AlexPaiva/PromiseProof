@@ -91,10 +91,14 @@ be selected with the absolute `PROMISEPROOF_ELEVATED_SANDBOX_HOME` path. The
 judge path is `npm run demo:rehearse`: a deterministic, no-key offline rehearsal
 that validates the authentic tracked artifacts, applies the approved patch only
 in disposable worktrees, and executes the unchanged verifier. It is a rehearsal
-of the recorded repair, not a fresh GPT-5.6 or Codex run. The recorded
-walkthrough of the same journey is served at `/judge` (`npm run dev`, then
-<http://127.0.0.1:4173/judge>); it reads only tracked evidence and makes no
-model call. The other local no-key paths remain
+of the recorded repair, not a fresh GPT-5.6 or Codex run. To browse the full
+no-key judge experience, build and serve the combined site — `npm run build:site`
+then `npx serve dist/site` — which serves the landing at `/` and the interactive
+walkthrough at `/walkthrough/`, matching production (so the walkthrough's "Back to
+overview" returns to the landing). The dev route (`npm run dev`, then
+<http://127.0.0.1:4173/judge>) mounts the walkthrough over the seeded Signal Shelf
+app and does not serve the landing at `/`. Either way the walkthrough reads only
+tracked evidence and makes no model call. The other local no-key paths remain
 `npm run test:investigation:offline` and `npm run test:repair:offline` after the
 reproducible installation above.
 

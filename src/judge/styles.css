@@ -1013,7 +1013,18 @@ pre {
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-wrap: wrap;
   gap: 12px;
+}
+
+.replay-caption {
+  flex-basis: 100%;
+  max-width: 66ch;
+  margin: 4px auto 0;
+  text-align: center;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: var(--muted);
 }
 
 .fork-down-arrow {
