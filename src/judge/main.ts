@@ -246,7 +246,7 @@ function renderObserve(data: JudgeData): HTMLElement {
     element(
       "p",
       "observe-intro-sub",
-      "Below is one real promise caught being broken, then proven fixed, in five steps. The model can propose the fix; it never gets to grade its own work.",
+      "Below is one real promise caught being broken, then an approved repair verified in isolation, in five steps. A model can propose the fix; it never gets to grade its own work.",
     ),
   );
   section.append(intro);
