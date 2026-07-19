@@ -49,6 +49,8 @@ body {
   font-size: 15px;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
+  /* hidden tooltips (position:absolute) must never add horizontal page scroll */
+  overflow-x: hidden;
 }
 
 code,
@@ -92,6 +94,9 @@ pre {
   min-height: 100vh;
   display: grid;
   grid-template-rows: auto auto 1fr auto;
+  /* a shrinkable column so wide children (nav, boundary row) never force the
+     whole shell wider than the viewport on small screens */
+  grid-template-columns: minmax(0, 1fr);
   max-width: 1200px;
   margin: 0 auto;
   padding: clamp(16px, 2.6vw, 28px) clamp(16px, 3vw, 32px) 22px;
@@ -2184,6 +2189,14 @@ pre {
     font-size: 15px;
   }
 
+  /* On narrow screens an info tooltip near a card's right edge can reach past the
+     viewport; clip the horizontal axis so it never adds page-wide sideways scroll.
+     Vertical stays visible, so upward-opening tooltips are never cut. Desktop is
+     left untouched — tooltips there have room to render in full. */
+  .judge-stage {
+    overflow-x: clip;
+  }
+
   .judge-nav-list {
     display: flex;
     gap: 8px;
@@ -2246,5 +2259,36 @@ pre {
 
   .judge-stage-controls {
     justify-content: space-between;
+  }
+}
+
+@media (max-width: 560px) {
+  .judge-shell {
+    padding: 13px 12px 18px;
+    gap: 14px;
+  }
+
+  .judge-topbar {
+    padding: 11px 13px;
+  }
+
+  /* the tagline is decorative and its long line stretches the topbar on phones */
+  .judge-brand-text small {
+    display: none;
+  }
+
+  /* stack the browser -> preference -> service nodes vertically */
+  .boundary-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .boundary-arrow {
+    transform: rotate(90deg);
+    align-self: center;
+  }
+
+  .judge-stage {
+    padding: 16px 14px;
   }
 }

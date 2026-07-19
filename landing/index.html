@@ -229,8 +229,14 @@ footer{border-top:1px solid rgba(255,255,255,.08);padding:54px 0 40px;color:#879
   .track::before{display:none}
   .gate{width:auto;border-left:0;border-top:2px dashed #cfd6e2}
   .gate .gl{position:static;transform:none;display:inline-block;margin:8px 0}
-  .packet,.harrow,.bcarrow{display:none}
+  .packet{display:none}
+  .harrow,.bcarrow{transform:rotate(90deg);justify-self:center;margin:2px 0}
   .hd-r .pill{display:none}
+}
+@media(max-width:560px){
+  header .hd-r .btn-ghost{display:none}
+  .hd{height:56px}
+  .hero{padding:120px 0 64px}
 }
 </style>
 </head>

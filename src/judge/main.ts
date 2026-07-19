@@ -370,6 +370,9 @@ function renderNegativeControl(data: JudgeData): HTMLElement {
       "Contextual recommendations kept working",
       "Contextual recommendations",
       "These are recommendations chosen without any user identity. This is the mode OFF is meant to use, and it kept working.",
+      // dot sits at the end of a long title (right side of the card); open the
+      // tooltip leftward so it never runs past the viewport on wide screens
+      "end",
     ),
   );
   card.append(head);
