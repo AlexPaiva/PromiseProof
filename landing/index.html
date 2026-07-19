@@ -83,7 +83,7 @@ html.js .hero .eyebrow{animation-delay:.05s}html.js .hero h1{animation-delay:.16
 .hstate .hmetric b{font-size:1.85rem;font-weight:800;letter-spacing:-.02em;line-height:1}
 .hstate .hmetric b.r{color:#ff8f93}.hstate .hmetric b.g{color:var(--green-bright)}
 .hstate .hd{margin-top:9px;color:#8093a8;font-size:.8rem;max-width:28ch}
-.harrow{align-self:center;color:#6c7b93;font-size:1.2rem;padding:0 6px}
+.harrow{align-self:center;font-size:2.8rem;line-height:1;padding:0 14px;font-weight:400;background:linear-gradient(90deg,#ff8f93 15%,var(--green-bright) 85%);-webkit-background-clip:text;background-clip:text;color:transparent}
 .hcard-repro{border-top:1px solid rgba(255,255,255,.07);padding:15px 24px;font-family:var(--mono);font-size:.82rem;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
 .hcard-repro .cmd{color:#e8edf6}.hcard-repro .cmd .p{color:var(--blue-bright)}
 .hcard-repro .res{color:var(--green-bright);font-weight:700}
@@ -172,7 +172,7 @@ html.js [data-reveal].in{opacity:1;transform:none;filter:none}
 .bc .v{margin-top:8px;font-family:var(--mono);font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;font-weight:700}
 .bc.b .v{color:var(--red-deep)}.bc.a .v{color:var(--green)}
 .bc .c{margin-top:6px;font-size:.86rem;color:#5a6678}
-.bcarrow{font-size:1.6rem;color:#aeb6c2}
+.bcarrow{font-size:2.6rem;line-height:1;font-weight:400;background:linear-gradient(90deg,var(--red) 15%,var(--green) 85%);-webkit-background-clip:text;background-clip:text;color:transparent}
 .plainproof{margin-top:26px;font-size:1.05rem;color:#3a4658;max-width:60ch}
 .plainproof b{color:var(--ink)}
 
@@ -268,7 +268,7 @@ footer{border-top:1px solid rgba(255,255,255,.08);padding:54px 0 40px;color:#879
           <div class="hmetric"><b class="r">1</b> <span>identifiable request reached recommendations</span></div>
           <div class="hd">while the user had personalization off</div>
         </div>
-        <div class="harrow">&rarr;</div>
+        <div class="harrow">&#10230;</div>
         <div class="hstate after">
           <div class="hl">Approved patch, verified in isolation</div>
           <div class="hv">&#10003; PASS</div>
@@ -357,7 +357,7 @@ footer{border-top:1px solid rgba(255,255,255,.08);padding:54px 0 40px;color:#879
     <h2 data-reveal>Not a claim. A result you can reproduce.</h2>
     <div class="bigcompare" data-reveal>
       <div class="bc b"><div class="n">1</div><div class="v">Before &#10007; FAIL</div><div class="c">identifiable request leaked</div></div>
-      <div class="bcarrow">&rarr;</div>
+      <div class="bcarrow">&#10230;</div>
       <div class="bc a"><div class="n">0</div><div class="v">After &#10003; PASS</div><div class="c">none leaked, feature still works</div></div>
     </div>
     <p class="plainproof" data-reveal>In plain terms: on a fresh isolated copy, the approved patch took the check from FAIL to PASS, and you can re-run that same check yourself and get the same verdict every time. <b>Authentic once, and deterministically rechecked offline.</b></p>
