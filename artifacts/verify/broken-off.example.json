@@ -3,132 +3,50 @@
   "contractFamily": "activity-personalization/v1",
   "evidence": {
     "scenario": "off",
-    "runId": "article-atlas-broken-off",
-    "userId": "article-atlas-reader-001",
-    "ui": {
-      "preference": "off",
+    "subjectId": "article-atlas-reader-001",
+    "control": {
+      "uiPreference": "off",
       "toggleChecked": false,
-      "feedFunctional": true
+      "storedPreference": "off",
+      "backendPreference": "off",
+      "reloadObserved": true
     },
-    "storage": {
-      "preference": "off"
-    },
-    "request": {
-      "activityPayloads": [
+    "activity": {
+      "capturedActivities": [
         {
           "runId": "article-atlas-broken-off",
-          "userId": "article-atlas-reader-001",
+          "subjectId": "article-atlas-reader-001",
           "eventType": "page_view",
           "itemId": "article-atlas-origin-001",
           "clientSequence": 1,
           "occurredAt": "2026-01-15T12:00:01.000Z"
         }
       ],
-      "preferenceUpdates": [
+      "recommendationServiceReceipts": [
         {
-          "targetUserId": "article-atlas-reader-001",
-          "payload": {
-            "runId": "article-atlas-broken-off",
-            "preference": "off"
-          }
+          "runId": "article-atlas-broken-off",
+          "subjectId": "article-atlas-reader-001",
+          "eventType": "page_view",
+          "itemId": "article-atlas-origin-001",
+          "clientSequence": 1,
+          "occurredAt": "2026-01-15T12:00:01.000Z"
         }
       ]
     },
-    "response": {
-      "preferenceUpdates": [
-        {
-          "userId": "article-atlas-reader-001",
-          "preference": "off",
-          "updatedAt": "2026-01-15T12:00:00.000Z",
-          "receipt": {
-            "kind": "preference",
-            "receiptId": "article-atlas-broken-off-preference-receipt",
-            "sequence": 1,
-            "receivedAt": "2026-01-15T12:00:00.000Z",
-            "userId": "article-atlas-reader-001",
-            "preference": "off"
-          }
-        }
-      ]
-    },
-    "backend": {
-      "preference": "off",
-      "activityReceipts": [
-        {
-          "kind": "activity",
-          "service": "recommendation",
-          "receiptId": "article-atlas-broken-off-activity-receipt",
-          "sequence": 2,
-          "receivedAt": "2026-01-15T12:00:01.000Z",
-          "payload": {
-            "runId": "article-atlas-broken-off",
-            "userId": "article-atlas-reader-001",
-            "eventType": "page_view",
-            "itemId": "article-atlas-origin-001",
-            "clientSequence": 1,
-            "occurredAt": "2026-01-15T12:00:01.000Z"
-          }
-        }
+    "recommendations": {
+      "feedFunctional": true,
+      "renderedSource": "contextual",
+      "renderedItemIds": [
+        "article-atlas-story-101"
       ],
-      "recommendationReceipts": [
+      "recommendationServiceReceipts": [
         {
-          "kind": "recommendation",
-          "receiptId": "article-atlas-broken-off-recommendation-receipt",
-          "sequence": 3,
-          "receivedAt": "2026-01-15T12:00:02.000Z",
           "source": "contextual",
-          "items": [
-            {
-              "id": "article-atlas-story-101",
-              "title": "A field guide to urban trees",
-              "description": "A synthetic Article Atlas recommendation.",
-              "eyebrow": "Article Atlas"
-            }
+          "itemIds": [
+            "article-atlas-story-101"
           ]
         }
-      ],
-      "preferenceReceipts": [
-        {
-          "kind": "preference",
-          "receiptId": "article-atlas-broken-off-preference-receipt",
-          "sequence": 1,
-          "receivedAt": "2026-01-15T12:00:00.000Z",
-          "userId": "article-atlas-reader-001",
-          "preference": "off"
-        }
       ]
-    },
-    "recommendation": {
-      "source": "contextual",
-      "itemIds": [
-        "article-atlas-story-101"
-      ]
-    },
-    "timestamps": {
-      "clientTimeline": [
-        {
-          "sequence": 1,
-          "event": "preference_restored",
-          "timestamp": "2026-01-15T12:00:00.000Z"
-        },
-        {
-          "sequence": 2,
-          "event": "recommendations_loaded",
-          "timestamp": "2026-01-15T12:00:02.000Z"
-        }
-      ],
-      "activityReceivedAt": [
-        "2026-01-15T12:00:01.000Z"
-      ],
-      "preferenceReceivedAt": [
-        "2026-01-15T12:00:00.000Z"
-      ],
-      "recommendationReceivedAt": [
-        "2026-01-15T12:00:02.000Z"
-      ]
-    },
-    "journey": {
-      "reloadObserved": true
     }
   }
 }

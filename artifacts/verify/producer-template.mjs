@@ -1,6 +1,6 @@
 import { readFile, writeFile } from "node:fs/promises";
 
-const [evidenceFile = "promise-evidence.json", outputFile = "bundle.json"] =
+const [evidenceFile = "external-evidence.json", outputFile = "bundle.json"] =
   process.argv.slice(2);
 const evidence = JSON.parse(await readFile(evidenceFile, "utf8"));
 const bundle = {

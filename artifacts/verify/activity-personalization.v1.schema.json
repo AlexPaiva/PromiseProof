@@ -20,22 +20,23 @@
             "off"
           ]
         },
-        "runId": {
+        "subjectId": {
           "type": "string",
           "minLength": 1,
           "maxLength": 256,
-          "pattern": "\\S"
+          "allOf": [
+            {
+              "pattern": "\\S"
+            },
+            {
+              "pattern": "^[^\\u0000-\\u001f\\u007f\\u202a-\\u202e\\u2066-\\u2069]*$"
+            }
+          ]
         },
-        "userId": {
-          "type": "string",
-          "minLength": 1,
-          "maxLength": 256,
-          "pattern": "\\S"
-        },
-        "ui": {
+        "control": {
           "type": "object",
           "properties": {
-            "preference": {
+            "uiPreference": {
               "type": "string",
               "enum": [
                 "on",
@@ -45,21 +46,7 @@
             "toggleChecked": {
               "type": "boolean"
             },
-            "feedFunctional": {
-              "type": "boolean"
-            }
-          },
-          "required": [
-            "preference",
-            "toggleChecked",
-            "feedFunctional"
-          ],
-          "additionalProperties": false
-        },
-        "storage": {
-          "type": "object",
-          "properties": {
-            "preference": {
+            "storedPreference": {
               "anyOf": [
                 {
                   "type": "string",
@@ -72,17 +59,31 @@
                   "type": "null"
                 }
               ]
+            },
+            "backendPreference": {
+              "type": "string",
+              "enum": [
+                "on",
+                "off"
+              ]
+            },
+            "reloadObserved": {
+              "type": "boolean"
             }
           },
           "required": [
-            "preference"
+            "uiPreference",
+            "toggleChecked",
+            "storedPreference",
+            "backendPreference",
+            "reloadObserved"
           ],
           "additionalProperties": false
         },
-        "request": {
+        "activity": {
           "type": "object",
           "properties": {
-            "activityPayloads": {
+            "capturedActivities": {
               "maxItems": 100,
               "type": "array",
               "items": {
@@ -92,13 +93,27 @@
                     "type": "string",
                     "minLength": 1,
                     "maxLength": 256,
-                    "pattern": "\\S"
+                    "allOf": [
+                      {
+                        "pattern": "\\S"
+                      },
+                      {
+                        "pattern": "^[^\\u0000-\\u001f\\u007f\\u202a-\\u202e\\u2066-\\u2069]*$"
+                      }
+                    ]
                   },
-                  "userId": {
+                  "subjectId": {
                     "type": "string",
                     "minLength": 1,
                     "maxLength": 256,
-                    "pattern": "\\S"
+                    "allOf": [
+                      {
+                        "pattern": "\\S"
+                      },
+                      {
+                        "pattern": "^[^\\u0000-\\u001f\\u007f\\u202a-\\u202e\\u2066-\\u2069]*$"
+                      }
+                    ]
                   },
                   "eventType": {
                     "type": "string",
@@ -108,7 +123,14 @@
                     "type": "string",
                     "minLength": 1,
                     "maxLength": 256,
-                    "pattern": "\\S"
+                    "allOf": [
+                      {
+                        "pattern": "\\S"
+                      },
+                      {
+                        "pattern": "^[^\\u0000-\\u001f\\u007f\\u202a-\\u202e\\u2066-\\u2069]*$"
+                      }
+                    ]
                   },
                   "clientSequence": {
                     "type": "integer",
@@ -123,7 +145,7 @@
                 },
                 "required": [
                   "runId",
-                  "userId",
+                  "subjectId",
                   "eventType",
                   "itemId",
                   "clientSequence",
@@ -132,270 +154,120 @@
                 "additionalProperties": false
               }
             },
-            "preferenceUpdates": {
+            "recommendationServiceReceipts": {
               "maxItems": 100,
               "type": "array",
               "items": {
                 "type": "object",
                 "properties": {
-                  "targetUserId": {
+                  "runId": {
                     "type": "string",
                     "minLength": 1,
                     "maxLength": 256,
-                    "pattern": "\\S"
-                  },
-                  "payload": {
-                    "type": "object",
-                    "properties": {
-                      "runId": {
-                        "type": "string",
-                        "minLength": 1,
-                        "maxLength": 256,
+                    "allOf": [
+                      {
                         "pattern": "\\S"
                       },
-                      "preference": {
-                        "type": "string",
-                        "enum": [
-                          "on",
-                          "off"
-                        ]
+                      {
+                        "pattern": "^[^\\u0000-\\u001f\\u007f\\u202a-\\u202e\\u2066-\\u2069]*$"
                       }
-                    },
-                    "required": [
-                      "runId",
-                      "preference"
-                    ],
-                    "additionalProperties": false
-                  }
-                },
-                "required": [
-                  "targetUserId",
-                  "payload"
-                ],
-                "additionalProperties": false
-              }
-            }
-          },
-          "required": [
-            "activityPayloads",
-            "preferenceUpdates"
-          ],
-          "additionalProperties": false
-        },
-        "response": {
-          "type": "object",
-          "properties": {
-            "preferenceUpdates": {
-              "maxItems": 100,
-              "type": "array",
-              "items": {
-                "type": "object",
-                "properties": {
-                  "userId": {
-                    "type": "string",
-                    "minLength": 1,
-                    "maxLength": 256,
-                    "pattern": "\\S"
-                  },
-                  "preference": {
-                    "type": "string",
-                    "enum": [
-                      "on",
-                      "off"
                     ]
                   },
-                  "updatedAt": {
+                  "subjectId": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 256,
+                    "allOf": [
+                      {
+                        "pattern": "\\S"
+                      },
+                      {
+                        "pattern": "^[^\\u0000-\\u001f\\u007f\\u202a-\\u202e\\u2066-\\u2069]*$"
+                      }
+                    ]
+                  },
+                  "eventType": {
+                    "type": "string",
+                    "const": "page_view"
+                  },
+                  "itemId": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 256,
+                    "allOf": [
+                      {
+                        "pattern": "\\S"
+                      },
+                      {
+                        "pattern": "^[^\\u0000-\\u001f\\u007f\\u202a-\\u202e\\u2066-\\u2069]*$"
+                      }
+                    ]
+                  },
+                  "clientSequence": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  "occurredAt": {
                     "type": "string",
                     "format": "date-time",
                     "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
-                  },
-                  "receipt": {
-                    "type": "object",
-                    "properties": {
-                      "kind": {
-                        "type": "string",
-                        "const": "preference"
-                      },
-                      "receiptId": {
-                        "type": "string",
-                        "minLength": 1,
-                        "maxLength": 256,
-                        "pattern": "\\S"
-                      },
-                      "sequence": {
-                        "type": "integer",
-                        "minimum": 0,
-                        "maximum": 9007199254740991
-                      },
-                      "receivedAt": {
-                        "type": "string",
-                        "format": "date-time",
-                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
-                      },
-                      "userId": {
-                        "type": "string",
-                        "minLength": 1,
-                        "maxLength": 256,
-                        "pattern": "\\S"
-                      },
-                      "preference": {
-                        "type": "string",
-                        "enum": [
-                          "on",
-                          "off"
-                        ]
-                      }
-                    },
-                    "required": [
-                      "kind",
-                      "receiptId",
-                      "sequence",
-                      "receivedAt",
-                      "userId",
-                      "preference"
-                    ],
-                    "additionalProperties": false
                   }
                 },
                 "required": [
-                  "userId",
-                  "preference",
-                  "updatedAt",
-                  "receipt"
+                  "runId",
+                  "subjectId",
+                  "eventType",
+                  "itemId",
+                  "clientSequence",
+                  "occurredAt"
                 ],
                 "additionalProperties": false
               }
             }
           },
           "required": [
-            "preferenceUpdates"
+            "capturedActivities",
+            "recommendationServiceReceipts"
           ],
           "additionalProperties": false
         },
-        "backend": {
+        "recommendations": {
           "type": "object",
           "properties": {
-            "preference": {
+            "feedFunctional": {
+              "type": "boolean"
+            },
+            "renderedSource": {
               "type": "string",
               "enum": [
-                "on",
-                "off"
+                "contextual",
+                "behavioral"
               ]
             },
-            "activityReceipts": {
+            "renderedItemIds": {
               "maxItems": 100,
               "type": "array",
               "items": {
-                "type": "object",
-                "properties": {
-                  "kind": {
-                    "type": "string",
-                    "const": "activity"
-                  },
-                  "service": {
-                    "type": "string",
-                    "const": "recommendation"
-                  },
-                  "receiptId": {
-                    "type": "string",
-                    "minLength": 1,
-                    "maxLength": 256,
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 256,
+                "allOf": [
+                  {
                     "pattern": "\\S"
                   },
-                  "sequence": {
-                    "type": "integer",
-                    "minimum": 0,
-                    "maximum": 9007199254740991
-                  },
-                  "receivedAt": {
-                    "type": "string",
-                    "format": "date-time",
-                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
-                  },
-                  "payload": {
-                    "type": "object",
-                    "properties": {
-                      "runId": {
-                        "type": "string",
-                        "minLength": 1,
-                        "maxLength": 256,
-                        "pattern": "\\S"
-                      },
-                      "userId": {
-                        "type": "string",
-                        "minLength": 1,
-                        "maxLength": 256,
-                        "pattern": "\\S"
-                      },
-                      "eventType": {
-                        "type": "string",
-                        "const": "page_view"
-                      },
-                      "itemId": {
-                        "type": "string",
-                        "minLength": 1,
-                        "maxLength": 256,
-                        "pattern": "\\S"
-                      },
-                      "clientSequence": {
-                        "type": "integer",
-                        "minimum": 0,
-                        "maximum": 9007199254740991
-                      },
-                      "occurredAt": {
-                        "type": "string",
-                        "format": "date-time",
-                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
-                      }
-                    },
-                    "required": [
-                      "runId",
-                      "userId",
-                      "eventType",
-                      "itemId",
-                      "clientSequence",
-                      "occurredAt"
-                    ],
-                    "additionalProperties": false
+                  {
+                    "pattern": "^[^\\u0000-\\u001f\\u007f\\u202a-\\u202e\\u2066-\\u2069]*$"
                   }
-                },
-                "required": [
-                  "kind",
-                  "service",
-                  "receiptId",
-                  "sequence",
-                  "receivedAt",
-                  "payload"
-                ],
-                "additionalProperties": false
+                ]
               }
             },
-            "recommendationReceipts": {
+            "recommendationServiceReceipts": {
               "maxItems": 100,
               "type": "array",
               "items": {
                 "type": "object",
                 "properties": {
-                  "kind": {
-                    "type": "string",
-                    "const": "recommendation"
-                  },
-                  "receiptId": {
-                    "type": "string",
-                    "minLength": 1,
-                    "maxLength": 256,
-                    "pattern": "\\S"
-                  },
-                  "sequence": {
-                    "type": "integer",
-                    "minimum": 0,
-                    "maximum": 9007199254740991
-                  },
-                  "receivedAt": {
-                    "type": "string",
-                    "format": "date-time",
-                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
-                  },
                   "source": {
                     "type": "string",
                     "enum": [
@@ -403,264 +275,60 @@
                       "behavioral"
                     ]
                   },
-                  "userId": {
+                  "subjectId": {
                     "type": "string",
                     "minLength": 1,
                     "maxLength": 256,
-                    "pattern": "\\S"
+                    "allOf": [
+                      {
+                        "pattern": "\\S"
+                      },
+                      {
+                        "pattern": "^[^\\u0000-\\u001f\\u007f\\u202a-\\u202e\\u2066-\\u2069]*$"
+                      }
+                    ]
                   },
-                  "items": {
+                  "itemIds": {
                     "maxItems": 100,
                     "type": "array",
                     "items": {
-                      "type": "object",
-                      "properties": {
-                        "id": {
-                          "type": "string",
-                          "minLength": 1,
-                          "maxLength": 256,
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 256,
+                      "allOf": [
+                        {
                           "pattern": "\\S"
                         },
-                        "title": {
-                          "type": "string",
-                          "maxLength": 512
-                        },
-                        "description": {
-                          "type": "string",
-                          "maxLength": 2048
-                        },
-                        "eyebrow": {
-                          "type": "string",
-                          "maxLength": 512
-                        }
-                      },
-                      "required": [
-                        "id",
-                        "title",
-                        "description",
-                        "eyebrow"
-                      ],
-                      "additionalProperties": false
-                    }
-                  }
-                },
-                "required": [
-                  "kind",
-                  "receiptId",
-                  "sequence",
-                  "receivedAt",
-                  "source",
-                  "items"
-                ],
-                "additionalProperties": false
-              }
-            },
-            "preferenceReceipts": {
-              "maxItems": 100,
-              "type": "array",
-              "items": {
-                "type": "object",
-                "properties": {
-                  "kind": {
-                    "type": "string",
-                    "const": "preference"
-                  },
-                  "receiptId": {
-                    "type": "string",
-                    "minLength": 1,
-                    "maxLength": 256,
-                    "pattern": "\\S"
-                  },
-                  "sequence": {
-                    "type": "integer",
-                    "minimum": 0,
-                    "maximum": 9007199254740991
-                  },
-                  "receivedAt": {
-                    "type": "string",
-                    "format": "date-time",
-                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
-                  },
-                  "userId": {
-                    "type": "string",
-                    "minLength": 1,
-                    "maxLength": 256,
-                    "pattern": "\\S"
-                  },
-                  "preference": {
-                    "type": "string",
-                    "enum": [
-                      "on",
-                      "off"
-                    ]
-                  }
-                },
-                "required": [
-                  "kind",
-                  "receiptId",
-                  "sequence",
-                  "receivedAt",
-                  "userId",
-                  "preference"
-                ],
-                "additionalProperties": false
-              }
-            }
-          },
-          "required": [
-            "preference",
-            "activityReceipts",
-            "recommendationReceipts",
-            "preferenceReceipts"
-          ],
-          "additionalProperties": false
-        },
-        "recommendation": {
-          "type": "object",
-          "properties": {
-            "source": {
-              "type": "string",
-              "enum": [
-                "contextual",
-                "behavioral"
-              ]
-            },
-            "itemIds": {
-              "maxItems": 100,
-              "type": "array",
-              "items": {
-                "type": "string",
-                "minLength": 1,
-                "maxLength": 256,
-                "pattern": "\\S"
-              }
-            }
-          },
-          "required": [
-            "source",
-            "itemIds"
-          ],
-          "additionalProperties": false
-        },
-        "timestamps": {
-          "type": "object",
-          "properties": {
-            "clientTimeline": {
-              "maxItems": 100,
-              "type": "array",
-              "items": {
-                "type": "object",
-                "properties": {
-                  "sequence": {
-                    "type": "integer",
-                    "minimum": 0,
-                    "maximum": 9007199254740991
-                  },
-                  "event": {
-                    "type": "string",
-                    "minLength": 1,
-                    "maxLength": 256,
-                    "pattern": "\\S"
-                  },
-                  "timestamp": {
-                    "type": "string",
-                    "format": "date-time",
-                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
-                  },
-                  "detail": {
-                    "type": "object",
-                    "propertyNames": {
-                      "type": "string",
-                      "maxLength": 256
-                    },
-                    "additionalProperties": {
-                      "anyOf": [
                         {
-                          "type": "string",
-                          "maxLength": 2048
-                        },
-                        {
-                          "type": "number"
-                        },
-                        {
-                          "type": "boolean"
-                        },
-                        {
-                          "type": "null"
+                          "pattern": "^[^\\u0000-\\u001f\\u007f\\u202a-\\u202e\\u2066-\\u2069]*$"
                         }
                       ]
                     }
                   }
                 },
                 "required": [
-                  "sequence",
-                  "event",
-                  "timestamp"
+                  "source",
+                  "itemIds"
                 ],
                 "additionalProperties": false
               }
-            },
-            "activityReceivedAt": {
-              "maxItems": 100,
-              "type": "array",
-              "items": {
-                "type": "string",
-                "format": "date-time",
-                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
-              }
-            },
-            "preferenceReceivedAt": {
-              "maxItems": 100,
-              "type": "array",
-              "items": {
-                "type": "string",
-                "format": "date-time",
-                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
-              }
-            },
-            "recommendationReceivedAt": {
-              "maxItems": 100,
-              "type": "array",
-              "items": {
-                "type": "string",
-                "format": "date-time",
-                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
-              }
             }
           },
           "required": [
-            "clientTimeline",
-            "activityReceivedAt",
-            "preferenceReceivedAt",
-            "recommendationReceivedAt"
-          ],
-          "additionalProperties": false
-        },
-        "journey": {
-          "type": "object",
-          "properties": {
-            "reloadObserved": {
-              "type": "boolean"
-            }
-          },
-          "required": [
-            "reloadObserved"
+            "feedFunctional",
+            "renderedSource",
+            "renderedItemIds",
+            "recommendationServiceReceipts"
           ],
           "additionalProperties": false
         }
       },
       "required": [
         "scenario",
-        "runId",
-        "userId",
-        "ui",
-        "storage",
-        "request",
-        "response",
-        "backend",
-        "recommendation",
-        "timestamps",
-        "journey"
+        "subjectId",
+        "control",
+        "activity",
+        "recommendations"
       ],
       "additionalProperties": false
     }
@@ -672,5 +340,5 @@
   ],
   "additionalProperties": false,
   "title": "PromiseProof activity-personalization/v1 evidence bundle",
-  "description": "Externally supplied evidence for the single activity-personalization/v1 contract family."
+  "description": "Externally supplied evaluator-relevant facts for the single activity-personalization/v1 contract family."
 }

@@ -130,7 +130,7 @@ test("CLI verifies passing OFF and ON with exit 0 without API key, network, brow
 test("CLI verifies broken ON with exit 2", async () => {
   const root = await temporaryRoot();
   const brokenOn = clone(passingOnExample);
-  brokenOn.evidence.backend.activityReceipts = [];
+  brokenOn.evidence.activity.recommendationServiceReceipts = [];
   const evidence = path.join(root, "broken-on.json");
   await writeJson(evidence, brokenOn);
 
@@ -268,7 +268,7 @@ test("CLI rejects oversized input and bounded collection overflow with exit 3", 
   const collection = path.join(root, "collection.json");
   await writeFile(oversized, " ".repeat(MAX_INPUT_BYTES + 1), "utf8");
   const tooMany = clone(passingOffExample);
-  tooMany.evidence.recommendation.itemIds = Array.from(
+  tooMany.evidence.recommendations.renderedItemIds = Array.from(
     { length: 101 },
     (_, index) => `article-${index}`,
   );

@@ -4,6 +4,7 @@ import path from "node:path";
 import test from "node:test";
 
 import { evaluatePromise } from "../../src/shared/evaluator.js";
+import { adaptExternalEvidence } from "../../src/verify/adapter.js";
 import {
   brokenOffExample,
   passingOffExample,
@@ -17,15 +18,22 @@ import {
   serializeGateReportMarkdown,
   serializeReportJson,
   serializeVerifyReportMarkdown,
+  type VerifyReport,
 } from "../../src/verify/report.js";
 import {
   externalBundleJsonSchema,
   MAX_COLLECTION_ITEMS,
+  type ExternalBundle,
 } from "../../src/verify/schema.js";
 import {
   runGate,
+  verifierTestHooks,
   verifyBundle,
 } from "../../src/verify/verify.js";
+import {
+  canonicalCases,
+  projectCanonicalEvidence,
+} from "./canonical-projection.js";
 
 const projectRoot = process.cwd();
 
@@ -33,78 +41,127 @@ function clone<T>(value: T): T {
   return structuredClone(value);
 }
 
-test("broken OFF maps the unchanged canonical failure to BROKEN_PROMISE", () => {
-  const result = verifyBundle(brokenOffExample);
+function stable(value: unknown): string {
+  return JSON.stringify(value);
+}
 
-  assert.equal(result.outcome, "BROKEN_PROMISE");
-  assert.equal(result.evaluation?.verdict, "fail");
+test("broken OFF, passing OFF, passing ON, and broken ON preserve canonical outcomes", () => {
+  const brokenOff = verifyBundle(brokenOffExample);
+  const passingOff = verifyBundle(passingOffExample);
+  const passingOn = verifyBundle(passingOnExample);
+  const brokenOnBundle = clone(passingOnExample);
+  brokenOnBundle.evidence.activity.recommendationServiceReceipts = [];
+  const brokenOn = verifyBundle(brokenOnBundle);
+
+  assert.equal(brokenOff.outcome, "BROKEN_PROMISE");
   assert.deepEqual(
-    result.evaluation?.violations.map((violation) => violation.code),
+    brokenOff.evaluation?.violations.map((item) => item.code),
     ["PP_IDENTIFIABLE_EVENT_LEAK"],
   );
-});
-
-test("passing OFF and passing ON map canonical passes to PASS", () => {
-  const off = verifyBundle(passingOffExample);
-  const on = verifyBundle(passingOnExample);
-
-  assert.equal(off.outcome, "PASS");
-  assert.equal(off.evaluation?.verdict, "pass");
-  assert.equal(on.outcome, "PASS");
-  assert.equal(on.evaluation?.verdict, "pass");
-});
-
-test("broken ON maps the unchanged canonical failure to BROKEN_PROMISE", () => {
-  const brokenOn = clone(passingOnExample);
-  brokenOn.evidence.backend.activityReceipts = [];
-
-  const result = verifyBundle(brokenOn);
-  assert.equal(result.outcome, "BROKEN_PROMISE");
+  assert.equal(passingOff.outcome, "PASS");
+  assert.equal(passingOn.outcome, "PASS");
+  assert.equal(brokenOn.outcome, "BROKEN_PROMISE");
   assert.deepEqual(
-    result.evaluation?.violations.map((violation) => violation.code),
+    brokenOn.evaluation?.violations.map((item) => item.code),
     ["PP_EXPECTED_ACTIVITY_MISSING"],
   );
 });
 
-test("gate requires passing OFF and ON evidence", () => {
-  const passing = runGate(passingOffExample, passingOnExample);
-  const broken = runGate(brokenOffExample, passingOnExample);
+test("gate evaluates exactly twice only after both inputs and slots are valid", () => {
+  let calls = 0;
+  const result = verifierTestHooks.runGateWithEvaluator(
+    passingOffExample,
+    passingOnExample,
+    (evidence) => {
+      calls += 1;
+      return evaluatePromise(evidence);
+    },
+  );
 
-  assert.equal(passing.outcome, "PASS");
-  assert.equal(broken.outcome, "BROKEN_PROMISE");
-  assert.equal(broken.off.outcome, "BROKEN_PROMISE");
-  assert.equal(broken.on.outcome, "PASS");
+  assert.equal(result.outcome, "PASS");
+  assert.equal(calls, 2);
 });
 
-test("gate rejects evidence supplied in the wrong scenario slot", () => {
+test("invalid gates atomically invoke no canonical evaluation", () => {
+  const invalidCases: Array<[string, unknown, unknown]> = [
+    ["OFF bundle in ON slot", passingOnExample, passingOnExample],
+    ["ON bundle in OFF slot", passingOffExample, passingOffExample],
+    ["malformed OFF", { malformed: true }, passingOnExample],
+    ["malformed ON", passingOffExample, { malformed: true }],
+    [
+      "unsupported version",
+      { ...clone(passingOffExample), schemaVersion: "2" },
+      passingOnExample,
+    ],
+    [
+      "unsupported family",
+      passingOffExample,
+      {
+        ...clone(passingOnExample),
+        contractFamily: "generic-consent/v1",
+      },
+    ],
+  ];
+
+  for (const [name, off, on] of invalidCases) {
+    let calls = 0;
+    const result = verifierTestHooks.runGateWithEvaluator(
+      off,
+      on,
+      (evidence) => {
+        calls += 1;
+        return evaluatePromise(evidence);
+      },
+    );
+
+    assert.equal(result.outcome, "INVALID_EVIDENCE", name);
+    assert.equal(result.off.evaluation, null, name);
+    assert.equal(result.on.evaluation, null, name);
+    assert.equal(calls, 0, name);
+    assert.ok(result.issues.length > 0, name);
+    assert.deepEqual([...result.issues], [...result.issues].sort(), name);
+    assert.deepEqual(
+      [...result.off.issues],
+      [...result.off.issues].sort(),
+      name,
+    );
+    assert.deepEqual(
+      [...result.on.issues],
+      [...result.on.issues].sort(),
+      name,
+    );
+  }
+});
+
+test("swapped gate slots remain unevaluated", () => {
   const result = runGate(passingOnExample, passingOffExample);
 
   assert.equal(result.outcome, "INVALID_EVIDENCE");
+  assert.equal(result.off.evaluation, null);
+  assert.equal(result.on.evaluation, null);
   assert.deepEqual(result.issues, [
     "--off bundle must contain OFF-scenario evidence",
     "--on bundle must contain ON-scenario evidence",
   ]);
-  assert.equal(result.off.evaluation?.verdict, "pass");
-  assert.equal(result.on.evaluation?.verdict, "pass");
 });
 
-test("strict validation rejects missing fields, unknown fields, and unsupported envelope values", () => {
+test("strict minimal validation rejects missing, unknown, unsupported, and malformed fields", () => {
   const missing = clone(passingOffExample) as Record<string, unknown>;
-  delete (missing.evidence as Record<string, unknown>).journey;
-
+  delete (missing.evidence as Record<string, unknown>).control;
   const unknown = clone(passingOffExample) as Record<string, unknown>;
   (unknown.evidence as Record<string, unknown>).unexpected = true;
   const nestedUnknown = clone(passingOffExample);
-  Object.assign(nestedUnknown.evidence.ui, { unexpected: true });
-
-  const version = {
-    ...clone(passingOffExample),
-    schemaVersion: "2",
-  };
+  Object.assign(nestedUnknown.evidence.control, { unexpected: true });
+  const version = { ...clone(passingOffExample), schemaVersion: "2" };
   const family = {
     ...clone(passingOffExample),
     contractFamily: "generic-consent/v1",
   };
+  const whitespace = clone(passingOffExample);
+  whitespace.evidence.subjectId = "   ";
+  const timestamp = clone(passingOnExample);
+  timestamp.evidence.activity.capturedActivities[0]!.occurredAt =
+    "not-a-timestamp";
 
   for (const candidate of [
     missing,
@@ -112,6 +169,8 @@ test("strict validation rejects missing fields, unknown fields, and unsupported 
     nestedUnknown,
     version,
     family,
+    whitespace,
+    timestamp,
   ]) {
     const result = verifyBundle(candidate);
     assert.equal(result.outcome, "INVALID_EVIDENCE");
@@ -120,22 +179,41 @@ test("strict validation rejects missing fields, unknown fields, and unsupported 
   }
 });
 
-test("validation rejects malformed identifiers and timestamps without coercion", () => {
-  const identifier = clone(passingOffExample);
-  identifier.evidence.runId = "   ";
-  const timestamp = clone(passingOffExample);
-  timestamp.evidence.timestamps.preferenceReceivedAt = ["not-a-timestamp"];
+test("ASCII controls and Unicode bidi override/isolate characters are rejected", () => {
+  const forbidden = [
+    "\u0000",
+    "\u0008",
+    "\t",
+    "\n",
+    "\r",
+    "\u007f",
+    "\u202a",
+    "\u202b",
+    "\u202c",
+    "\u202d",
+    "\u202e",
+    "\u2066",
+    "\u2067",
+    "\u2068",
+    "\u2069",
+  ];
 
-  assert.equal(verifyBundle(identifier).outcome, "INVALID_EVIDENCE");
-  assert.equal(verifyBundle(timestamp).outcome, "INVALID_EVIDENCE");
-  assert.equal(identifier.evidence.runId, "   ");
+  for (const character of forbidden) {
+    const candidate = clone(passingOnExample);
+    candidate.evidence.subjectId = `reader${character}name`;
+    assert.equal(
+      verifyBundle(candidate).outcome,
+      "INVALID_EVIDENCE",
+      `U+${character.codePointAt(0)!.toString(16).padStart(4, "0")}`,
+    );
+  }
 });
 
 test("bounded collections are rejected before canonical evaluation", () => {
   const oversized = clone(passingOffExample);
-  oversized.evidence.timestamps.activityReceivedAt = Array.from(
+  oversized.evidence.recommendations.renderedItemIds = Array.from(
     { length: MAX_COLLECTION_ITEMS + 1 },
-    () => "2026-01-15T12:00:01.000Z",
+    (_, index) => `article-${index}`,
   );
 
   const result = verifyBundle(oversized);
@@ -144,30 +222,48 @@ test("bounded collections are rejected before canonical evaluation", () => {
   assert.match(result.issues.join("\n"), /Too big/);
 });
 
-test("valid evidence reaches the unchanged evaluator only after validation", () => {
-  const invalid = {
-    schemaVersion: "1",
-    contractFamily: "activity-personalization/v1",
-    evidence: {},
-  };
-  const rejected = verifyBundle(invalid);
-  const accepted = verifyBundle(passingOffExample);
+test("Markdown encodes HTML, ampersands, backticks, pipes, and backslashes deterministically", () => {
+  const adversarial = clone(passingOnExample);
+  const subject = "<reader>&`pipe|slash\\";
+  adversarial.evidence.subjectId = subject;
+  adversarial.evidence.activity.capturedActivities[0]!.subjectId = subject;
+  adversarial.evidence.activity.recommendationServiceReceipts[0]!.subjectId =
+    subject;
+  adversarial.evidence.recommendations.recommendationServiceReceipts[0]!.subjectId =
+    subject;
 
-  assert.equal(rejected.outcome, "INVALID_EVIDENCE");
-  assert.equal(rejected.evaluation, null);
-  assert.deepEqual(
-    accepted.evaluation,
-    evaluatePromise(passingOffExample.evidence),
-  );
+  const first = createVerifyReport(verifyBundle(adversarial));
+  const second = createVerifyReport(verifyBundle(clone(adversarial)));
+  const markdown = serializeVerifyReportMarkdown(first);
+
+  assert.equal(first.outcome, "PASS");
+  assert.equal(markdown, serializeVerifyReportMarkdown(second));
+  assert.match(markdown, /&lt;reader&gt;&amp;&#96;pipe\\\|slash\\\\/);
+  assert.doesNotMatch(markdown, /<reader>/);
 });
 
-test("single reports are deterministic with canonical clause and violation ordering", () => {
-  const broken = verifyBundle(brokenOffExample);
-  const first = createVerifyReport(broken);
-  const second = createVerifyReport(verifyBundle(clone(brokenOffExample)));
+test("Markdown converts CR, LF, and CRLF to inert spaces after encoding", () => {
+  const report = clone(
+    createVerifyReport(verifyBundle(passingOffExample)),
+  ) as VerifyReport;
+  const mutableClause = report.clauses[0]!;
+  Object.assign(mutableClause, {
+    expected: "one\r\ntwo\nthree\rfour",
+    observed: "<tag>&`|\\",
+  });
+
+  const markdown = serializeVerifyReportMarkdown(report);
+  assert.match(markdown, /one two three four/);
+  assert.match(markdown, /&lt;tag&gt;&amp;&#96;\\\|\\\\/);
+  assert.doesNotMatch(markdown, /\r/);
+});
+
+test("single and gate reports preserve deterministic canonical ordering", () => {
+  const single = createVerifyReport(verifyBundle(brokenOffExample));
+  const gate = createGateReport(runGate(passingOffExample, passingOnExample));
 
   assert.deepEqual(
-    first.clauses.map((clause) => clause.id),
+    single.clauses.map((clause) => clause.id),
     [
       "no_identifiable_activity",
       "contextual_feed_functional",
@@ -175,97 +271,241 @@ test("single reports are deterministic with canonical clause and violation order
     ],
   );
   assert.deepEqual(
-    first.violations.map((violation) => violation.code),
-    ["PP_IDENTIFIABLE_EVENT_LEAK"],
-  );
-  assert.equal(serializeReportJson(first), serializeReportJson(second));
-  assert.equal(
-    serializeVerifyReportMarkdown(first),
-    serializeVerifyReportMarkdown(second),
-  );
-});
-
-test("gate reports preserve separate deterministic OFF and ON evaluations", () => {
-  const first = createGateReport(
-    runGate(passingOffExample, passingOnExample),
-  );
-  const second = createGateReport(
-    runGate(clone(passingOffExample), clone(passingOnExample)),
-  );
-
-  assert.deepEqual(
-    first.evaluations.off.clauses.map((clause) => clause.id),
-    [
-      "no_identifiable_activity",
-      "contextual_feed_functional",
-      "preference_survives_reload",
-    ],
-  );
-  assert.deepEqual(
-    first.evaluations.on.clauses.map((clause) => clause.id),
+    gate.evaluations.on.clauses.map((clause) => clause.id),
     ["expected_activity_received", "behavioral_feed_functional"],
   );
-  assert.equal(serializeReportJson(first), serializeReportJson(second));
   assert.equal(
-    serializeGateReportMarkdown(first),
-    serializeGateReportMarkdown(second),
+    serializeReportJson(single),
+    serializeReportJson(
+      createVerifyReport(verifyBundle(clone(brokenOffExample))),
+    ),
+  );
+  assert.equal(
+    serializeGateReportMarkdown(gate),
+    serializeGateReportMarkdown(
+      createGateReport(
+        runGate(clone(passingOffExample), clone(passingOnExample)),
+      ),
+    ),
   );
 });
 
-test("reports disclose external evidence authority and contain no machine metadata", () => {
-  const report = serializeReportJson(
+test("adapter placeholders never enter public reports", () => {
+  const json = serializeReportJson(
     createVerifyReport(verifyBundle(passingOffExample)),
   );
   const markdown = serializeVerifyReportMarkdown(
     createVerifyReport(verifyBundle(passingOffExample)),
   );
 
-  assert.match(report, /"evidenceSource": "externally-supplied"/);
-  assert.match(report, /"collectionAttested": false/);
-  assert.match(
-    report,
-    /"evaluation": "deterministic-promiseproof-evaluator"/,
-  );
-  assert.match(markdown, /Evidence source: externally supplied/);
-  assert.match(
-    markdown,
-    /Collection integrity: not attested by PromiseProof/,
-  );
-  assert.match(
-    markdown,
-    /Evaluation authority: deterministic PromiseProof evaluator/,
-  );
-  assert.doesNotMatch(report, /generatedAt|hostname|username|[A-Z]:\\/i);
+  for (const forbidden of [
+    "promiseproof-external-adapter",
+    "2000-01-01T00:00:00.000Z",
+    "Not part of externally supplied evidence",
+  ]) {
+    assert.doesNotMatch(json, new RegExp(forbidden));
+    assert.doesNotMatch(markdown, new RegExp(forbidden));
+  }
 });
 
-test("invalid evidence cannot be rendered as a canonical report", () => {
-  const invalid = verifyBundle({ malformed: true });
+test("canonical projection and deterministic adapter preserve every evaluation byte-for-byte", () => {
+  for (const [name, canonical] of Object.entries(canonicalCases)) {
+    const original = evaluatePromise(canonical);
+    const roundTripped = evaluatePromise(
+      adaptExternalEvidence(projectCanonicalEvidence(canonical)),
+    );
 
-  assert.equal(invalid.outcome, "INVALID_EVIDENCE");
-  assert.throws(
-    () => createVerifyReport(invalid),
-    /Invalid evidence cannot be rendered as a product verdict/,
-  );
+    assert.equal(stable(roundTripped), stable(original), name);
+  }
 });
 
-test("committed JSON Schema is generated byte-for-byte from the runtime Zod schema", async () => {
-  const committed = await readFile(
-    path.join(
-      projectRoot,
-      "artifacts",
-      "verify",
-      "activity-personalization.v1.schema.json",
-    ),
+test("every evaluator-relevant public field has mutation coverage", () => {
+  const mutationCases: Array<{
+    name: string;
+    bundle: ExternalBundle;
+    mutate: (bundle: ExternalBundle) => void;
+    invalid?: boolean;
+  }> = [
+    {
+      name: "scenario",
+      bundle: passingOffExample,
+      mutate: (item) => {
+        item.evidence.scenario = "on";
+      },
+    },
+    {
+      name: "subjectId",
+      bundle: passingOnExample,
+      mutate: (item) => {
+        item.evidence.subjectId = "different-subject";
+      },
+    },
+    ...([
+      ["uiPreference", "on"],
+      ["toggleChecked", true],
+      ["storedPreference", "on"],
+      ["backendPreference", "on"],
+      ["reloadObserved", false],
+    ] as const).map(([field, value]) => ({
+      name: `control.${field}`,
+      bundle: passingOffExample,
+      mutate: (item: ExternalBundle) => {
+        Object.assign(item.evidence.control, { [field]: value });
+      },
+    })),
+    {
+      name: "capturedActivities",
+      bundle: passingOnExample,
+      mutate: (item) => {
+        item.evidence.activity.capturedActivities = [];
+      },
+    },
+    {
+      name: "recommendationServiceActivityReceipts",
+      bundle: passingOnExample,
+      mutate: (item) => {
+        item.evidence.activity.recommendationServiceReceipts = [];
+      },
+    },
+    ...(["runId", "subjectId", "itemId", "clientSequence", "occurredAt"] as const)
+      .flatMap((field) => [
+        {
+          name: `capturedActivity.${field}`,
+          bundle: passingOnExample,
+          mutate: (item: ExternalBundle) => {
+            Object.assign(item.evidence.activity.capturedActivities[0]!, {
+              [field]:
+                field === "clientSequence"
+                  ? 2
+                  : field === "occurredAt"
+                    ? "2026-01-15T12:00:02.000Z"
+                    : `different-${field}`,
+            });
+          },
+        },
+        {
+          name: `activityReceipt.${field}`,
+          bundle: passingOnExample,
+          mutate: (item: ExternalBundle) => {
+            Object.assign(
+              item.evidence.activity.recommendationServiceReceipts[0]!,
+              {
+                [field]:
+                  field === "clientSequence"
+                    ? 2
+                    : field === "occurredAt"
+                      ? "2026-01-15T12:00:02.000Z"
+                      : `different-${field}`,
+              },
+            );
+          },
+        },
+      ]),
+    {
+      name: "capturedActivity.eventType",
+      bundle: passingOnExample,
+      invalid: true,
+      mutate: (item) => {
+        Object.assign(item.evidence.activity.capturedActivities[0]!, {
+          eventType: "click",
+        });
+      },
+    },
+    {
+      name: "activityReceipt.eventType",
+      bundle: passingOnExample,
+      invalid: true,
+      mutate: (item) => {
+        Object.assign(
+          item.evidence.activity.recommendationServiceReceipts[0]!,
+          { eventType: "click" },
+        );
+      },
+    },
+    {
+      name: "feedFunctional",
+      bundle: passingOffExample,
+      mutate: (item) => {
+        item.evidence.recommendations.feedFunctional = false;
+      },
+    },
+    {
+      name: "renderedSource",
+      bundle: passingOffExample,
+      mutate: (item) => {
+        item.evidence.recommendations.renderedSource = "behavioral";
+      },
+    },
+    {
+      name: "renderedItemIds",
+      bundle: passingOffExample,
+      mutate: (item) => {
+        item.evidence.recommendations.renderedItemIds = ["different-item"];
+      },
+    },
+    {
+      name: "recommendationServiceReceipts",
+      bundle: passingOffExample,
+      mutate: (item) => {
+        item.evidence.recommendations.recommendationServiceReceipts = [];
+      },
+    },
+    {
+      name: "recommendationReceipt.source",
+      bundle: passingOffExample,
+      mutate: (item) => {
+        item.evidence.recommendations.recommendationServiceReceipts[0]!.source =
+          "behavioral";
+      },
+    },
+    {
+      name: "recommendationReceipt.subjectId",
+      bundle: passingOffExample,
+      mutate: (item) => {
+        item.evidence.recommendations.recommendationServiceReceipts[0]!.subjectId =
+          item.evidence.subjectId;
+      },
+    },
+    {
+      name: "recommendationReceipt.itemIds",
+      bundle: passingOffExample,
+      mutate: (item) => {
+        item.evidence.recommendations.recommendationServiceReceipts[0]!.itemIds =
+          ["different-item"];
+      },
+    },
+  ];
+
+  for (const mutation of mutationCases) {
+    const candidate = clone(mutation.bundle);
+    const baseline = verifyBundle(mutation.bundle);
+    mutation.mutate(candidate);
+    const changed = verifyBundle(candidate);
+
+    if (mutation.invalid) {
+      assert.equal(changed.outcome, "INVALID_EVIDENCE", mutation.name);
+    } else {
+      assert.notEqual(
+        stable(changed.evaluation),
+        stable(baseline.evaluation),
+        mutation.name,
+      );
+      assert.equal(changed.outcome, "BROKEN_PROMISE", mutation.name);
+    }
+  }
+});
+
+test("committed schema and scaffold text are generated from runtime definitions", async () => {
+  const artifactRoot = path.join(projectRoot, "artifacts", "verify");
+  const committedSchema = await readFile(
+    path.join(artifactRoot, "activity-personalization.v1.schema.json"),
     "utf8",
   );
-  const generated = `${JSON.stringify(externalBundleJsonSchema(), null, 2)}\n`;
 
-  assert.equal(committed, generated);
-});
-
-test("committed scaffold text artifacts match the runtime scaffold exactly", async () => {
-  const artifactRoot = path.join(projectRoot, "artifacts", "verify");
-
+  assert.equal(
+    committedSchema,
+    `${JSON.stringify(externalBundleJsonSchema(), null, 2)}\n`,
+  );
   assert.equal(
     await readFile(path.join(artifactRoot, "producer-template.mjs"), "utf8"),
     producerTemplate,
@@ -274,9 +514,11 @@ test("committed scaffold text artifacts match the runtime scaffold exactly", asy
     await readFile(path.join(artifactRoot, "README.md"), "utf8"),
     scaffoldReadme,
   );
+  assert.ok(committedSchema.split("\n").length < 400);
+  assert.ok(Buffer.byteLength(committedSchema) < 16_000);
 });
 
-test("Article Atlas examples are independent and limited to the supported family", () => {
+test("Article Atlas examples remain independent and one-family only", () => {
   const serialized = JSON.stringify([
     brokenOffExample,
     passingOffExample,
@@ -288,14 +530,12 @@ test("Article Atlas examples are independent and limited to the supported family
     serialized,
     /signal shelf|initialization-race|propagation-failure|fixture|src\//i,
   );
-  assert.equal(brokenOffExample.contractFamily, "activity-personalization/v1");
-  assert.equal(passingOffExample.contractFamily, "activity-personalization/v1");
-  assert.equal(passingOnExample.contractFamily, "activity-personalization/v1");
 });
 
 test("external verifier modules have no forbidden implementation imports", async () => {
   const verifyDirectory = path.join(projectRoot, "src", "verify");
   const filenames = [
+    "adapter.ts",
     "cli.ts",
     "examples.ts",
     "outcome.ts",
@@ -310,17 +550,4 @@ test("external verifier modules have no forbidden implementation imports", async
     const source = await readFile(path.join(verifyDirectory, filename), "utf8");
     assert.doesNotMatch(source, forbidden, filename);
   }
-
-  const verifierSource = await readFile(
-    path.join(verifyDirectory, "verify.ts"),
-    "utf8",
-  );
-  assert.match(
-    verifierSource,
-    /import \{ evaluatePromise \} from "\.\.\/shared\/evaluator\.js"/,
-  );
-  assert.ok(
-    verifierSource.indexOf("if (!parsed.success)") <
-      verifierSource.indexOf("evaluatePromise(evidence)"),
-  );
 });

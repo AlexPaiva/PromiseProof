@@ -106,6 +106,10 @@ export function serializeReportJson(
 
 function markdownInline(value: string): string {
   return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll("`", "&#96;")
     .replaceAll("\\", "\\\\")
     .replaceAll("|", "\\|")
     .replaceAll("\r\n", " ")
