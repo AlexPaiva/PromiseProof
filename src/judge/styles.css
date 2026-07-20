@@ -2197,15 +2197,87 @@ pre {
     overflow-x: clip;
   }
 
+  /* Compact progress stepper: numbered dots spread across the width, joined by a
+     single connector line drawn behind them, with only the current step expanded
+     to a labelled pill. No horizontal scroll; reads like a progress bar. The
+     active pill sizes to its own content (space-between distribution) so a long
+     label like "Investigate" is never squeezed. Labels stay in the DOM (hidden,
+     not removed) so tests and the desktop grid are unaffected. */
   .judge-nav-list {
     display: flex;
-    gap: 8px;
-    overflow-x: auto;
-    padding-bottom: 4px;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+    position: relative;
+    overflow: visible;
+    padding-bottom: 0;
+  }
+
+  /* the connector runs center-to-center of the first and last dots (inset by
+     half a 36px circle) and is punched through by each dot's opaque background */
+  .judge-nav-list::before {
+    content: "";
+    position: absolute;
+    left: 18px;
+    right: 18px;
+    top: 50%;
+    height: 2px;
+    background: var(--line);
+    border-radius: 2px;
+    z-index: 0;
+  }
+
+  .judge-nav-item {
+    position: relative;
+    z-index: 1;
+    display: flex;
   }
 
   .judge-nav-button {
     flex: none;
+    gap: 0;
+    padding: 0;
+    width: 36px;
+    height: 36px;
+    justify-content: center;
+    border-radius: 50%;
+  }
+
+  .judge-nav-label {
+    display: none;
+  }
+
+  .judge-nav-index {
+    width: auto;
+    height: auto;
+    border: none;
+    background: transparent;
+    font-size: 0.85rem;
+    color: inherit;
+  }
+
+  .judge-nav-button[data-current="true"] {
+    width: auto;
+    height: 36px;
+    gap: 8px;
+    padding: 0 14px 0 5px;
+    border-radius: 999px;
+  }
+
+  .judge-nav-button[data-current="true"] .judge-nav-label {
+    display: inline;
+    font-size: 0.86rem;
+    font-weight: 650;
+    white-space: nowrap;
+  }
+
+  .judge-nav-button[data-current="true"] .judge-nav-index {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: var(--blue);
+    color: #fff;
+    font-size: 0.78rem;
   }
 
   .observe-sequence {
