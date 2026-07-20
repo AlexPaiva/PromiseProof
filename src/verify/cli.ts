@@ -361,27 +361,36 @@ async function runCheck(args: readonly string[], io: CliIo): Promise<number> {
   const hasEvidence = args.includes("--evidence");
   const hasGate = args.includes("--off") || args.includes("--on");
 
-  if (hasEvidence && !hasGate) {
-    const options = parseOptions(args, ["report", "evidence"]);
-    const [report, evidence] = await Promise.all([
-      readExternalJson(options.report!),
-      readExternalJson(options.evidence!),
-    ]);
-    const result = await checkSingle(report, evidence);
-    io.stdout(`${result.status}: ${result.detail}`);
-    return CHECK_EXIT[result.status];
-  }
+  try {
+    if (hasEvidence && !hasGate) {
+      const options = parseOptions(args, ["report", "evidence"]);
+      const [report, evidence] = await Promise.all([
+        readExternalJson(options.report!),
+        readExternalJson(options.evidence!),
+      ]);
+      const result = await checkSingle(report, evidence);
+      io.stdout(`${result.status}: ${result.detail}`);
+      return CHECK_EXIT[result.status];
+    }
 
-  if (hasGate && !hasEvidence) {
-    const options = parseOptions(args, ["report", "off", "on"]);
-    const [report, off, on] = await Promise.all([
-      readExternalJson(options.report!),
-      readExternalJson(options.off!),
-      readExternalJson(options.on!),
-    ]);
-    const result = await checkGate(report, off, on);
-    io.stdout(`${result.status}: ${result.detail}`);
-    return CHECK_EXIT[result.status];
+    if (hasGate && !hasEvidence) {
+      const options = parseOptions(args, ["report", "off", "on"]);
+      const [report, off, on] = await Promise.all([
+        readExternalJson(options.report!),
+        readExternalJson(options.off!),
+        readExternalJson(options.on!),
+      ]);
+      const result = await checkGate(report, off, on);
+      io.stdout(`${result.status}: ${result.detail}`);
+      return CHECK_EXIT[result.status];
+    }
+  } catch (error) {
+    if (error instanceof InvalidEvidenceFileError) {
+      io.stderr("INVALID_REPORT_OR_EVIDENCE");
+      io.stderr(`- ${error.message}`);
+      return CHECK_EXIT.INVALID_REPORT_OR_EVIDENCE;
+    }
+    throw error;
   }
 
   throw new UsageError(

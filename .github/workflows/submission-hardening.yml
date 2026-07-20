@@ -39,6 +39,7 @@ jobs:
       - run: npx playwright install chromium
       - run: npm run build
       - run: npm run evidence:verify
+      - run: npm run test:external
       - run: npm run test:evidence:unit
       - run: npm run test:investigation:unit
       - run: npm run test:investigation:offline
@@ -72,6 +73,7 @@ jobs:
       - run: npm ci
       - run: npx playwright install chromium
       - run: npm test
+      - run: npm run test:external:pipeline
       - run: npm run test:expected-red
 
   repair-rehearsal:
@@ -138,6 +140,7 @@ jobs:
       - run: npm ci
       - run: npx playwright install chromium
       - run: npm run build:site
+      - run: npm run test:verify:judge
       - run: npm run test:judge:unit
       - run: npm run test:judge:interface
       - run: npm run demo:rehearse

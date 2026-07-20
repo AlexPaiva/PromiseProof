@@ -438,3 +438,52 @@ test("CLI help succeeds and documents commands and exit codes", () => {
   assert.match(result.stdout, /gate --off/);
   assert.match(result.stdout, /3  INVALID_EVIDENCE/);
 });
+
+test("CLI check distinguishes malformed reports from valid semantic mismatches", async () => {
+  const root = await temporaryRoot();
+  const off = path.join(root, "off.json");
+  const on = path.join(root, "on.json");
+  const output = path.join(root, "output");
+  const reportPath = path.join(output, "report.json");
+  await writeJson(off, passingOffExample);
+  await writeJson(on, passingOnExample);
+  assert.equal(
+    runCli(["gate", "--off", off, "--on", on, "--out", output]).status,
+    0,
+  );
+
+  await writeJson(reportPath, { schemaVersion: "2" });
+  const malformed = runCli([
+    "check",
+    "--report",
+    reportPath,
+    "--off",
+    off,
+    "--on",
+    on,
+  ]);
+  assert.equal(malformed.status, 3);
+  assert.match(malformed.stdout, /INVALID_REPORT_OR_EVIDENCE/);
+
+  const genuineOutput = path.join(root, "genuine");
+  assert.equal(
+    runCli(["gate", "--off", off, "--on", on, "--out", genuineOutput]).status,
+    0,
+  );
+  const forged = JSON.parse(
+    await readFile(path.join(genuineOutput, "report.json"), "utf8"),
+  );
+  forged.outcome = "BROKEN_PROMISE";
+  await writeJson(reportPath, forged);
+  const mismatch = runCli([
+    "check",
+    "--report",
+    reportPath,
+    "--off",
+    off,
+    "--on",
+    on,
+  ]);
+  assert.equal(mismatch.status, 4);
+  assert.match(mismatch.stdout, /STALE_OR_MISMATCH/);
+});

@@ -134,6 +134,73 @@ test("a document that is not a v2 report is INVALID_REPORT_OR_EVIDENCE", async (
   );
 });
 
+test("single and gate checks reject the other report kind", async () => {
+  const single = await genuineSingle(passingOffExample);
+  const gate = await genuineGate(passingOffExample, passingOnExample);
+
+  assert.equal(
+    (await checkSingle(gate, passingOffExample)).status,
+    "INVALID_REPORT_OR_EVIDENCE",
+  );
+  assert.equal(
+    (await checkGate(single, passingOffExample, passingOnExample)).status,
+    "INVALID_REPORT_OR_EVIDENCE",
+  );
+});
+
+test("strict report validation rejects missing, malformed, and unknown fields", async () => {
+  const genuine = clone(await genuineSingle(brokenOffExample));
+  const cases: unknown[] = [];
+
+  const missingAuthority = clone(genuine);
+  delete missingAuthority.authority;
+  cases.push(missingAuthority);
+
+  const malformedClause = clone(genuine);
+  malformedClause.clauses[0].passed = "yes";
+  cases.push(malformedClause);
+
+  const malformedViolation = clone(genuine);
+  malformedViolation.violations[0].code = "PP_NOT_A_REAL_VIOLATION";
+  cases.push(malformedViolation);
+
+  const unknownField = clone(genuine);
+  unknownField.unexpected = true;
+  cases.push(unknownField);
+
+  const wrongOutcome = clone(genuine);
+  wrongOutcome.outcome = "INCONCLUSIVE";
+  cases.push(wrongOutcome);
+
+  const invalidDigest = clone(genuine);
+  invalidDigest.inputBinding.sha256 = "not-a-sha256";
+  cases.push(invalidDigest);
+
+  const wrongVersion = clone(genuine);
+  wrongVersion.schemaVersion = "1";
+  cases.push(wrongVersion);
+
+  for (const report of cases) {
+    assert.equal(
+      (await checkSingle(report, brokenOffExample)).status,
+      "INVALID_REPORT_OR_EVIDENCE",
+    );
+  }
+});
+
+test("valid-shaped semantic forgeries remain STALE_OR_MISMATCH", async () => {
+  const report = clone(await genuineSingle(brokenOffExample));
+  report.outcome = "PASS";
+  report.canonicalVerdict = "pass";
+  report.authority.evaluatorSourceSha256 = "0".repeat(64);
+  report.authority.collectionAttested = true;
+
+  assert.equal(
+    (await checkSingle(report, brokenOffExample)).status,
+    "STALE_OR_MISMATCH",
+  );
+});
+
 test("invalid evidence is INVALID_REPORT_OR_EVIDENCE", async () => {
   const report = await genuineSingle(passingOffExample);
   assert.equal(

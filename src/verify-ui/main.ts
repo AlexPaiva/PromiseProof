@@ -15,7 +15,10 @@ import {
   serializeReportJson,
   type GateReport,
 } from "../verify/report.js";
-import type { ExternalActivity } from "../verify/schema.js";
+import {
+  MAX_INPUT_BYTES,
+  type ExternalActivity,
+} from "../verify/schema.js";
 import { runGate, verifyBundle, type VerifyResult } from "../verify/verify.js";
 
 // ---------------------------------------------------------------------------
@@ -506,6 +509,7 @@ function renderByo(
   off: VerifyResult,
   on: VerifyResult | null,
   digests: Array<[string, string]>,
+  gateIssues: readonly string[] = [],
 ): void {
   const result = byId("vf-byo-result");
   const outcome = byId("vf-byo-outcome");
@@ -526,6 +530,7 @@ function renderByo(
   setPill(outcome, combinedOutcome, outcomeKind(combinedOutcome));
 
   const allIssues = [
+    ...gateIssues,
     ...off.issues.map((issue) => (on === null ? issue : `off · ${issue}`)),
     ...(on?.issues ?? []).map((issue) => `on · ${issue}`),
   ];
@@ -554,14 +559,12 @@ async function runByo(): Promise<void> {
   }
   try {
     if (byoOffText !== null && byoOnText !== null) {
-      const off = verifyBundle(parseBundle(byoOffText));
-      const on = verifyBundle(parseBundle(byoOnText));
       const gate = runGate(parseBundle(byoOffText), parseBundle(byoOnText));
       const digests =
         gate.outcome === "INVALID_EVIDENCE"
           ? []
           : gateDigestPairs(await createGateReport(gate));
-      renderByo(off, on, digests);
+      renderByo(gate.off, gate.on, digests, gate.issues);
     } else {
       const single = verifyBundle(parseBundle((byoOffText ?? byoOnText) as string));
       const digests =
@@ -577,8 +580,23 @@ async function runByo(): Promise<void> {
     }
     toast("Verified local evidence.");
   } catch {
+    renderByoInvalid("<root>: malformed JSON");
     toast("That file is not valid JSON.");
   }
+}
+
+function renderByoInvalid(issue: string): void {
+  const result = byId("vf-byo-result");
+  const outcome = byId("vf-byo-outcome");
+  const issues = byId("vf-byo-issues");
+  result.hidden = false;
+  setPill(outcome, "INVALID_EVIDENCE", "warn");
+  issues.replaceChildren(tag("li", undefined, issue));
+  issues.hidden = false;
+  byId("vf-byo-table").hidden = true;
+  byId("vf-byo-clauses").replaceChildren();
+  byId("vf-byo-violations").replaceChildren();
+  byId("vf-byo-digests").replaceChildren();
 }
 
 function wireFile(
@@ -591,12 +609,26 @@ function wireFile(
   const drop = byId(dropId);
   const nameEl = byId(nameId);
   const load = (file: File): void => {
+    assign(null, file.name);
+    byId("vf-byo-result").hidden = true;
+    if (file.size > MAX_INPUT_BYTES) {
+      const issue = `<root>: input exceeds ${MAX_INPUT_BYTES}-byte limit`;
+      nameEl.textContent = `${file.name} — rejected`;
+      input.value = "";
+      renderByoInvalid(issue);
+      toast("That file exceeds the verifier input-size limit.");
+      return;
+    }
     const reader = new FileReader();
     reader.onload = () => {
       assign(String(reader.result), file.name);
       nameEl.textContent = file.name;
     };
-    reader.onerror = () => toast("Could not read that file.");
+    reader.onerror = () => {
+      assign(null, file.name);
+      renderByoInvalid("<root>: file could not be read");
+      toast("Could not read that file.");
+    };
     reader.readAsText(file);
   };
   input.addEventListener("change", () => {
