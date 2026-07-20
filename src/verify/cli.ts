@@ -10,6 +10,11 @@ import process from "node:process";
 import { fileURLToPath } from "node:url";
 
 import {
+  CHECK_EXIT,
+  checkGate,
+  checkSingle,
+} from "./check.js";
+import {
   brokenOffExample,
   passingOffExample,
   passingOnExample,
@@ -43,13 +48,22 @@ Usage:
   npm run promiseproof -- init --out <directory>
   npm run promiseproof -- verify --evidence <bundle.json> --out <directory>
   npm run promiseproof -- gate --off <off-bundle.json> --on <on-bundle.json> --out <directory>
+  npm run promiseproof -- check --report <report.json> --evidence <bundle.json>
+  npm run promiseproof -- check --report <report.json> --off <off.json> --on <on.json>
   npm run promiseproof -- --help
 
-Exit codes:
+Exit codes (verify / gate):
   0  PASS
   1  usage, I/O, or unexpected execution error
   2  BROKEN_PROMISE
   3  INVALID_EVIDENCE
+
+Exit codes (check): the report is reproduced by re-running the unchanged
+evaluator on the supplied evidence, not merely hash-compared.
+  0  BOUND_AND_REPRODUCED
+  1  usage, I/O, or unexpected execution error
+  3  INVALID_REPORT_OR_EVIDENCE
+  4  STALE_OR_MISMATCH
 
 Supported contract family: activity-personalization/v1
 `;
@@ -343,6 +357,38 @@ async function runGateCommand(
   return EXIT_CODE[result.outcome];
 }
 
+async function runCheck(args: readonly string[], io: CliIo): Promise<number> {
+  const hasEvidence = args.includes("--evidence");
+  const hasGate = args.includes("--off") || args.includes("--on");
+
+  if (hasEvidence && !hasGate) {
+    const options = parseOptions(args, ["report", "evidence"]);
+    const [report, evidence] = await Promise.all([
+      readExternalJson(options.report!),
+      readExternalJson(options.evidence!),
+    ]);
+    const result = await checkSingle(report, evidence);
+    io.stdout(`${result.status}: ${result.detail}`);
+    return CHECK_EXIT[result.status];
+  }
+
+  if (hasGate && !hasEvidence) {
+    const options = parseOptions(args, ["report", "off", "on"]);
+    const [report, off, on] = await Promise.all([
+      readExternalJson(options.report!),
+      readExternalJson(options.off!),
+      readExternalJson(options.on!),
+    ]);
+    const result = await checkGate(report, off, on);
+    io.stdout(`${result.status}: ${result.detail}`);
+    return CHECK_EXIT[result.status];
+  }
+
+  throw new UsageError(
+    "check requires --report with either --evidence, or both --off and --on.",
+  );
+}
+
 export async function runCli(
   args: readonly string[],
   io: CliIo = {
@@ -369,6 +415,9 @@ export async function runCli(
     }
     if (command === "gate") {
       return await runGateCommand(commandArgs, io);
+    }
+    if (command === "check") {
+      return await runCheck(commandArgs, io);
     }
     throw new UsageError(`Unknown command: ${String(command)}`);
   } catch (error) {
