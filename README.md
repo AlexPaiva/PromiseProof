@@ -43,7 +43,7 @@ The AI never grades its own work. That is the whole point.
 ## See it live
 
 - 🌐 **[promiseproof.alex0paiva0.workers.dev](https://promiseproof.alex0paiva0.workers.dev/)** hosts the landing page at `/` and the interactive judge walkthrough at `/walkthrough/`.
-- The walkthrough is a **recorded run** of one real broken promise and its approved repair, with no live model calls. It is reproducible without an API key once dependencies are installed.
+- The walkthrough is a **recorded run** of one concrete synthetic failure and its approved repair, with no live model calls. It is reproducible without an API key once dependencies are installed.
 
 ## How it works
 
@@ -86,15 +86,16 @@ This validates the recorded repair proof's tracked artifacts, applies the approv
 
 ```bash
 npm run build:site        # builds landing (/) + walkthrough (/walkthrough/)
-npx serve dist/site
+npx --yes serve@14.2.6 dist/site
 ```
 
-Other offline paths (no network, no OpenAI credits):
+Other paths that need no external model or API calls, and no OpenAI credits (they do use local loopback HTTP between the browser and the synthetic service):
 
 ```bash
 npm run test:investigation:offline   # real evidence signatures + replays through a deterministic provider
 npm run test:repair:offline          # prepares, approves, applies and verifies the repair in disposable worktrees
 npm run test:judge:unit              # the walkthrough's evidence/interaction unit checks
+npm run test:judge:interface         # browser-level walkthrough and accessibility checks
 ```
 
 > On Windows systems that block PowerShell's `npm.ps1`, use `npm.cmd` / `npx.cmd`.
@@ -150,13 +151,15 @@ Everything a judge needs is verifiable without an API key. The recorded diagnosi
 
 The repository fingerprints the retained artifacts and verifies their internal consistency against the approved patch and verification receipts. This is **repository-level integrity evidence, not third-party provider attestation**, an important and deliberate distinction.
 
-Selected live and CI commands (these do spend OpenAI credits or require a provisioned host):
+More ways to validate. None of these spend OpenAI credits except the explicit live investigation at the end:
 
 ```bash
 npm test                        # health, control, detector and replay assertions
 npm run test:determinism        # 5 fresh OFF + 5 fresh ON contexts per fixture
 npm run test:expected-red       # both unchanged verifiers must exit exactly 1 with only their PP_ code
-npm run investigate:live:race   # a single paid live GPT-5.6 investigation (needs OPENAI_API_KEY)
+
+# paid: one live GPT-5.6 investigation, needs OPENAI_API_KEY
+npm run investigate:live:race
 ```
 
 The full milestone record, live-receipt details, and limitations live in [`BUILD_WEEK.md`](BUILD_WEEK.md); canonical scope and forbidden shortcuts in [`AGENTS.md`](AGENTS.md).
