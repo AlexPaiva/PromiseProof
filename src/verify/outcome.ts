@@ -14,4 +14,4 @@ export const EXIT_CODE = {
 export const SUPPORTED_SCHEMA_VERSION = "1" as const;
 export const SUPPORTED_CONTRACT_FAMILY =
   "activity-personalization/v1" as const;
-export const REPORT_SCHEMA_VERSION = "1" as const;
+export const REPORT_SCHEMA_VERSION = "2" as const;

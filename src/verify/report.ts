@@ -4,6 +4,13 @@ import type {
   PromiseViolation,
 } from "../shared/types.js";
 import {
+  bindCanonicalJson,
+  CANONICAL_JSON_ID,
+  EVALUATOR_SOURCE_SHA256,
+  SHA256_ALGORITHM,
+  type InputBinding,
+} from "./binding.js";
+import {
   REPORT_SCHEMA_VERSION,
   SUPPORTED_CONTRACT_FAMILY,
 } from "./outcome.js";
@@ -13,6 +20,7 @@ const authority = {
   evidenceSource: "externally-supplied",
   collectionAttested: false,
   evaluation: "deterministic-promiseproof-evaluator",
+  evaluatorSourceSha256: EVALUATOR_SOURCE_SHA256,
 } as const;
 
 export interface EvaluationReport {
@@ -26,6 +34,7 @@ export interface VerifyReport extends EvaluationReport {
   readonly schemaVersion: typeof REPORT_SCHEMA_VERSION;
   readonly contractFamily: typeof SUPPORTED_CONTRACT_FAMILY;
   readonly outcome: "PASS" | "BROKEN_PROMISE";
+  readonly inputBinding: InputBinding;
   readonly authority: typeof authority;
 }
 
@@ -33,6 +42,10 @@ export interface GateReport {
   readonly schemaVersion: typeof REPORT_SCHEMA_VERSION;
   readonly contractFamily: typeof SUPPORTED_CONTRACT_FAMILY;
   readonly outcome: "PASS" | "BROKEN_PROMISE";
+  readonly inputBindings: {
+    readonly off: InputBinding;
+    readonly on: InputBinding;
+  };
   readonly evaluations: {
     readonly off: EvaluationReport;
     readonly on: EvaluationReport;
@@ -45,6 +58,13 @@ function requireEvaluation(result: VerifyResult): PromiseEvaluation {
     throw new Error("Cannot render a canonical report for invalid evidence.");
   }
   return result.evaluation;
+}
+
+function requireValidatedCanonicalJson(result: VerifyResult): string {
+  if (result.validatedCanonicalJson === null) {
+    throw new Error("Cannot bind a report without validated evidence.");
+  }
+  return result.validatedCanonicalJson;
 }
 
 function evaluationReport(result: VerifyResult): EvaluationReport {
@@ -61,7 +81,9 @@ function evaluationReport(result: VerifyResult): EvaluationReport {
   };
 }
 
-export function createVerifyReport(result: VerifyResult): VerifyReport {
+export async function createVerifyReport(
+  result: VerifyResult,
+): Promise<VerifyReport> {
   if (
     result.outcome !== "PASS" &&
     result.outcome !== "BROKEN_PROMISE"
@@ -73,12 +95,15 @@ export function createVerifyReport(result: VerifyResult): VerifyReport {
     schemaVersion: REPORT_SCHEMA_VERSION,
     contractFamily: SUPPORTED_CONTRACT_FAMILY,
     outcome: result.outcome,
+    inputBinding: await bindCanonicalJson(
+      requireValidatedCanonicalJson(result),
+    ),
     ...evaluationReport(result),
     authority,
   };
 }
 
-export function createGateReport(result: GateResult): GateReport {
+export async function createGateReport(result: GateResult): Promise<GateReport> {
   if (
     result.outcome !== "PASS" &&
     result.outcome !== "BROKEN_PROMISE"
@@ -90,6 +115,10 @@ export function createGateReport(result: GateResult): GateReport {
     schemaVersion: REPORT_SCHEMA_VERSION,
     contractFamily: SUPPORTED_CONTRACT_FAMILY,
     outcome: result.outcome,
+    inputBindings: {
+      off: await bindCanonicalJson(requireValidatedCanonicalJson(result.off)),
+      on: await bindCanonicalJson(requireValidatedCanonicalJson(result.on)),
+    },
     evaluations: {
       off: evaluationReport(result.off),
       on: evaluationReport(result.on),
@@ -159,6 +188,15 @@ function authorityMarkdown(): string[] {
     "Evidence source: externally supplied",
     "Collection integrity: not attested by PromiseProof",
     "Evaluation authority: deterministic PromiseProof evaluator",
+    `Evaluator source SHA-256 (canonical UTF-8/LF): ${EVALUATOR_SOURCE_SHA256}`,
+  ];
+}
+
+function inputBindingMarkdown(label: string, binding: InputBinding): string[] {
+  return [
+    `${label} canonicalization: ${CANONICAL_JSON_ID}`,
+    `${label} digest algorithm: ${SHA256_ALGORITHM}`,
+    `${label} evidence SHA-256: ${binding.sha256}`,
   ];
 }
 
@@ -168,6 +206,8 @@ export function serializeVerifyReportMarkdown(report: VerifyReport): string {
     "",
     `Contract family: ${report.contractFamily}`,
     `Outcome: ${report.outcome}`,
+    "",
+    ...inputBindingMarkdown("Input", report.inputBinding),
     "",
     ...evaluationMarkdown("Evaluation", report),
     "",
@@ -181,6 +221,9 @@ export function serializeGateReportMarkdown(report: GateReport): string {
     "",
     `Contract family: ${report.contractFamily}`,
     `Outcome: ${report.outcome}`,
+    "",
+    ...inputBindingMarkdown("OFF input", report.inputBindings.off),
+    ...inputBindingMarkdown("ON input", report.inputBindings.on),
     "",
     ...evaluationMarkdown("OFF evaluation", report.evaluations.off),
     "",

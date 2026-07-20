@@ -1,10 +1,17 @@
 import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import test from "node:test";
 
 import { evaluatePromise } from "../../src/shared/evaluator.js";
 import { adaptExternalEvidence } from "../../src/verify/adapter.js";
+import {
+  bindExternalBundle,
+  canonicalizeJson,
+  EVALUATOR_SOURCE_SHA256,
+  evaluatorSourceMatchesFingerprint,
+} from "../../src/verify/binding.js";
 import {
   brokenOffExample,
   passingOffExample,
@@ -222,7 +229,7 @@ test("bounded collections are rejected before canonical evaluation", () => {
   assert.match(result.issues.join("\n"), /Too big/);
 });
 
-test("Markdown encodes HTML, ampersands, backticks, pipes, and backslashes deterministically", () => {
+test("Markdown encodes HTML, ampersands, backticks, pipes, and backslashes deterministically", async () => {
   const adversarial = clone(passingOnExample);
   const subject = "<reader>&`pipe|slash\\";
   adversarial.evidence.subjectId = subject;
@@ -232,8 +239,8 @@ test("Markdown encodes HTML, ampersands, backticks, pipes, and backslashes deter
   adversarial.evidence.recommendations.recommendationServiceReceipts[0]!.subjectId =
     subject;
 
-  const first = createVerifyReport(verifyBundle(adversarial));
-  const second = createVerifyReport(verifyBundle(clone(adversarial)));
+  const first = await createVerifyReport(verifyBundle(adversarial));
+  const second = await createVerifyReport(verifyBundle(clone(adversarial)));
   const markdown = serializeVerifyReportMarkdown(first);
 
   assert.equal(first.outcome, "PASS");
@@ -242,9 +249,9 @@ test("Markdown encodes HTML, ampersands, backticks, pipes, and backslashes deter
   assert.doesNotMatch(markdown, /<reader>/);
 });
 
-test("Markdown converts CR, LF, and CRLF to inert spaces after encoding", () => {
+test("Markdown converts CR, LF, and CRLF to inert spaces after encoding", async () => {
   const report = clone(
-    createVerifyReport(verifyBundle(passingOffExample)),
+    await createVerifyReport(verifyBundle(passingOffExample)),
   ) as VerifyReport;
   const mutableClause = report.clauses[0]!;
   Object.assign(mutableClause, {
@@ -258,9 +265,11 @@ test("Markdown converts CR, LF, and CRLF to inert spaces after encoding", () => 
   assert.doesNotMatch(markdown, /\r/);
 });
 
-test("single and gate reports preserve deterministic canonical ordering", () => {
-  const single = createVerifyReport(verifyBundle(brokenOffExample));
-  const gate = createGateReport(runGate(passingOffExample, passingOnExample));
+test("single and gate reports preserve deterministic canonical ordering", async () => {
+  const single = await createVerifyReport(verifyBundle(brokenOffExample));
+  const gate = await createGateReport(
+    runGate(passingOffExample, passingOnExample),
+  );
 
   assert.deepEqual(
     single.clauses.map((clause) => clause.id),
@@ -277,25 +286,25 @@ test("single and gate reports preserve deterministic canonical ordering", () => 
   assert.equal(
     serializeReportJson(single),
     serializeReportJson(
-      createVerifyReport(verifyBundle(clone(brokenOffExample))),
+      await createVerifyReport(verifyBundle(clone(brokenOffExample))),
     ),
   );
   assert.equal(
     serializeGateReportMarkdown(gate),
     serializeGateReportMarkdown(
-      createGateReport(
+      await createGateReport(
         runGate(clone(passingOffExample), clone(passingOnExample)),
       ),
     ),
   );
 });
 
-test("adapter placeholders never enter public reports", () => {
+test("adapter placeholders never enter public reports", async () => {
   const json = serializeReportJson(
-    createVerifyReport(verifyBundle(passingOffExample)),
+    await createVerifyReport(verifyBundle(passingOffExample)),
   );
   const markdown = serializeVerifyReportMarkdown(
-    createVerifyReport(verifyBundle(passingOffExample)),
+    await createVerifyReport(verifyBundle(passingOffExample)),
   );
 
   for (const forbidden of [
@@ -306,6 +315,172 @@ test("adapter placeholders never enter public reports", () => {
     assert.doesNotMatch(json, new RegExp(forbidden));
     assert.doesNotMatch(markdown, new RegExp(forbidden));
   }
+});
+
+test("canonical bundle binding is stable across key order and JSON whitespace", async () => {
+  const reordered: ExternalBundle = {
+    evidence: {
+      recommendations: clone(passingOffExample.evidence.recommendations),
+      activity: clone(passingOffExample.evidence.activity),
+      control: clone(passingOffExample.evidence.control),
+      subjectId: passingOffExample.evidence.subjectId,
+      scenario: passingOffExample.evidence.scenario,
+    },
+    contractFamily: passingOffExample.contractFamily,
+    schemaVersion: passingOffExample.schemaVersion,
+  };
+  const compact = JSON.parse(JSON.stringify(passingOffExample)) as ExternalBundle;
+  const formatted = JSON.parse(
+    JSON.stringify(passingOffExample, null, 4),
+  ) as ExternalBundle;
+  const expected = await bindExternalBundle(passingOffExample);
+
+  assert.deepEqual(await bindExternalBundle(reordered), expected);
+  assert.deepEqual(await bindExternalBundle(compact), expected);
+  assert.deepEqual(await bindExternalBundle(formatted), expected);
+  assert.equal(canonicalizeJson(reordered), canonicalizeJson(passingOffExample));
+  assert.equal(
+    canonicalizeJson({ "ä": 1, a: 2, Z: 3, A: 4 }),
+    '{"A":4,"Z":3,"a":2,"ä":1}',
+  );
+});
+
+test("array order and every evidence category are bound by the digest", async () => {
+  const baseline = (await bindExternalBundle(passingOnExample)).sha256;
+  const mutations: Array<[string, (bundle: ExternalBundle) => void]> = [
+    [
+      "subjectId",
+      (item) => {
+        item.evidence.subjectId = "different-subject";
+      },
+    ],
+    [
+      "control.uiPreference",
+      (item) => {
+        item.evidence.control.uiPreference = "off";
+      },
+    ],
+    [
+      "control.toggleChecked",
+      (item) => {
+        item.evidence.control.toggleChecked = false;
+      },
+    ],
+    [
+      "control.storedPreference",
+      (item) => {
+        item.evidence.control.storedPreference = "off";
+      },
+    ],
+    [
+      "control.backendPreference",
+      (item) => {
+        item.evidence.control.backendPreference = "off";
+      },
+    ],
+    [
+      "control.reloadObserved",
+      (item) => {
+        item.evidence.control.reloadObserved = false;
+      },
+    ],
+    [
+      "activity",
+      (item) => {
+        item.evidence.activity.capturedActivities[0]!.itemId =
+          "different-origin";
+      },
+    ],
+    [
+      "recommendation",
+      (item) => {
+        item.evidence.recommendations.renderedItemIds = ["different-story"];
+      },
+    ],
+  ];
+
+  for (const [name, mutate] of mutations) {
+    const candidate = clone(passingOnExample);
+    mutate(candidate);
+    assert.notEqual((await bindExternalBundle(candidate)).sha256, baseline, name);
+  }
+
+  const ordered = clone(passingOnExample);
+  ordered.evidence.recommendations.renderedItemIds = ["story-a", "story-b"];
+  const reversed = clone(ordered);
+  reversed.evidence.recommendations.renderedItemIds.reverse();
+  assert.notEqual(
+    (await bindExternalBundle(ordered)).sha256,
+    (await bindExternalBundle(reversed)).sha256,
+  );
+});
+
+test("report schema v2 binds single and gate inputs and discloses evaluator fingerprint", async () => {
+  const single = await createVerifyReport(verifyBundle(passingOffExample));
+  const gate = await createGateReport(
+    runGate(passingOffExample, passingOnExample),
+  );
+  const expectedOff = await bindExternalBundle(passingOffExample);
+  const expectedOn = await bindExternalBundle(passingOnExample);
+
+  assert.equal(single.schemaVersion, "2");
+  assert.deepEqual(single.inputBinding, expectedOff);
+  assert.deepEqual(gate.inputBindings.off, expectedOff);
+  assert.deepEqual(gate.inputBindings.on, expectedOn);
+  assert.notEqual(gate.inputBindings.off.sha256, gate.inputBindings.on.sha256);
+  assert.equal(single.authority.evaluatorSourceSha256, EVALUATOR_SOURCE_SHA256);
+  assert.equal(gate.authority.evaluatorSourceSha256, EVALUATOR_SOURCE_SHA256);
+
+  const singleJson = serializeReportJson(single);
+  const singleMarkdown = serializeVerifyReportMarkdown(single);
+  const gateJson = serializeReportJson(gate);
+  const gateMarkdown = serializeGateReportMarkdown(gate);
+  for (const digest of [expectedOff.sha256, expectedOn.sha256]) {
+    assert.match(digest, /^[0-9a-f]{64}$/u);
+    assert.ok(
+      digest === expectedOff.sha256
+        ? singleJson.includes(digest) && singleMarkdown.includes(digest)
+        : true,
+    );
+    assert.ok(gateJson.includes(digest));
+    assert.ok(gateMarkdown.includes(digest));
+  }
+  for (const output of [singleJson, singleMarkdown, gateJson, gateMarkdown]) {
+    assert.ok(output.includes(EVALUATOR_SOURCE_SHA256));
+  }
+});
+
+test("unsupported envelope literals cannot reach report binding", async () => {
+  for (const candidate of [
+    { ...clone(passingOffExample), schemaVersion: "2" },
+    { ...clone(passingOffExample), contractFamily: "unsupported/v1" },
+  ]) {
+    const result = verifyBundle(candidate);
+    assert.equal(result.outcome, "INVALID_EVIDENCE");
+    assert.equal(result.validatedCanonicalJson, null);
+    await assert.rejects(createVerifyReport(result), /Invalid evidence/);
+  }
+});
+
+test("committed evaluator fingerprint matches canonical-LF source and known Git blob", async () => {
+  const evaluatorPath = path.join(projectRoot, "src", "shared", "evaluator.ts");
+  const source = await readFile(evaluatorPath, "utf8");
+  assert.equal(await evaluatorSourceMatchesFingerprint(source), true);
+  assert.equal(
+    await evaluatorSourceMatchesFingerprint(source, "0".repeat(64)),
+    false,
+  );
+
+  const git = spawnSync("git", ["hash-object", "src/shared/evaluator.ts"], {
+    cwd: projectRoot,
+    encoding: "utf8",
+    windowsHide: true,
+  });
+  assert.equal(git.status, 0, git.stderr);
+  assert.equal(
+    git.stdout.trim(),
+    "9654cb43f4388c7f399bf0717ceb94bba2718962",
+  );
 });
 
 test("canonical projection and deterministic adapter preserve every evaluation byte-for-byte", () => {
@@ -536,6 +711,7 @@ test("external verifier modules have no forbidden implementation imports", async
   const verifyDirectory = path.join(projectRoot, "src", "verify");
   const filenames = [
     "adapter.ts",
+    "binding.ts",
     "cli.ts",
     "examples.ts",
     "outcome.ts",

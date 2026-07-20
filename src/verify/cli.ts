@@ -311,7 +311,7 @@ async function runVerify(args: readonly string[], io: CliIo): Promise<number> {
     return printInvalid(io, result.issues);
   }
 
-  const report = createVerifyReport(result);
+  const report = await createVerifyReport(result);
   await writeReports(
     safeOutputDirectory(options.out!),
     serializeReportJson(report),
@@ -333,7 +333,7 @@ async function runGateCommand(
     return printInvalid(io, gateValidationIssues(result));
   }
 
-  const report = createGateReport(result);
+  const report = await createGateReport(result);
   await writeReports(
     safeOutputDirectory(options.out!),
     serializeReportJson(report),

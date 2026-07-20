@@ -23,6 +23,7 @@
     "typecheck": "tsc --noEmit",
     "promiseproof": "tsx src/verify/cli.ts",
     "test:external": "tsx --test tests/verify/core.unit.ts tests/verify/cli.unit.ts",
+    "test:external:pipeline": "cross-env PROMISEPROOF_EQUIVALENCE_MODE=initialization-race playwright test --config=tests/verify/pipeline.playwright.config.ts && cross-env PROMISEPROOF_EQUIVALENCE_MODE=propagation-failure playwright test --config=tests/verify/pipeline.playwright.config.ts",
     "evidence:verify": "tsx scripts/evidence-verify.ts",
     "demo:rehearse": "tsx scripts/demo-rehearse.ts",
     "test:judge:unit": "tsx --test tests/judge/rehearsal.unit.ts",

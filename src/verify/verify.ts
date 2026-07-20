@@ -4,6 +4,7 @@ import type {
   PromiseEvidence,
 } from "../shared/types.js";
 import { adaptExternalEvidence } from "./adapter.js";
+import { canonicalizeJson } from "./binding.js";
 import {
   SUPPORTED_CONTRACT_FAMILY,
   type ExternalOutcome,
@@ -20,6 +21,7 @@ export interface VerifyResult {
   readonly contractFamily: string;
   readonly scenario: "on" | "off" | null;
   readonly evaluation: PromiseEvaluation | null;
+  readonly validatedCanonicalJson: string | null;
   readonly issues: readonly string[];
 }
 
@@ -66,6 +68,7 @@ function rejectedResult(validation: BundleValidation): VerifyResult {
     contractFamily: SUPPORTED_CONTRACT_FAMILY,
     scenario: validation.success ? validation.bundle.evidence.scenario : null,
     evaluation: null,
+    validatedCanonicalJson: null,
     issues: [...(validation.success ? [] : validation.issues)].sort(),
   };
 }
@@ -74,6 +77,7 @@ function evaluateValidatedBundle(
   validated: ValidatedBundle,
   evaluator: CanonicalEvaluator,
 ): VerifyResult {
+  const validatedCanonicalJson = canonicalizeJson(validated.bundle);
   const evidence = adaptExternalEvidence(validated.bundle.evidence);
   const evaluation = evaluator(evidence);
   return {
@@ -81,6 +85,7 @@ function evaluateValidatedBundle(
     contractFamily: validated.bundle.contractFamily,
     scenario: validated.bundle.evidence.scenario,
     evaluation,
+    validatedCanonicalJson,
     issues: [],
   };
 }

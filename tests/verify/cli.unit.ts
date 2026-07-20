@@ -15,6 +15,7 @@ import {
   passingOffExample,
   passingOnExample,
 } from "../../src/verify/examples.js";
+import { bindExternalBundle } from "../../src/verify/binding.js";
 import { MAX_INPUT_BYTES } from "../../src/verify/schema.js";
 
 const projectRoot = process.cwd();
@@ -354,6 +355,77 @@ test("CLI creates byte-identical JSON and Markdown across repeated runs", async 
   assert.deepEqual(
     await readFile(path.join(first, "report.md")),
     await readFile(path.join(second, "report.md")),
+  );
+});
+
+test("CLI uses the shared canonical binding and changes reports for semantic input changes", async () => {
+  const root = await temporaryRoot();
+  const reorderedPath = path.join(root, "reordered.json");
+  const changedPath = path.join(root, "changed.json");
+  const reorderedOutput = path.join(root, "reordered-report");
+  const changedOutput = path.join(root, "changed-report");
+  const reordered = {
+    evidence: {
+      recommendations: passingOffExample.evidence.recommendations,
+      activity: passingOffExample.evidence.activity,
+      control: passingOffExample.evidence.control,
+      subjectId: passingOffExample.evidence.subjectId,
+      scenario: passingOffExample.evidence.scenario,
+    },
+    contractFamily: passingOffExample.contractFamily,
+    schemaVersion: passingOffExample.schemaVersion,
+  };
+  const changed = clone(passingOffExample);
+  changed.evidence.subjectId = "article-atlas-reader-002";
+  await writeFile(reorderedPath, JSON.stringify(reordered), "utf8");
+  await writeJson(changedPath, changed);
+
+  assert.equal(
+    runCli([
+      "verify",
+      "--evidence",
+      reorderedPath,
+      "--out",
+      reorderedOutput,
+    ]).status,
+    0,
+  );
+  assert.equal(
+    runCli([
+      "verify",
+      "--evidence",
+      changedPath,
+      "--out",
+      changedOutput,
+    ]).status,
+    0,
+  );
+
+  const reorderedReport = JSON.parse(
+    await readFile(path.join(reorderedOutput, "report.json"), "utf8"),
+  ) as { inputBinding: { sha256: string } };
+  const changedReport = JSON.parse(
+    await readFile(path.join(changedOutput, "report.json"), "utf8"),
+  ) as { inputBinding: { sha256: string } };
+  assert.equal(
+    reorderedReport.inputBinding.sha256,
+    (await bindExternalBundle(passingOffExample)).sha256,
+  );
+  assert.match(
+    await readFile(path.join(reorderedOutput, "report.md"), "utf8"),
+    new RegExp(reorderedReport.inputBinding.sha256, "u"),
+  );
+  assert.notEqual(
+    reorderedReport.inputBinding.sha256,
+    changedReport.inputBinding.sha256,
+  );
+  assert.notDeepEqual(
+    await readFile(path.join(reorderedOutput, "report.json")),
+    await readFile(path.join(changedOutput, "report.json")),
+  );
+  assert.notDeepEqual(
+    await readFile(path.join(reorderedOutput, "report.md")),
+    await readFile(path.join(changedOutput, "report.md")),
   );
 });
 
