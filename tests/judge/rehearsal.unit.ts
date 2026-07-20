@@ -47,6 +47,10 @@ test('offline rehearsal environment removes model credentials and Codex configur
   assert.equal(environment.NO_COLOR, '1');
 });
 
+test('committed judge bundle passes strict verification', async () => {
+  await verifyJudgeBundle(projectRoot);
+});
+
 test('strict bundle rejects a recorded artifact relabelled as live', async () => {
   const root = await fixture();
   try {
