@@ -659,16 +659,24 @@ function renderReplay(data: JudgeData): HTMLElement {
 
   // The reveal is a fresh CSS animation on mount, so re-rendering these nodes
   // replays it on demand — the crossing is the one moment judges should see move.
+  // `data-replaying` marks the explicit "Play the crossing" click: under
+  // prefers-reduced-motion the crossing stays still on stage entry (honoring the
+  // preference) and only animates when the user actually asks for it.
   const slot = element("div", "replay-slot");
-  const fill = (): void => {
+  const fill = (replaying: boolean): void => {
+    if (replaying) {
+      slot.dataset.replaying = "true";
+    } else {
+      delete slot.dataset.replaying;
+    }
     slot.replaceChildren(
       renderFlightRecorder(data),
       renderFlightRecorderCompact(data),
       renderReplayFinding(data),
     );
   };
-  fill();
-  playAgain.addEventListener("click", fill);
+  fill(false);
+  playAgain.addEventListener("click", () => fill(true));
   section.append(slot);
   return section;
 }

@@ -76,16 +76,22 @@ pre {
     transition-duration: 0.001ms !important;
     scroll-behavior: auto !important;
   }
-  /* Exception: the boundary crossing is user-triggered ("Play the crossing"),
-     an explicit request for motion, so it keeps its choreography even here. */
-  .ppa-spine { animation-duration: 0.8s !important; }
-  .ppa-e1 { animation-duration: 0.5s !important; }
-  .ppa-dot { animation-duration: 0.4s !important; }
-  .ppa-line { animation-duration: 0.4s !important; }
-  .ppa-e2 { animation-duration: 0.5s, 0.9s !important; }
-  .ppa-arrow { animation-duration: 0.3s !important; }
-  .ppa-e3 { animation-duration: 0.5s !important; }
-  .ppa-finding { animation-duration: 0.6s !important; }
+  /* Exception: only when the viewer explicitly clicks "Play the crossing"
+     (which sets data-replaying on the slot) does the choreography run under
+     reduced motion. On stage entry it stays still, so the preference is honored
+     and the crossing snaps to its final revealed state (animations fill both). */
+  [data-replaying] .ppa-spine { animation-duration: 0.8s !important; }
+  [data-replaying] .ppa-e1 { animation-duration: 0.5s !important; }
+  [data-replaying] .ppa-dot { animation-duration: 0.4s !important; }
+  [data-replaying] .ppa-line { animation-duration: 0.4s !important; }
+  [data-replaying] .ppa-e2 { animation-duration: 0.5s, 0.9s !important; }
+  [data-replaying] .ppa-arrow { animation-duration: 0.3s !important; }
+  [data-replaying] .ppa-e3 { animation-duration: 0.5s !important; }
+  [data-replaying] .ppa-finding { animation-duration: 0.6s !important; }
+
+  /* On stage entry (not an explicit replay) collapse the crossing's stagger too,
+     so it lands fully revealed at once instead of popping in over ~1.65s. */
+  .replay-slot:not([data-replaying]) .ppa { animation-delay: 0s !important; }
 }
 
 /* ------------------------------ shell ------------------------------ */
@@ -295,6 +301,14 @@ pre {
   padding: clamp(20px, 2.3vw, 28px);
   outline: none;
   min-height: 0;
+}
+
+/* When the host moves focus here after Prev/Next via the keyboard, give a
+   keyboard-only ring so the user can see where they landed (mouse focus, which
+   does not match :focus-visible, stays ring-free). */
+.judge-stage:focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: 3px;
 }
 
 /* Shown only until JS renders the first stage (and if the bundle never loads),
@@ -1330,7 +1344,19 @@ pre {
 }
 
 .flight-recorder-compact {
-  display: none;
+  /* Visually hidden but kept in the accessibility tree: the painted recorder
+     above is aria-hidden, so this sr-only copy is how desktop screen-reader
+     users reach the three timeline events. Below 820px it becomes the visible
+     timeline (the reset in that block restores normal flow). */
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
   flex-direction: column;
   gap: 8px;
 }
@@ -2328,6 +2354,13 @@ pre {
   }
 
   .flight-recorder-compact {
+    position: static;
+    width: auto;
+    height: auto;
+    margin: 0;
+    overflow: visible;
+    clip: auto;
+    white-space: normal;
     display: flex;
   }
 

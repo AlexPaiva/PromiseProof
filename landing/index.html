@@ -46,6 +46,8 @@ header{position:fixed;top:0;left:0;right:0;z-index:90;backdrop-filter:blur(10px)
 .btn{display:inline-flex;align-items:center;gap:8px;padding:9px 16px;border-radius:999px;font-weight:650;font-size:.86rem;cursor:pointer;border:1px solid transparent;transition:transform .15s,background .15s,border-color .15s}
 .btn-primary{background:var(--blue);color:#fff}.btn-primary:hover{background:#3560e0;transform:translateY(-1px)}
 .btn-ghost{border-color:rgba(255,255,255,.16);color:#dbe4f2}.btn-ghost:hover{border-color:rgba(255,255,255,.4);background:rgba(255,255,255,.04)}
+.skip-link{position:absolute;left:-9999px;top:0;z-index:200;background:var(--blue);color:#fff;padding:10px 16px;border-radius:0 0 8px 0;font-weight:650;font-size:.9rem}
+.skip-link:focus{left:0}
 .ext::after{content:"\2197";font-size:.9em;opacity:.8}
 :focus-visible{outline:2px solid var(--blue-bright);outline-offset:3px;border-radius:6px}
 
@@ -90,7 +92,7 @@ html.js .hero .eyebrow{animation-delay:.05s}html.js .hero h1{animation-delay:.16
 .hcard-repro .cmd{color:#e8edf6}.hcard-repro .cmd .p{color:var(--blue-bright)}
 .hcard-repro .res{color:var(--green-bright);font-weight:700}
 .hcard-repro .rn{color:#7f8da3;font-size:.77rem}
-.hcard-prov{border-top:1px solid rgba(255,255,255,.06);padding:11px 24px;font-family:var(--mono);font-size:.68rem;color:#6a7a92;letter-spacing:.02em}
+.hcard-prov{border-top:1px solid rgba(255,255,255,.06);padding:11px 24px;font-family:var(--mono);font-size:.68rem;color:#7c8ca6;letter-spacing:.02em}
 .hcard-prov b{color:#9db4d0;font-weight:600}
 .cmp-sub{margin-top:14px;text-align:center;font-size:.98rem;color:#93a1b8;max-width:60ch;margin-left:auto;margin-right:auto}
 .light .cmp-sub{color:#48566b}
@@ -123,16 +125,16 @@ html.js [data-reveal].in{opacity:1;transform:none;filter:none}
 .pcard:hover{transform:translateY(-4px);box-shadow:0 18px 40px -22px rgba(11,18,32,.4)}
 .pcard h3{font-size:1.15rem;letter-spacing:-.01em}
 .pcard p{margin-top:8px;color:#4a5568;font-size:.98rem}
-.pcard .tag{font-family:var(--mono);font-size:.68rem;letter-spacing:.09em;text-transform:uppercase;color:#8a93a3}
+.pcard .tag{font-family:var(--mono);font-size:.68rem;letter-spacing:.09em;text-transform:uppercase;color:#6b7180}
 .pcard.bad{border-color:rgba(229,72,77,.3);background:linear-gradient(180deg,#fff,#fff6f6)}
 .track{margin-top:24px;position:relative;display:grid;grid-template-columns:1fr auto 1fr;align-items:stretch;border:1px solid var(--paperline);border-radius:14px;overflow:hidden;background:#fff}
 .track::before{content:"";position:absolute;top:50%;left:9%;right:9%;height:2px;background:#e7ebf2;transform:translateY(-50%)}
 .zone{padding:22px 22px;display:flex;flex-direction:column;gap:6px;justify-content:center;position:relative;z-index:2}
-.zone .zk{font-family:var(--mono);font-size:.6rem;letter-spacing:.12em;text-transform:uppercase;color:#8a93a3}
+.zone .zk{font-family:var(--mono);font-size:.6rem;letter-spacing:.12em;text-transform:uppercase;color:#6b7180}
 .zone .zv{font-size:1.02rem;font-weight:700;color:var(--ink)}
 .zone.leak{background:#fff6f6}.zone.leak .zv{color:var(--red-deep)}
 .gate{width:0;border-left:2px dashed #cfd6e2;position:relative;z-index:3}
-.gate .gl{position:absolute;top:10px;left:50%;transform:translateX(-50%);white-space:nowrap;font-family:var(--mono);font-size:.54rem;letter-spacing:.1em;text-transform:uppercase;color:#8a93a3;background:#fff;padding:3px 7px;border-radius:5px;border:1px solid var(--paperline)}
+.gate .gl{position:absolute;top:10px;left:50%;transform:translateX(-50%);white-space:nowrap;font-family:var(--mono);font-size:.54rem;letter-spacing:.1em;text-transform:uppercase;color:#6b7180;background:#fff;padding:3px 7px;border-radius:5px;border:1px solid var(--paperline)}
 .packet{position:absolute;top:50%;left:9%;width:11px;height:11px;margin-top:-6px;border-radius:50%;background:var(--red);box-shadow:0 0 10px 2px rgba(229,72,77,.5);z-index:4;animation:travel 3.4s cubic-bezier(.55,0,.5,1) infinite}
 @keyframes travel{0%{left:9%;opacity:0;transform:scale(.5)}9%{opacity:1;transform:scale(1)}58%{left:83%;opacity:1}70%{left:83%;transform:scale(1.3)}84%{left:83%;opacity:.5}100%{left:83%;opacity:0}}
 
@@ -179,7 +181,7 @@ html.js [data-reveal].in{opacity:1;transform:none;filter:none}
 .plainproof b{color:var(--ink)}
 
 .reveal-more{margin-top:40px;border-top:1px solid var(--paperline);padding-top:34px}
-.reveal-more .rm-tag{font-family:var(--mono);font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;color:#8a93a3}
+.reveal-more .rm-tag{font-family:var(--mono);font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;color:#6b7180}
 .receipt{margin-top:18px;display:grid;grid-template-columns:1.15fr .85fr;gap:20px}
 @media(max-width:820px){.receipt{grid-template-columns:1fr}.bigcompare{max-width:none}}
 .term{background:#0b111c;border:1px solid rgba(255,255,255,.1);border-radius:14px;overflow:hidden;font-family:var(--mono);font-size:.8rem;box-shadow:0 24px 60px -34px rgba(0,0,0,.5)}
@@ -188,11 +190,11 @@ html.js [data-reveal].in{opacity:1;transform:none;filter:none}
 .term-bar .d.r{background:#e5484d}.term-bar .d.y{background:#e0a63b}.term-bar .d.g{background:#2fa968}
 .term-bar .tt{margin-left:8px}
 .term-body{padding:16px;color:#c8d3e6;line-height:1.7;overflow-x:auto}
-.term-body .del{color:#ff9296}.term-body .add{color:var(--green-bright)}.term-body .mut{color:#5f6f88}.term-body .file{color:#8fb0ff}
+.term-body .del{color:#ff9296}.term-body .add{color:var(--green-bright)}.term-body .mut{color:#7d8ca6}.term-body .file{color:#8fb0ff}
 .term-body .fail{color:#ff8f93;font-weight:700}.term-body .pass{color:var(--green-bright);font-weight:700}
 .rmeta{display:flex;flex-direction:column;gap:12px}
 .rcard{border:1px solid var(--paperline);border-radius:12px;background:#fff;padding:15px 17px}
-.rcard .rk{font-family:var(--mono);font-size:.62rem;letter-spacing:.09em;text-transform:uppercase;color:#8a93a3}
+.rcard .rk{font-family:var(--mono);font-size:.62rem;letter-spacing:.09em;text-transform:uppercase;color:#6b7180}
 .rcard .rv{margin-top:5px;font-family:var(--mono);font-size:.8rem;color:var(--ink);word-break:break-all;line-height:1.5}
 .matrix{margin-top:10px;width:100%;border-collapse:collapse;font-size:.88rem}
 .matrix td{padding:8px 4px;border-bottom:1px solid var(--paperline);color:#4a5568}
@@ -218,9 +220,9 @@ footer{border-top:1px solid rgba(255,255,255,.08);padding:54px 0 40px;color:#879
 .foot-brand .brand{color:#dce4f2;margin-bottom:14px}
 .foot-tag{max-width:34ch;line-height:1.5;color:#9aa8bf}
 .foot-col{display:flex;flex-direction:column;gap:11px}
-.foot-h{font-family:var(--mono);font-size:.64rem;letter-spacing:.12em;text-transform:uppercase;color:#66748c;margin-bottom:3px}
+.foot-h{font-family:var(--mono);font-size:.64rem;letter-spacing:.12em;text-transform:uppercase;color:#7d8ba1;margin-bottom:3px}
 .foot-col a{color:#b7c2d4;transition:color .15s}.foot-col a:hover{color:#fff}
-.foot-note{margin-top:34px;padding-top:22px;border-top:1px solid rgba(255,255,255,.06);color:#66748c;font-size:.8rem;line-height:1.6}
+.foot-note{margin-top:34px;padding-top:22px;border-top:1px solid rgba(255,255,255,.06);color:#7d8ba1;font-size:.8rem;line-height:1.6}
 
 @media(max-width:820px){
   .prob-grid,.roles{grid-template-columns:1fr}
@@ -246,6 +248,8 @@ footer{border-top:1px solid rgba(255,255,255,.08);padding:54px 0 40px;color:#879
 <body>
 <script>document.documentElement.className+=" js";</script>
 
+<a class="skip-link" href="#main">Skip to content</a>
+
 <div class="progress" id="prog"></div>
 
 <header>
@@ -259,11 +263,13 @@ footer{border-top:1px solid rgba(255,255,255,.08);padding:54px 0 40px;color:#879
   </div>
 </header>
 
+<main id="main">
+
 <section class="hero">
   <div class="wrap">
     <span class="eyebrow"><span class="dot"></span> A user turned personalization off. One identifiable request still crossed.</span>
     <h1 class="hero-h">When software breaks a promise, the AI that repairs it <span class="g">doesn't get the final word.</span></h1>
-    <p class="hero-sub">PromiseProof turns one "off means off" promise into cross-system evidence. GPT-5.6 ranks registered explanations and selects one bounded replay; PromiseProof runs it. Codex proposes a constrained two-file repair, a human approves the exact patch, and an unchanged Playwright journey and deterministic evaluator, <b>never a model</b>, decide PASS.</p>
+    <p class="hero-sub">PromiseProof turns one "off means off" promise into cross-system evidence. GPT-5.6 proposes and ranks candidate explanations, then requests one allowlisted replay; PromiseProof runs it. Codex proposes a constrained two-file repair, a human approves the exact patch, and an unchanged Playwright journey and deterministic evaluator, <b>never a model</b>, decide PASS.</p>
     <p class="hero-contrast">Monitoring can tell you a promise broke. PromiseProof carries the failure through bounded diagnosis, constrained repair, and independent verification.</p>
     <div class="hero-cta">
       <a class="btn btn-primary ext" href="/walkthrough/">Open the walkthrough</a>
@@ -340,7 +346,7 @@ footer{border-top:1px solid rgba(255,255,255,.08);padding:54px 0 40px;color:#879
       <div class="role approve d1" data-reveal>
         <div class="num"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5L21 21"/></svg></div><div class="who">GPT-5.6, bounded</div>
         <h3>Find where it broke</h3>
-        <p>When the promise fails, GPT-5.6 reads the recorded evidence and ranks a short, fixed list of possible causes it is allowed to choose from, without changing anything. It then asks for exactly one controlled replay, which PromiseProof runs, showing which layer actually broke, UI, storage, network or backend. It investigates; it never gets the verdict.</p>
+        <p>When the promise fails, GPT-5.6 reads the recorded evidence and proposes a short, ranked list of possible causes, without changing anything. It then asks for exactly one replay from a fixed allowlist, which PromiseProof runs, showing which layer actually broke, UI, storage, network or backend. It investigates; it never gets the verdict.</p>
       </div>
       <div class="role decide d2" data-reveal>
         <div class="num"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l7 2.5v5.5c0 4.2-2.9 7-7 8.5-4.1-1.5-7-4.3-7-8.5V5.5z"/><path d="M9 12l2 2 4-4"/></svg></div><div class="who">A fixed test</div>
@@ -447,9 +453,9 @@ footer{border-top:1px solid rgba(255,255,255,.08);padding:54px 0 40px;color:#879
     <h2 data-reveal>The things a skeptic asks first.</h2>
     <div class="faq">
       <details class="qa" data-reveal><summary>What counts as a promise?<span class="pl">+</span></summary><div class="ans">A promise is any guarantee your software makes to users that you can express as a check, like "off means off" or "deleted means deleted." PromiseProof runs that check against a real browser journey and its network traffic, so the promise is judged by what actually happened, not by what a model claims. This prototype demonstrates one such promise, "off means off," across UI, storage, network and backend state. Its demo app also carries a second, independent fault that violates a different clause of the same promise, with its own distinct failure signature.</div></details>
-      <details class="qa" data-reveal><summary>How do I know the verdict isn't just the AI's opinion?<span class="pl">+</span></summary><div class="ans">Because the AI never gives the verdict. An unchanged Playwright journey and a fixed evaluator run the check against reproducible evidence and return PASS or FAIL. GPT-5.6 only investigates, read only, ranking a set of registered candidate causes; if a fix is needed a human approves the exact patch by its fingerprint; the test alone decides the promise is kept.</div></details>
+      <details class="qa" data-reveal><summary>How do I know the verdict isn't just the AI's opinion?<span class="pl">+</span></summary><div class="ans">Because the AI never gives the verdict. An unchanged Playwright journey and a fixed evaluator run the check against reproducible evidence and return PASS or FAIL. GPT-5.6 only investigates, read only, proposing and ranking candidate causes and requesting one replay from a fixed allowlist; if a fix is needed a human approves the exact patch by its fingerprint; the test alone decides the promise is kept.</div></details>
       <details class="qa" data-reveal><summary>Is the run real, or cached?<span class="pl">+</span></summary><div class="ans">The diagnosis is a recorded authentic GPT-5.6 run through OpenAI's Responses API. The repair is a recorded authentic Codex SDK run, version 0.144.4, one Codex turn, with a logged thread id and the approved patch's fingerprint. It happened once. The offline command replays that recorded evidence and re-runs the check, so the verdict is deterministically reproducible. The repository fingerprints the retained artifacts and verifies their internal consistency against the approved patch and verification receipts; this is repository-level integrity evidence, not third-party provider attestation.</div></details>
-      <details class="qa" data-reveal><summary>What if GPT-5.6's diagnosis is wrong?<span class="pl">+</span></summary><div class="ans">It does not change the verdict. GPT-5.6 only proposes a cause and runs one registered replay, which supports or weakens that guess with recorded evidence. The unchanged test decides pass or fail on its own. If the diagnosis had been wrong, the approved fix would not have taken the check from FAIL to PASS, and the test would still say FAIL. A wrong guess cannot fake a passing result.</div></details>
+      <details class="qa" data-reveal><summary>What if GPT-5.6's diagnosis is wrong?<span class="pl">+</span></summary><div class="ans">It does not change the verdict. GPT-5.6 only proposes a cause and requests one allowlisted replay, which deterministic code runs to support or weaken that guess with recorded evidence. The unchanged test decides pass or fail on its own. If the diagnosis had been wrong, the approved fix would not have taken the check from FAIL to PASS, and the test would still say FAIL. A wrong guess cannot fake a passing result.</div></details>
     </div>
   </div>
 </section>
@@ -465,6 +471,8 @@ footer{border-top:1px solid rgba(255,255,255,.08);padding:54px 0 40px;color:#879
     </div>
   </div>
 </section>
+
+</main>
 
 <footer>
   <div class="wrap">
