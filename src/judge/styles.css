@@ -2197,6 +2197,24 @@ pre {
     overflow-x: clip;
   }
 
+  /* The 17px "?" explainer dots are fine to click with a mouse but too small to
+     tap. Enlarge the hit area to 40px on touch screens without moving the glyph:
+     the dot uses display:grid, and an absolutely-positioned ::before stays out
+     of the grid flow so the "?" remains centred. */
+  .info-dot {
+    position: relative;
+  }
+
+  .info-dot::before {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 40px;
+    height: 40px;
+  }
+
   /* Compact progress stepper: numbered dots spread across the width, joined by a
      single connector line drawn behind them, with only the current step expanded
      to a labelled pill. No horizontal scroll; reads like a progress bar. The
@@ -2362,5 +2380,11 @@ pre {
 
   .judge-stage {
     padding: 16px 14px;
+  }
+
+  /* Centred it reads as ~5 ragged lines on a phone; left-aligning gives a clean
+     edge against the rest of the left-aligned stage copy (desktop stays centred). */
+  .replay-caption {
+    text-align: left;
   }
 }

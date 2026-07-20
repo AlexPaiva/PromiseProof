@@ -235,7 +235,10 @@ footer{border-top:1px solid rgba(255,255,255,.08);padding:54px 0 40px;color:#879
 }
 @media(max-width:560px){
   header .hd-r .btn-ghost{display:none}
-  .hd{height:56px}
+  /* keep the sole remaining CTA on one line and clear of the wordmark: below
+     ~400px it otherwise wraps to two lines and butts against "PromiseProof" */
+  header .hd-r .btn-primary{white-space:nowrap;padding:8px 12px;font-size:.78rem}
+  header .hd{height:56px;gap:10px}
   .hero{padding:120px 0 64px}
 }
 </style>
