@@ -396,6 +396,8 @@ const APP_HTML = `
       <div class="vf-actions">
         <button type="button" class="vf-btn vf-btn-primary" id="vf-byo-run" data-testid="byo-run">Verify local evidence</button>
         <button type="button" class="vf-btn vf-btn-quiet" id="vf-byo-clear">Clear</button>
+        <button type="button" class="vf-btn vf-btn-quiet" id="vf-byo-tpl-off" title="Download a valid OFF evidence bundle to use as a template.">Download example OFF</button>
+        <button type="button" class="vf-btn vf-btn-quiet" id="vf-byo-tpl-on" title="Download a valid ON evidence bundle to use as a template.">Download example ON</button>
       </div>
       <div class="vf-result" style="margin-top:16px" id="vf-byo-result" hidden>
         <div class="vf-verdict">
@@ -732,6 +734,12 @@ async function init(): Promise<void> {
   });
   wireFile("vf-file-on", "vf-drop-on", "vf-name-on", (text) => {
     byoOnText = text;
+  });
+  byId("vf-byo-tpl-off").addEventListener("click", () => {
+    download("promiseproof-off.example.json", JSON.stringify(passingOffExample, null, 2), "application/json");
+  });
+  byId("vf-byo-tpl-on").addEventListener("click", () => {
+    download("promiseproof-on.example.json", JSON.stringify(passingOnExample, null, 2), "application/json");
   });
   byId("vf-byo-run").addEventListener("click", () => {
     void runByo();

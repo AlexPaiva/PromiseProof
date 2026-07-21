@@ -43,25 +43,18 @@
     <meta name="twitter:image" content="/og-card.png" />
   </head>
   <body>
-    <div class="vf-shell" data-testid="verify-root">
-      <header class="vf-topbar">
-        <a class="vf-brand" href="/" aria-label="Back to the PromiseProof overview">
-          <span class="vf-mark" aria-hidden="true"><span></span><span></span><span></span></span>
-          <span class="vf-brand-text">
-            <strong>PromiseProof</strong>
-            <small>Verify. Re-derive the verdict yourself.</small>
-          </span>
-        </a>
-        <div class="vf-topbar-actions">
-          <p class="vf-chip" data-testid="local-chip">
-            <span class="vf-dot" aria-hidden="true"></span>
-            Runs in your browser. No network, no upload.
-          </p>
-          <a class="vf-toplink" href="/walkthrough/">Walkthrough &rarr;</a>
-          <a class="vf-toplink" href="/">&larr; Overview</a>
+    <header>
+      <div class="wrap hd">
+        <a class="brand" href="/" aria-label="PromiseProof overview"><span class="mark" aria-hidden="true"><i></i><i></i><i></i></span> PromiseProof</a>
+        <div class="hd-r">
+          <span class="pill mono" data-testid="local-chip">Runs in your browser. No network, no upload.</span>
+          <a class="btn btn-ghost" href="/">Overview</a>
+          <a class="btn btn-primary" href="/walkthrough/">Open the walkthrough</a>
         </div>
-      </header>
+      </div>
+    </header>
 
+    <div class="vf-shell" data-testid="verify-root">
       <main class="vf-main">
         <section class="vf-hero">
           <p class="vf-eyebrow">PromiseProof Verify &middot; Judge Mode</p>
@@ -77,6 +70,7 @@
             The AI that repairs the promise never owns PASS. An unchanged evaluator does,
             and you are about to run it.
           </p>
+          <p class="vf-runit">You do not have to take our word for it. Run the check yourself, right here, in a few clicks. No sign-up, no setup.</p>
         </section>
 
         <div id="vf-app" class="vf-app" data-testid="verify-app">
@@ -88,15 +82,33 @@
           </p>
         </div>
       </main>
-
-      <footer class="vf-footer">
-        <p>
-          Evidence here is externally supplied and synthetic; PromiseProof does not attest how it
-          was collected. Only the deterministic evaluator decides a bundle that passes strict
-          validation. Nothing you load or tamper leaves this page.
-        </p>
-      </footer>
     </div>
+
+    <footer>
+      <div class="wrap">
+        <div class="foot">
+          <div class="foot-brand">
+            <div class="brand"><span class="mark" aria-hidden="true"><i></i><i></i><i></i></span> PromiseProof</div>
+            <p class="foot-tag">A fixed test, never the AI, decides whether software keeps its promise.</p>
+          </div>
+          <div class="foot-col">
+            <span class="foot-h">Explore</span>
+            <a href="/#problem">The promise that broke</a>
+            <a href="/#how">How it works</a>
+            <a href="/#proof">The proof</a>
+            <a href="/#compare">Why trust it</a>
+          </div>
+          <div class="foot-col">
+            <span class="foot-h">Project</span>
+            <a href="/walkthrough/">Interactive walkthrough</a>
+            <a href="/verify/?judge=1">Challenge the proof</a>
+            <a href="https://github.com/AlexPaiva/PromiseProof">GitHub repository</a>
+            <a href="/#faq">Questions</a>
+          </div>
+        </div>
+        <p class="foot-note">Evidence here is externally supplied and synthetic; PromiseProof does not attest how it was collected. Only the deterministic evaluator decides a bundle that passes strict validation. Nothing you load or tamper leaves this page. Built for OpenAI Build Week 2026, Developer Tools.</p>
+      </div>
+    </footer>
 
     <script type="module" src="/src/verify-ui/main.ts"></script>
   </body>
