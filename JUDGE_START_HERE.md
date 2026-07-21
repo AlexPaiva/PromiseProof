@@ -35,6 +35,18 @@ A bundled Action that runs the same verifier in CI with no `npm install`, no bro
 | Human | Yes | No | Yes | No |
 | Unchanged verifier | No | No | No | Yes |
 
+## The model cannot award itself PASS
+
+This split is enforced in code and covered by tests, not merely asserted:
+
+- **No verdict field exists.** The final investigation contract in `src/investigation/contracts.ts` has no overall-verdict field; the only verdict-adjacent limitation code is `diagnostic_not_verdict` ("Diagnostic hypotheses do not determine the product promise verdict.").
+- **Verdict language from the model is rejected.** `tests/investigation/investigation.unit.ts` asserts `PP_INV_VERDICT_LANGUAGE_REJECTED` when model output uses reserved verdict wording.
+- **A claimed model verdict is ignored by the matrix.** `tests/judge/rehearsal.unit.ts`, "verification matrix rejects missing propagation control, browser errors, and model verdict claims," proves a supplied `modelVerificationVerdict` cannot turn a fail into a pass.
+- **Approval is human and digest-bound.** `tests/repair/artifact-approval.unit.ts`, "accepts only the exact APPROVE or REJECT phrase for the current digest," proves the patch is approved by a human against its exact fingerprint, and the lifecycle records `modelVerdictUsed: false`.
+- **The verdict path needs no model at all.** `tests/judge/rehearsal.unit.ts`, "offline rehearsal environment removes model credentials and Codex configuration," runs the whole verification with no model present.
+
+This is deterministic, code-level separation. It is not a formal or mathematical proof.
+
 ## Recorded versus fresh
 
 - **Recorded and authentic:** the GPT-5.6 investigation, the Codex source repair, and the five-stage walkthrough that presents them. These happened once and are replayed, not re-run live.

@@ -40,7 +40,7 @@ Reproduce a report from its evidence:
     on_evidence: artifacts/personalization-on.json
 ```
 
-After a release tag contains the Action, replace `@main` with that immutable tag.
+The examples pin `@submission-rc-03`, the immutable release that contains this Action. Use `@main` only if you intentionally want to track later changes on the default branch.
 
 ## Inputs
 
