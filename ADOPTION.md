@@ -211,7 +211,7 @@ A bundled GitHub Action runs the same frozen verifier in a workflow with no `npm
 Gate an OFF and an ON bundle:
 
 ```yaml
-- uses: AlexPaiva/PromiseProof/.github/actions/verify@main
+- uses: AlexPaiva/PromiseProof/.github/actions/verify@submission-rc-03
   with:
     mode: gate
     off_evidence: artifacts/personalization-off.json

@@ -12,7 +12,7 @@ supplied by you and is not collection-attested.
 Gate an OFF and an ON evidence bundle (both must pass):
 
 ```yaml
-- uses: AlexPaiva/PromiseProof/.github/actions/verify@main
+- uses: AlexPaiva/PromiseProof/.github/actions/verify@submission-rc-03
   with:
     mode: gate
     off_evidence: artifacts/personalization-off.json
@@ -23,7 +23,7 @@ Gate an OFF and an ON evidence bundle (both must pass):
 Verify a single bundle:
 
 ```yaml
-- uses: AlexPaiva/PromiseProof/.github/actions/verify@main
+- uses: AlexPaiva/PromiseProof/.github/actions/verify@submission-rc-03
   with:
     mode: verify
     evidence: artifacts/personalization-off.json
@@ -32,7 +32,7 @@ Verify a single bundle:
 Reproduce a report from its evidence:
 
 ```yaml
-- uses: AlexPaiva/PromiseProof/.github/actions/verify@main
+- uses: AlexPaiva/PromiseProof/.github/actions/verify@submission-rc-03
   with:
     mode: check
     report: artifacts/promiseproof/report.json
