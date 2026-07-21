@@ -23,6 +23,8 @@ A human approves the exact patch. An unchanged deterministic verifier decides wh
 
 ---
 
+**Contents:** [The 30-second version](#the-30-second-version) · [See the proof](#see-the-proof) · [The problem](#the-problem) · [Who decides it is fixed](#who-decides-it-is-fixed) · [Try it yourself](#try-it-yourself) · [Use it on your own project](#use-it-on-your-own-project) · [How it works](#how-it-works) · [GPT-5.6 and Codex](#gpt-56-and-codex) · [Architecture](#architecture) · [Limitations](#limitations)
+
 ## The 30-second version
 
 1. **A user turned personalization off.** The interface, the browser storage, and the backend all reported the same thing: off.
@@ -130,6 +132,19 @@ npm run promiseproof -- check \
 ```
 
 Swap in the committed `artifacts/verify/broken-off.example.json` and `gate` returns `BROKEN_PROMISE` (exit 2). No `init`, no scaffolding, no key. Full CLI, exit codes, and exact scope are in [PromiseProof Verify](#try-promiseproof-verify) below.
+
+## Use it on your own project
+
+If your app can emit the supported OFF and ON evidence for this contract, pick the surface that fits how you work. The evidence shape is defined in [ADOPTION.md](ADOPTION.md).
+
+| You want to | Do this |
+| --- | --- |
+| Try it with zero setup | Open the [hosted verifier](https://promiseproof.alex0paiva0.workers.dev/verify/?judge=1), then load your own OFF and ON bundles under "Bring your own evidence" |
+| Gate a change locally | `npm run promiseproof -- gate --off off.json --on on.json` |
+| Reproduce a report from evidence | `npm run promiseproof -- check --report report.json --off off.json --on on.json` |
+| Fail CI on a broken promise | Add the [GitHub Action](#try-it-yourself) step, pinned to `@submission-rc-03` |
+
+The evidence envelope, the report format, exit codes, and the trust boundaries are all in [ADOPTION.md](ADOPTION.md). One contract family is supported today, `activity-personalization/v1`, and that guide shows the exact bundle shape and how to produce it.
 
 ## What was built in one Build Week
 
@@ -288,7 +303,9 @@ The investigation makes **exactly two provider calls and at most one replay exec
 
 GPT-5.6 never receives the selected fixture, source paths, logs, screenshots, or root-cause labels. Deterministic TypeScript and Playwright alone decide whether the promise passed.
 
-## GPT-5.6 + Codex
+## GPT-5.6 and Codex
+
+PromiseProof is built on exactly what these models are good at, and bounded by exactly what you should not trust them with. GPT-5.6's structured reasoning and strict function-calling are what make the investigation capable while keeping its authority bounded: the model reasons over a sanitized dossier and ranks competing causes, yet it can act only through one strict tool call into a fixed allowlist, and its result schema has no field in which to write a verdict. The usual worry about an LLM, that it grades its own work, is designed out rather than hoped away. Codex's agentic, multi-file editing is what turns a diagnosis into a real fix: a constrained two-file source patch plus a focused regression test, prepared in isolation. The models do the open-ended reasoning and code work; a deterministic evaluator, not either model, keeps the verdict.
 
 **GPT-5.6** is part of the runtime product architecture. It receives a sanitized, versioned dossier, proposes and ranks diagnostic hypotheses, and selects exactly one allowlisted factual replay through a strict function call. After deterministic code runs that replay, it may update only the existing hypothesis IDs using allowlisted evidence references. It cannot run an arbitrary command, choose an unregistered replay, or determine the product verdict.
 
