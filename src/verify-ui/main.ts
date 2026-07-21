@@ -312,13 +312,13 @@ const APP_HTML = `
       </div>
 
       <div class="vf-actions" style="margin-top:18px">
-        <button type="button" class="vf-btn vf-btn-tamper" id="vf-tamper" data-testid="tamper">Tamper OFF evidence</button>
-        <button type="button" class="vf-btn vf-btn-primary" id="vf-evaluate" data-testid="evaluate">Evaluate current evidence</button>
-        <button type="button" class="vf-btn" id="vf-check" data-testid="check">Verify loaded report</button>
-        <button type="button" class="vf-btn" id="vf-seal" data-testid="seal">Seal current result</button>
-        <button type="button" class="vf-btn vf-btn-quiet" id="vf-reset" data-testid="reset">Reset passing example</button>
-        <button type="button" class="vf-btn vf-btn-quiet" id="vf-dl-json">Download report.json</button>
-        <button type="button" class="vf-btn vf-btn-quiet" id="vf-dl-md">Download report.md</button>
+        <button type="button" class="vf-btn vf-btn-tamper" id="vf-tamper" data-testid="tamper" title="Add one identifiable request to the OFF evidence, the way the seeded defect would.">Tamper OFF evidence</button>
+        <button type="button" class="vf-btn vf-btn-primary" id="vf-evaluate" data-testid="evaluate" title="Re-run the deterministic evaluator on the evidence shown above.">Evaluate current evidence</button>
+        <button type="button" class="vf-btn" id="vf-check" data-testid="check" title="Re-derive the sealed report from the current evidence and check that it reproduces.">Verify loaded report</button>
+        <button type="button" class="vf-btn" id="vf-seal" data-testid="seal" title="Bind a report to exactly the evidence shown now.">Seal current result</button>
+        <button type="button" class="vf-btn vf-btn-quiet" id="vf-reset" data-testid="reset" title="Restore the original passing OFF and ON evidence.">Reset passing example</button>
+        <button type="button" class="vf-btn vf-btn-quiet" id="vf-dl-json" title="Download the machine-readable report for the current evidence.">Download report.json</button>
+        <button type="button" class="vf-btn vf-btn-quiet" id="vf-dl-md" title="Download the human-readable report for the current evidence.">Download report.md</button>
       </div>
 
       <div class="vf-result" style="margin-top:20px">
@@ -337,6 +337,19 @@ const APP_HTML = `
         <div class="vf-digests" id="vf-digests"></div>
         <p class="vf-muted" id="vf-toast" role="status" aria-live="assertive" style="margin-top:12px;min-height:1.2em"></p>
       </div>
+    </div>
+  </section>
+
+  <section class="vf-panel">
+    <div class="vf-panel-head"><span>What the results mean</span><span>plain-language glossary</span></div>
+    <div class="vf-panel-body">
+      <dl class="vf-gloss">
+        <dt>PASS</dt><dd>Every clause held for this evidence.</dd>
+        <dt>BROKEN_PROMISE</dt><dd>At least one clause failed. The violation is listed above.</dd>
+        <dt>BOUND_AND_REPRODUCED</dt><dd>The sealed report regenerates exactly from the evidence shown.</dd>
+        <dt>STALE_OR_MISMATCH</dt><dd>The sealed report no longer matches the current evidence, so it does not reproduce.</dd>
+        <dt>PP_IDENTIFIABLE_EVENT_LEAK</dt><dd>Personalization was off, yet an identifiable request reached the recommendation service.</dd>
+      </dl>
     </div>
   </section>
 

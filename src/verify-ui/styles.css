@@ -694,3 +694,27 @@ a:hover {
     animation: none !important;
   }
 }
+
+.vf-gloss {
+  display: grid;
+  grid-template-columns: minmax(190px, max-content) 1fr;
+  gap: 9px 20px;
+  margin: 0;
+}
+.vf-gloss dt {
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+.vf-gloss dd {
+  margin: 0;
+  opacity: 0.82;
+}
+@media (max-width: 560px) {
+  .vf-gloss {
+    grid-template-columns: 1fr;
+    gap: 2px 0;
+  }
+  .vf-gloss dd {
+    margin-bottom: 9px;
+  }
+}
