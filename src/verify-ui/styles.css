@@ -800,6 +800,81 @@ header {
 .btn-accent { background: #6c5ce7; color: #fff; }
 .btn-accent:hover { background: #5a4bd4; transform: translateY(-1px); }
 .ext::after { content: "\2197"; font-size: 0.9em; opacity: 0.8; }
+
+/* ---- "Try it here" live control panel ---- */
+.vf-try {
+  margin-top: 22px;
+  border: 1px solid rgba(108, 92, 231, 0.38);
+  background: linear-gradient(180deg, rgba(108, 92, 231, 0.12), rgba(108, 92, 231, 0.03));
+  border-radius: 14px;
+  padding: 18px 18px 20px;
+}
+.vf-try-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--mono);
+  font-size: 0.74rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: #d4ccff;
+  background: rgba(108, 92, 231, 0.22);
+  border: 1px solid rgba(108, 92, 231, 0.45);
+  padding: 6px 13px;
+  border-radius: 999px;
+}
+.vf-try-lede {
+  margin: 12px 0 0;
+  color: var(--text);
+  font-size: 1rem;
+  line-height: 1.5;
+}
+.vf-try-steps {
+  margin: 15px 0 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: vftry;
+  display: grid;
+  gap: 10px;
+}
+.vf-try-steps li {
+  counter-increment: vftry;
+  position: relative;
+  padding-left: 36px;
+  color: var(--muted);
+  font-size: 0.94rem;
+  line-height: 1.45;
+}
+.vf-try-steps li::before {
+  content: counter(vftry);
+  position: absolute;
+  left: 0;
+  top: -1px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-family: var(--mono);
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: #fff;
+  background: #6c5ce7;
+}
+.vf-try-steps b {
+  color: var(--text);
+}
+.vf-try-hint {
+  margin: 15px 0 0;
+  font-size: 0.82rem;
+  color: var(--muted2);
+}
+.vf-actions-div {
+  flex-basis: 100%;
+  height: 0;
+  margin: 0;
+}
 .vf-runit {
   margin-top: 14px;
   color: var(--muted);
