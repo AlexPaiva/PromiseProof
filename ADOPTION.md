@@ -77,7 +77,7 @@ An OFF bundle passes when all three clauses hold:
 - `contextual_feed_functional`: a functional feed with `renderedSource` `contextual`, a non-empty `renderedItemIds`, and a matching contextual recommendation-service receipt.
 - `preference_survives_reload`: a witnessed reload (`reloadObserved` true) followed by off in the UI, toggle, stored preference, and backend.
 
-The single OFF violation surfaced by the seeded demo is `PP_IDENTIFIABLE_EVENT_LEAK`.
+The hosted Judge Mode's semantic tamper surfaces `PP_IDENTIFIABLE_EVENT_LEAK`. The original Signal Shelf propagation fixture independently surfaces `PP_PREFERENCE_NOT_PERSISTED`.
 
 ### ON requirements
 
@@ -189,7 +189,7 @@ In the hosted Judge Mode these limits apply in the browser, before the file is r
 
 - Node.js 22.12 or newer and npm 10 or newer for the CLI.
 - The CLI is directly verified on Windows 10 x64. It uses cross-platform Node and Web Crypto primitives; macOS and Linux are expected to work but are not yet claimed as verified.
-- The hosted Judge Mode runs entirely in a modern browser with no server and no network request in the verdict path.
+- After the page loads, verification runs entirely in the browser. The verdict path uses no backend API, model call, evidence upload, or server-side evaluation.
 
 ## CI example
 
