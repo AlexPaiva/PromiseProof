@@ -9,12 +9,12 @@ When AI says "fixed," that is a claim, not a fact. GPT-5.6 investigates. Codex r
 **1. Watch the recorded repair lifecycle.**
 https://promiseproof.alex0paiva0.workers.dev/walkthrough/
 
-Five stages: Observe, Investigate, Replay, Repair, Prove. It replays one authentic run: a user turned personalization off, one identifiable request still reached the recommendation service, GPT-5.6 proposed the diagnosis, Codex proposed a two-file repair, a human approved the exact patch, and an unchanged test decided PASS.
+Five stages: Observe, Investigate, Replay, Repair, Prove. It replays one authentic run: a user turned personalization off, one identifiable request still reached the recommendation service, GPT-5.6 ranked competing hypotheses and selected one allowlisted factual replay, Codex proposed a two-file repair, a human approved the exact patch, and an unchanged test decided PASS.
 
 **2. Challenge the proof yourself.**
 https://promiseproof.alex0paiva0.workers.dev/verify/?judge=1
 
-This runs the same deterministic evaluator in your browser, with no network call. Expected states:
+After the page loads, verification runs entirely in the browser. The verdict path uses no backend API, evidence upload, or model call. Expected states:
 
 - On load: `PASS` and `BOUND_AND_REPRODUCED`.
 - After you tamper one OFF observation: `BROKEN_PROMISE`, violation `PP_IDENTIFIABLE_EVENT_LEAK`, and the report you sealed a moment earlier becomes `STALE_OR_MISMATCH`.
