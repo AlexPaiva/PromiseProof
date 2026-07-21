@@ -4,6 +4,8 @@
 
 ### When software breaks a promise, the AI that repairs it doesn't get the final word.
 
+**GPT-5.6 investigates. Codex repairs. Neither decides PASS.**
+
 Carry a broken product promise all the way through bounded diagnosis, constrained repair, and independent verification, where a deterministic test, *never a model*, decides PASS.
 
 [![OpenAI Build Week 2026](https://img.shields.io/badge/OpenAI-Build_Week_2026-10a37f)](https://openai.com)
@@ -12,7 +14,7 @@ Carry a broken product promise all the way through bounded diagnosis, constraine
 [![Playwright](https://img.shields.io/badge/Playwright-verified-2fa968)](https://playwright.dev/)
 [![Cloudflare Workers](https://img.shields.io/badge/hosted-Cloudflare_Workers-f38020)](https://workers.cloudflare.com/)
 
-**[▶ Live demo](https://promiseproof.alex0paiva0.workers.dev/)** · **[Judge walkthrough](https://promiseproof.alex0paiva0.workers.dev/walkthrough/)** · [How it works](#how-it-works) · [Quick start](#quick-start-the-judge-path)
+**[▶ Live demo](https://promiseproof.alex0paiva0.workers.dev/)** · **[Judge Start Here](JUDGE_START_HERE.md)** · **[Judge walkthrough](https://promiseproof.alex0paiva0.workers.dev/walkthrough/)** · [How it works](#how-it-works) · [Quick start](#quick-start-the-judge-path)
 
 ![PromiseProof: find the boundary that broke the promise](public/og-card.png)
 
@@ -132,7 +134,7 @@ npm run promiseproof -- check \
 **GitHub Action**, drop the verifier into any workflow with no `npm install`, browser, or key:
 
 ```yaml
-- uses: AlexPaiva/PromiseProof/.github/actions/verify@main
+- uses: AlexPaiva/PromiseProof/.github/actions/verify@submission-rc-03
   with:
     mode: gate
     off_evidence: artifacts/personalization-off.json
@@ -140,7 +142,7 @@ npm run promiseproof -- check \
     output_directory: artifacts/promiseproof
 ```
 
-The step fails on `BROKEN_PROMISE` and still leaves `report.json` and `report.md` behind. Replace `@main` with an immutable release tag once one contains the Action. Details in the [Action README](.github/actions/verify/README.md).
+The step fails on `BROKEN_PROMISE` and still leaves `report.json` and `report.md` behind. `@submission-rc-03` is the immutable release tag that contains the Action; `@main` also works if you prefer to track the branch. Details in the [Action README](.github/actions/verify/README.md).
 
 What it is, stated exactly:
 
