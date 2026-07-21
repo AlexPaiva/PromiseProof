@@ -135,7 +135,7 @@ Swap in the committed `artifacts/verify/broken-off.example.json` and `gate` retu
 
 ## Use it on your own project
 
-You already have the inputs this needs: a user-facing promise, evidence from your app, and a CI pipeline. Pick the surface that fits how you work.
+If your app can emit the supported OFF and ON evidence for this contract, pick the surface that fits how you work. The evidence shape is defined in [ADOPTION.md](ADOPTION.md).
 
 | You want to | Do this |
 | --- | --- |
@@ -305,7 +305,7 @@ GPT-5.6 never receives the selected fixture, source paths, logs, screenshots, or
 
 ## GPT-5.6 and Codex
 
-PromiseProof is built on exactly what these models are good at, and bounded by exactly what you should not trust them with. GPT-5.6's structured reasoning and strict function-calling are what make the investigation both capable and safe: the model reasons over a sanitized dossier and ranks competing causes, yet it can act only through one strict tool call into a fixed allowlist, and its result schema has no field in which to write a verdict. The usual worry about an LLM, that it grades its own work, is designed out rather than hoped away. Codex's agentic, multi-file editing is what turns a diagnosis into a real fix: a constrained two-file source patch plus a focused regression test, prepared in isolation. The models do the open-ended reasoning and code work; a deterministic evaluator, not either model, keeps the verdict.
+PromiseProof is built on exactly what these models are good at, and bounded by exactly what you should not trust them with. GPT-5.6's structured reasoning and strict function-calling are what make the investigation capable while keeping its authority bounded: the model reasons over a sanitized dossier and ranks competing causes, yet it can act only through one strict tool call into a fixed allowlist, and its result schema has no field in which to write a verdict. The usual worry about an LLM, that it grades its own work, is designed out rather than hoped away. Codex's agentic, multi-file editing is what turns a diagnosis into a real fix: a constrained two-file source patch plus a focused regression test, prepared in isolation. The models do the open-ended reasoning and code work; a deterministic evaluator, not either model, keeps the verdict.
 
 **GPT-5.6** is part of the runtime product architecture. It receives a sanitized, versioned dossier, proposes and ranks diagnostic hypotheses, and selects exactly one allowlisted factual replay through a strict function call. After deterministic code runs that replay, it may update only the existing hypothesis IDs using allowlisted evidence references. It cannot run an arbitrary command, choose an unregistered replay, or determine the product verdict.
 
