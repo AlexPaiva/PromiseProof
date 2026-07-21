@@ -312,13 +312,13 @@ const APP_HTML = `
       </div>
 
       <div class="vf-actions" style="margin-top:18px">
-        <button type="button" class="vf-btn vf-btn-tamper" id="vf-tamper" data-testid="tamper">Tamper OFF evidence</button>
-        <button type="button" class="vf-btn vf-btn-primary" id="vf-evaluate" data-testid="evaluate">Evaluate current evidence</button>
-        <button type="button" class="vf-btn" id="vf-check" data-testid="check">Verify loaded report</button>
-        <button type="button" class="vf-btn" id="vf-seal" data-testid="seal">Seal current result</button>
-        <button type="button" class="vf-btn vf-btn-quiet" id="vf-reset" data-testid="reset">Reset passing example</button>
-        <button type="button" class="vf-btn vf-btn-quiet" id="vf-dl-json">Download report.json</button>
-        <button type="button" class="vf-btn vf-btn-quiet" id="vf-dl-md">Download report.md</button>
+        <button type="button" class="vf-btn vf-btn-tamper" id="vf-tamper" data-testid="tamper" title="Add one identifiable request to the OFF evidence, the way the seeded defect would.">Tamper OFF evidence</button>
+        <button type="button" class="vf-btn vf-btn-primary" id="vf-evaluate" data-testid="evaluate" title="Re-run the deterministic evaluator on the evidence shown above.">Evaluate current evidence</button>
+        <button type="button" class="vf-btn" id="vf-check" data-testid="check" title="Re-derive the sealed report from the current evidence and check that it reproduces.">Verify loaded report</button>
+        <button type="button" class="vf-btn" id="vf-seal" data-testid="seal" title="Bind a report to exactly the evidence shown now.">Seal current result</button>
+        <button type="button" class="vf-btn vf-btn-quiet" id="vf-reset" data-testid="reset" title="Restore the original passing OFF and ON evidence.">Reset passing example</button>
+        <button type="button" class="vf-btn vf-btn-quiet" id="vf-dl-json" title="Download the machine-readable report for the current evidence.">Download report.json</button>
+        <button type="button" class="vf-btn vf-btn-quiet" id="vf-dl-md" title="Download the human-readable report for the current evidence.">Download report.md</button>
       </div>
 
       <div class="vf-result" style="margin-top:20px">
@@ -337,6 +337,19 @@ const APP_HTML = `
         <div class="vf-digests" id="vf-digests"></div>
         <p class="vf-muted" id="vf-toast" role="status" aria-live="assertive" style="margin-top:12px;min-height:1.2em"></p>
       </div>
+    </div>
+  </section>
+
+  <section class="vf-panel">
+    <div class="vf-panel-head"><span>What the results mean</span><span>plain-language glossary</span></div>
+    <div class="vf-panel-body">
+      <dl class="vf-gloss">
+        <dt>PASS</dt><dd>Every clause held for this evidence.</dd>
+        <dt>BROKEN_PROMISE</dt><dd>At least one clause failed. The violation is listed above.</dd>
+        <dt>BOUND_AND_REPRODUCED</dt><dd>The sealed report regenerates exactly from the evidence shown.</dd>
+        <dt>STALE_OR_MISMATCH</dt><dd>The sealed report no longer matches the current evidence, so it does not reproduce.</dd>
+        <dt>PP_IDENTIFIABLE_EVENT_LEAK</dt><dd>Personalization was off, yet an identifiable request reached the recommendation service.</dd>
+      </dl>
     </div>
   </section>
 
@@ -383,6 +396,8 @@ const APP_HTML = `
       <div class="vf-actions">
         <button type="button" class="vf-btn vf-btn-primary" id="vf-byo-run" data-testid="byo-run">Verify local evidence</button>
         <button type="button" class="vf-btn vf-btn-quiet" id="vf-byo-clear">Clear</button>
+        <button type="button" class="vf-btn vf-btn-quiet" id="vf-byo-tpl-off" title="Download a valid OFF evidence bundle to use as a template.">Download example OFF</button>
+        <button type="button" class="vf-btn vf-btn-quiet" id="vf-byo-tpl-on" title="Download a valid ON evidence bundle to use as a template.">Download example ON</button>
       </div>
       <div class="vf-result" style="margin-top:16px" id="vf-byo-result" hidden>
         <div class="vf-verdict">
@@ -719,6 +734,12 @@ async function init(): Promise<void> {
   });
   wireFile("vf-file-on", "vf-drop-on", "vf-name-on", (text) => {
     byoOnText = text;
+  });
+  byId("vf-byo-tpl-off").addEventListener("click", () => {
+    download("promiseproof-off.example.json", JSON.stringify(passingOffExample, null, 2), "application/json");
+  });
+  byId("vf-byo-tpl-on").addEventListener("click", () => {
+    download("promiseproof-on.example.json", JSON.stringify(passingOnExample, null, 2), "application/json");
   });
   byId("vf-byo-run").addEventListener("click", () => {
     void runByo();

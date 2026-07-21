@@ -23,7 +23,18 @@ A human approves the exact patch. An unchanged deterministic verifier decides wh
 
 ---
 
-**Contents:** [The 30-second version](#the-30-second-version) · [See the proof](#see-the-proof) · [The problem](#the-problem) · [Who decides it is fixed](#who-decides-it-is-fixed) · [Try it yourself](#try-it-yourself) · [Use it on your own project](#use-it-on-your-own-project) · [How it works](#how-it-works) · [GPT-5.6 and Codex](#gpt-56-and-codex) · [Architecture](#architecture) · [Limitations](#limitations)
+## Contents
+
+1. [The 30-second version](#the-30-second-version)
+2. [See the proof](#see-the-proof)
+3. [The problem](#the-problem)
+4. [Who decides it is fixed](#who-decides-it-is-fixed)
+5. [Try it yourself](#try-it-yourself)
+6. [Use it on your own project](#use-it-on-your-own-project)
+7. [How it works](#how-it-works)
+8. [GPT-5.6 and Codex](#gpt-56-and-codex)
+9. [Architecture](#architecture)
+10. [Limitations](#limitations)
 
 ## The 30-second version
 
@@ -38,13 +49,19 @@ Most tools confirm that your tests pass. PromiseProof answers the one question a
 
 Two states of the hosted verifier. Same evaluator, no model in the verdict path, nothing uploaded.
 
-![PromiseProof verifier returning PASS with five passing clauses](docs/screenshots/03-unchanged-verifier.png)
+<div align="center">
+  <img src="docs/screenshots/03-unchanged-verifier.png" alt="PromiseProof verifier returning PASS with five passing clauses" width="840">
+  <br>
+  <sub>The unchanged evaluator, running in your browser, returns <b>PASS</b> bound to this evidence. Five clauses hold across OFF, reload, and the ON control, and the verdict path makes no model call.</sub>
+</div>
 
-*The unchanged evaluator, running in your browser, returns **PASS** bound to this evidence. Five clauses hold across OFF, reload, and the ON control. The verdict path makes no model call.*
+<br>
 
-![PromiseProof verifier after a tamper, showing BROKEN_PROMISE and a stale sealed report](docs/screenshots/04-challenge-and-ci.png)
-
-*Change one load-bearing observation and the same evaluator flips to **BROKEN_PROMISE** with `PP_IDENTIFIABLE_EVENT_LEAK`, while the report you sealed a moment ago no longer reproduces (**STALE_OR_MISMATCH**). A PASS cannot be carried onto changed evidence.*
+<div align="center">
+  <img src="docs/screenshots/04-challenge-and-ci.png" alt="PromiseProof verifier after a tamper, showing BROKEN_PROMISE and a stale sealed report" width="840">
+  <br>
+  <sub>Change one load-bearing observation and the same evaluator flips to <b>BROKEN_PROMISE</b> with <code>PP_IDENTIFIABLE_EVENT_LEAK</code>, while the report you sealed a moment ago no longer reproduces (<b>STALE_OR_MISMATCH</b>). A PASS cannot be carried onto changed evidence.</sub>
+</div>
 
 The first two beats, the broken promise and the bounded investigation, play in order in the [five-stage walkthrough](https://promiseproof.alex0paiva0.workers.dev/walkthrough/).
 
