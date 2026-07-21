@@ -47,7 +47,7 @@ Most tools confirm that your tests pass. PromiseProof answers the one question a
 
 ## See the proof
 
-Two states of the hosted verifier. Same evaluator, no model in the verdict path, nothing uploaded.
+Three states, no setup: the verifier passes, breaks under a tamper, and the same authority gates your CI. Same evaluator, no model in the verdict path, nothing uploaded.
 
 <div align="center">
   <img src="docs/screenshots/03-unchanged-verifier.png" alt="PromiseProof verifier returning PASS with five passing clauses" width="840">
@@ -63,14 +63,15 @@ Two states of the hosted verifier. Same evaluator, no model in the verdict path,
   <sub>Change one load-bearing observation and the same evaluator flips to <b>BROKEN_PROMISE</b> with <code>PP_IDENTIFIABLE_EVENT_LEAK</code>, while the report you sealed a moment ago no longer reproduces (<b>STALE_OR_MISMATCH</b>). A PASS cannot be carried onto changed evidence.</sub>
 </div>
 
-The first two beats, the broken promise and the bounded investigation, play in order in the [five-stage walkthrough](https://promiseproof.alex0paiva0.workers.dev/walkthrough/).
+<br>
 
-<!-- Owner: to complete the four-image sequence, capture 01-broken-promise.png and 02-models-without-authority.png (1920x1080) during the walkthrough, drop them into docs/screenshots/, and uncomment:
-![The Observe stage: personalization OFF everywhere, yet one identifiable request crosses to recommendations](docs/screenshots/01-broken-promise.png)
-*The user selected OFF. One identifiable request still crossed the service boundary. That is the broken promise.*
-![The lifecycle: bounded GPT-5.6 investigation, isolated Codex repair, human approval](docs/screenshots/02-models-without-authority.png)
-*GPT-5.6 investigates inside a bounded dossier and Codex proposes the source repair. A human approves the exact patch. Neither model can write PASS.*
--->
+<div align="center">
+  <img src="docs/screenshots/05-cli-gate.png" alt="Terminal running the PromiseProof gate: a kept promise exits 0, a broken promise exits 2" width="840">
+  <br>
+  <sub>The same deterministic authority in your terminal and CI: a kept promise exits <code>0</code>, a broken one exits <code>2</code> and fails the build.</sub>
+</div>
+
+The full lifecycle, from broken promise to proof, plays in order in the [five-stage walkthrough](https://promiseproof.alex0paiva0.workers.dev/walkthrough/).
 
 ## The problem
 
