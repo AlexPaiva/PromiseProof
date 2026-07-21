@@ -1,0 +1,34 @@
+{
+  "schemaVersion": "1",
+  "contractFamily": "activity-personalization/v1",
+  "evidence": {
+    "scenario": "off",
+    "subjectId": "article-atlas-reader-001",
+    "control": {
+      "uiPreference": "off",
+      "toggleChecked": false,
+      "storedPreference": "off",
+      "backendPreference": "off",
+      "reloadObserved": true
+    },
+    "activity": {
+      "capturedActivities": [],
+      "recommendationServiceReceipts": []
+    },
+    "recommendations": {
+      "feedFunctional": true,
+      "renderedSource": "contextual",
+      "renderedItemIds": [
+        "article-atlas-story-101"
+      ],
+      "recommendationServiceReceipts": [
+        {
+          "source": "contextual",
+          "itemIds": [
+            "article-atlas-story-101"
+          ]
+        }
+      ]
+    }
+  }
+}

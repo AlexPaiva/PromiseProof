@@ -1,0 +1,52 @@
+{
+  "schemaVersion": "1",
+  "contractFamily": "activity-personalization/v1",
+  "evidence": {
+    "scenario": "off",
+    "subjectId": "article-atlas-reader-001",
+    "control": {
+      "uiPreference": "off",
+      "toggleChecked": false,
+      "storedPreference": "off",
+      "backendPreference": "off",
+      "reloadObserved": true
+    },
+    "activity": {
+      "capturedActivities": [
+        {
+          "runId": "article-atlas-broken-off",
+          "subjectId": "article-atlas-reader-001",
+          "eventType": "page_view",
+          "itemId": "article-atlas-origin-001",
+          "clientSequence": 1,
+          "occurredAt": "2026-01-15T12:00:01.000Z"
+        }
+      ],
+      "recommendationServiceReceipts": [
+        {
+          "runId": "article-atlas-broken-off",
+          "subjectId": "article-atlas-reader-001",
+          "eventType": "page_view",
+          "itemId": "article-atlas-origin-001",
+          "clientSequence": 1,
+          "occurredAt": "2026-01-15T12:00:01.000Z"
+        }
+      ]
+    },
+    "recommendations": {
+      "feedFunctional": true,
+      "renderedSource": "contextual",
+      "renderedItemIds": [
+        "article-atlas-story-101"
+      ],
+      "recommendationServiceReceipts": [
+        {
+          "source": "contextual",
+          "itemIds": [
+            "article-atlas-story-101"
+          ]
+        }
+      ]
+    }
+  }
+}

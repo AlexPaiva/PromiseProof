@@ -100,6 +100,46 @@ npm run test:judge:interface         # browser-level walkthrough and accessibili
 
 > On Windows systems that block PowerShell's `npm.ps1`, use `npm.cmd` / `npx.cmd`.
 
+## Try PromiseProof Verify
+
+The lifecycle above repairs a promise without ever letting a model own the verdict. **PromiseProof Verify** exposes that same unchanged evaluator so anyone can re-derive the result from evidence, in the browser or from the CLI.
+
+**Hosted Judge Mode**, no login and no API key, runs locally in your browser:
+
+**[▶ Open the verifier](https://promiseproof.alex0paiva0.workers.dev/verify/?judge=1)**
+
+It opens on a passing OFF/ON gate bound to the pinned evaluator source. Tamper a load-bearing OFF observation and the same evaluator returns `BROKEN_PROMISE` (`PP_IDENTIFIABLE_EVENT_LEAK`), while the report you sealed a moment earlier no longer reproduces (`STALE_OR_MISMATCH`). The files you select stay in the page.
+
+**Repository-local CLI**, no model call in the verdict path:
+
+```bash
+npm run promiseproof -- init --out .promiseproof
+
+npm run promiseproof -- gate \
+  --off .promiseproof/passing-off.example.json \
+  --on .promiseproof/passing-on.example.json \
+  --out .promiseproof/report
+
+npm run promiseproof -- check \
+  --report .promiseproof/report/report.json \
+  --off .promiseproof/passing-off.example.json \
+  --on .promiseproof/passing-on.example.json
+```
+
+- `verify` and `gate` exit `0` PASS, `2` BROKEN_PROMISE, `3` INVALID_EVIDENCE, `1` usage or execution error.
+- `check` exits `0` BOUND_AND_REPRODUCED, `4` STALE_OR_MISMATCH, `3` INVALID_REPORT_OR_EVIDENCE, `1` usage or execution error.
+
+What it is, stated exactly:
+
+- One supported contract family: `activity-personalization/v1`.
+- Externally supplied evidence is **not** collection-attested; PromiseProof does not claim to know how it was gathered.
+- Reports bind the validated evidence to the pinned evaluator source by content digest.
+- `check` re-runs the evaluator and compares the complete regenerated report, not only its hashes, so a report with correct digests but an invented verdict fails to reproduce.
+- The verifier path makes no GPT-5.6 or Codex call.
+- Signal Shelf still demonstrates the complete investigation and repair lifecycle above; the verifier is the reproducible check at the end of it.
+
+The full developer guide is in [ADOPTION.md](ADOPTION.md).
+
 ## The two seeded defects
 
 Signal Shelf carries two independently selectable defects. Both break the same OFF promise in different ways, produce different evidence, and require different diagnostic actions, so a single flag cannot explain both, and one fix cannot silence the other.

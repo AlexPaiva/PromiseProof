@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="dark light" />
+    <meta name="referrer" content="no-referrer" />
+    <meta name="theme-color" content="#080b12" />
+    <meta
+      name="description"
+      content="Re-derive the verdict yourself. PromiseProof runs its unchanged, deterministic evaluator in your browser, with no network, over recorded evidence. It says PASS, then you tamper the evidence and watch the same evaluator flip to a broken promise while the sealed report refuses to reproduce."
+    />
+    <title>PromiseProof Verify: re-derive the verdict yourself</title>
+
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" href="/favicon.ico" sizes="32x32" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="PromiseProof" />
+    <meta
+      property="og:title"
+      content="PromiseProof Verify: re-derive the verdict yourself"
+    />
+    <meta
+      property="og:description"
+      content="An in-browser, no-network verifier. It says PASS over recorded evidence; tamper the evidence and the same frozen evaluator returns a broken promise, and the report you sealed a moment ago no longer reproduces."
+    />
+    <meta property="og:image" content="/og-card.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="PromiseProof Verify: re-derive the verdict yourself." />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta
+      name="twitter:title"
+      content="PromiseProof Verify: re-derive the verdict yourself"
+    />
+    <meta
+      name="twitter:description"
+      content="Run the unchanged deterministic evaluator in your own browser, then tamper the evidence and watch the verdict flip. No install, no network."
+    />
+    <meta name="twitter:image" content="/og-card.png" />
+  </head>
+  <body>
+    <div class="vf-shell" data-testid="verify-root">
+      <header class="vf-topbar">
+        <a class="vf-brand" href="/" aria-label="Back to the PromiseProof overview">
+          <span class="vf-mark" aria-hidden="true"><span></span><span></span><span></span></span>
+          <span class="vf-brand-text">
+            <strong>PromiseProof</strong>
+            <small>Verify &mdash; re-derive the verdict yourself.</small>
+          </span>
+        </a>
+        <div class="vf-topbar-actions">
+          <p class="vf-chip" data-testid="local-chip">
+            <span class="vf-dot" aria-hidden="true"></span>
+            Runs in your browser. No network, no upload.
+          </p>
+          <a class="vf-toplink" href="/walkthrough/">Walkthrough &rarr;</a>
+          <a class="vf-toplink" href="/">&larr; Overview</a>
+        </div>
+      </header>
+
+      <main class="vf-main">
+        <section class="vf-hero">
+          <p class="vf-eyebrow">PromiseProof Verify &middot; Judge Mode</p>
+          <h1 class="vf-h1">Re-derive the verdict <span class="g">yourself.</span></h1>
+          <p class="vf-lede">
+            A user turned activity-based personalization <strong>off</strong>. This page runs the
+            same frozen, deterministic evaluator the repository ships &mdash; right here in your
+            browser, with no network call &mdash; over the recorded evidence. It says
+            <strong>PASS</strong>. Now tamper the evidence and watch the <em>same</em> evaluator
+            return a broken promise, while the report you sealed a moment ago refuses to reproduce.
+          </p>
+          <p class="vf-thesis">
+            The AI that repairs the promise never owns PASS. An unchanged evaluator does &mdash;
+            and you are about to run it.
+          </p>
+        </section>
+
+        <div id="vf-app" class="vf-app" data-testid="verify-app">
+          <p class="vf-fallback">
+            This verifier is interactive and needs JavaScript. The same deterministic evaluator,
+            evidence, and reports are in the
+            <a href="https://github.com/AlexPaiva/PromiseProof">GitHub repository</a>, and a
+            plain-language summary is on the <a href="/">overview page</a>.
+          </p>
+        </div>
+      </main>
+
+      <footer class="vf-footer">
+        <p>
+          Evidence here is externally supplied and synthetic; PromiseProof does not attest how it
+          was collected. Only the deterministic evaluator decides a bundle that passes strict
+          validation. Nothing you load or tamper leaves this page.
+        </p>
+      </footer>
+    </div>
+
+    <script type="module" src="/src/verify-ui/main.ts"></script>
+  </body>
+</html>

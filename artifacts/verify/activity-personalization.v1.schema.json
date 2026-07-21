@@ -1,0 +1,344 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "schemaVersion": {
+      "type": "string",
+      "const": "1"
+    },
+    "contractFamily": {
+      "type": "string",
+      "const": "activity-personalization/v1"
+    },
+    "evidence": {
+      "type": "object",
+      "properties": {
+        "scenario": {
+          "type": "string",
+          "enum": [
+            "on",
+            "off"
+          ]
+        },
+        "subjectId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256,
+          "allOf": [
+            {
+              "pattern": "\\S"
+            },
+            {
+              "pattern": "^[^\\u0000-\\u001f\\u007f\\u202a-\\u202e\\u2066-\\u2069]*$"
+            }
+          ]
+        },
+        "control": {
+          "type": "object",
+          "properties": {
+            "uiPreference": {
+              "type": "string",
+              "enum": [
+                "on",
+                "off"
+              ]
+            },
+            "toggleChecked": {
+              "type": "boolean"
+            },
+            "storedPreference": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "on",
+                    "off"
+                  ]
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "backendPreference": {
+              "type": "string",
+              "enum": [
+                "on",
+                "off"
+              ]
+            },
+            "reloadObserved": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "uiPreference",
+            "toggleChecked",
+            "storedPreference",
+            "backendPreference",
+            "reloadObserved"
+          ],
+          "additionalProperties": false
+        },
+        "activity": {
+          "type": "object",
+          "properties": {
+            "capturedActivities": {
+              "maxItems": 100,
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "runId": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 256,
+                    "allOf": [
+                      {
+                        "pattern": "\\S"
+                      },
+                      {
+                        "pattern": "^[^\\u0000-\\u001f\\u007f\\u202a-\\u202e\\u2066-\\u2069]*$"
+                      }
+                    ]
+                  },
+                  "subjectId": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 256,
+                    "allOf": [
+                      {
+                        "pattern": "\\S"
+                      },
+                      {
+                        "pattern": "^[^\\u0000-\\u001f\\u007f\\u202a-\\u202e\\u2066-\\u2069]*$"
+                      }
+                    ]
+                  },
+                  "eventType": {
+                    "type": "string",
+                    "const": "page_view"
+                  },
+                  "itemId": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 256,
+                    "allOf": [
+                      {
+                        "pattern": "\\S"
+                      },
+                      {
+                        "pattern": "^[^\\u0000-\\u001f\\u007f\\u202a-\\u202e\\u2066-\\u2069]*$"
+                      }
+                    ]
+                  },
+                  "clientSequence": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  "occurredAt": {
+                    "type": "string",
+                    "format": "date-time",
+                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                  }
+                },
+                "required": [
+                  "runId",
+                  "subjectId",
+                  "eventType",
+                  "itemId",
+                  "clientSequence",
+                  "occurredAt"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "recommendationServiceReceipts": {
+              "maxItems": 100,
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "runId": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 256,
+                    "allOf": [
+                      {
+                        "pattern": "\\S"
+                      },
+                      {
+                        "pattern": "^[^\\u0000-\\u001f\\u007f\\u202a-\\u202e\\u2066-\\u2069]*$"
+                      }
+                    ]
+                  },
+                  "subjectId": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 256,
+                    "allOf": [
+                      {
+                        "pattern": "\\S"
+                      },
+                      {
+                        "pattern": "^[^\\u0000-\\u001f\\u007f\\u202a-\\u202e\\u2066-\\u2069]*$"
+                      }
+                    ]
+                  },
+                  "eventType": {
+                    "type": "string",
+                    "const": "page_view"
+                  },
+                  "itemId": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 256,
+                    "allOf": [
+                      {
+                        "pattern": "\\S"
+                      },
+                      {
+                        "pattern": "^[^\\u0000-\\u001f\\u007f\\u202a-\\u202e\\u2066-\\u2069]*$"
+                      }
+                    ]
+                  },
+                  "clientSequence": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  "occurredAt": {
+                    "type": "string",
+                    "format": "date-time",
+                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                  }
+                },
+                "required": [
+                  "runId",
+                  "subjectId",
+                  "eventType",
+                  "itemId",
+                  "clientSequence",
+                  "occurredAt"
+                ],
+                "additionalProperties": false
+              }
+            }
+          },
+          "required": [
+            "capturedActivities",
+            "recommendationServiceReceipts"
+          ],
+          "additionalProperties": false
+        },
+        "recommendations": {
+          "type": "object",
+          "properties": {
+            "feedFunctional": {
+              "type": "boolean"
+            },
+            "renderedSource": {
+              "type": "string",
+              "enum": [
+                "contextual",
+                "behavioral"
+              ]
+            },
+            "renderedItemIds": {
+              "maxItems": 100,
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 256,
+                "allOf": [
+                  {
+                    "pattern": "\\S"
+                  },
+                  {
+                    "pattern": "^[^\\u0000-\\u001f\\u007f\\u202a-\\u202e\\u2066-\\u2069]*$"
+                  }
+                ]
+              }
+            },
+            "recommendationServiceReceipts": {
+              "maxItems": 100,
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "source": {
+                    "type": "string",
+                    "enum": [
+                      "contextual",
+                      "behavioral"
+                    ]
+                  },
+                  "subjectId": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 256,
+                    "allOf": [
+                      {
+                        "pattern": "\\S"
+                      },
+                      {
+                        "pattern": "^[^\\u0000-\\u001f\\u007f\\u202a-\\u202e\\u2066-\\u2069]*$"
+                      }
+                    ]
+                  },
+                  "itemIds": {
+                    "maxItems": 100,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 256,
+                      "allOf": [
+                        {
+                          "pattern": "\\S"
+                        },
+                        {
+                          "pattern": "^[^\\u0000-\\u001f\\u007f\\u202a-\\u202e\\u2066-\\u2069]*$"
+                        }
+                      ]
+                    }
+                  }
+                },
+                "required": [
+                  "source",
+                  "itemIds"
+                ],
+                "additionalProperties": false
+              }
+            }
+          },
+          "required": [
+            "feedFunctional",
+            "renderedSource",
+            "renderedItemIds",
+            "recommendationServiceReceipts"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "scenario",
+        "subjectId",
+        "control",
+        "activity",
+        "recommendations"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "contractFamily",
+    "evidence"
+  ],
+  "additionalProperties": false,
+  "title": "PromiseProof activity-personalization/v1 evidence bundle",
+  "description": "Externally supplied evaluator-relevant facts for the single activity-personalization/v1 contract family."
+}
