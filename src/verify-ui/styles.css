@@ -797,6 +797,9 @@ header {
 .btn-primary:hover { background: #3560e0; transform: translateY(-1px); }
 .btn-ghost { border-color: rgba(255, 255, 255, 0.16); color: #dbe4f2; }
 .btn-ghost:hover { border-color: rgba(255, 255, 255, 0.4); background: rgba(255, 255, 255, 0.04); }
+.btn-accent { background: #6c5ce7; color: #fff; }
+.btn-accent:hover { background: #5a4bd4; transform: translateY(-1px); }
+.ext::after { content: "\2197"; font-size: 0.9em; opacity: 0.8; }
 .vf-runit {
   margin-top: 14px;
   color: var(--muted);
