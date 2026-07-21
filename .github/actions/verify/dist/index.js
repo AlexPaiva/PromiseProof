@@ -27,6 +27,7 @@ var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__ge
 ));
 
 // src/action/index.ts
+var import_node_crypto = require("node:crypto");
 var import_node_fs = require("node:fs");
 var import_promises = require("node:fs/promises");
 var import_node_path = __toESM(require("node:path"), 1);
@@ -15251,23 +15252,61 @@ async function checkGate(rawReport, rawOff, rawOn) {
 var CONTRACT = SUPPORTED_CONTRACT_FAMILY;
 var ActionUsageError = class extends Error {
 };
+var ActionInvalidInputError = class extends Error {
+  constructor(status, mode) {
+    super(
+      status === "INVALID_EVIDENCE" ? "evidence exceeds the input-size limit" : "report or evidence exceeds the input-size limit"
+    );
+    this.status = status;
+    this.mode = mode;
+  }
+};
+var OUTPUT_NAMES = [
+  "status",
+  "mode",
+  "report_json",
+  "report_markdown",
+  "evaluator_sha256",
+  "evidence_sha256",
+  "off_evidence_sha256",
+  "on_evidence_sha256"
+];
+var UNSAFE_PATH_CHARACTERS = /[\u0000-\u001f\u007f\u202a-\u202e\u2066-\u2069]/u;
+function workflowCommandValue(message) {
+  return message.replaceAll("%", "%25").replaceAll("\r", "%0D").replaceAll("\n", "%0A");
+}
 function emit(kind, message) {
-  process.stdout.write(`::${kind}::${message.replaceAll("\n", " ")}
+  process.stdout.write(`::${kind}::${workflowCommandValue(message)}
 `);
 }
 function readInput(name) {
   return (process.env[`INPUT_${name.toUpperCase()}`] ?? "").trim();
 }
+function readPathInput(name) {
+  const raw = process.env[`INPUT_${name.toUpperCase()}`] ?? "";
+  if (UNSAFE_PATH_CHARACTERS.test(raw)) {
+    throw new ActionUsageError(`${name} contains a forbidden control character.`);
+  }
+  return raw.trim();
+}
 var collectedOutputs = {};
 function setOutput(name, value) {
+  if (!/^[a-z0-9_]+$/u.test(name)) {
+    throw new ActionUsageError("an internal output name is invalid.");
+  }
+  if (/[\r\n\u0000]/u.test(value)) {
+    throw new ActionUsageError(`the ${name} output is not single-line safe.`);
+  }
   collectedOutputs[name] = value;
   const file2 = process.env.GITHUB_OUTPUT;
   if (file2 === void 0 || file2 === "") return;
-  const delimiter = `ghadelim_${name}_${value.length}`;
-  (0, import_node_fs.appendFileSync)(file2, `${name}<<${delimiter}
-${value}
-${delimiter}
+  (0, import_node_fs.appendFileSync)(file2, `${name}=${value}
 `, "utf8");
+}
+function initializeOutputs() {
+  for (const name of OUTPUT_NAMES) {
+    setOutput(name, "");
+  }
 }
 function appendSummary(markdown) {
   const file2 = process.env.GITHUB_STEP_SUMMARY;
@@ -15286,6 +15325,18 @@ function actionHeader(mode, status) {
     "- external evidence collection is not attested",
     ""
   ].join("\n");
+}
+function appendEvaluationSummary(heading, evaluation) {
+  appendSummary(`### ${heading}`);
+  appendSummary("");
+  for (const clause2 of evaluation.clauses) {
+    appendSummary(`- ${clause2.id}: ${clause2.passed ? "PASS" : "FAIL"}`);
+  }
+  if (evaluation.violations.length > 0) {
+    appendSummary(
+      `- violation codes: ${evaluation.violations.map((item) => item.code).join(", ")}`
+    );
+  }
 }
 function workspaceRoot() {
   const raw = process.env.GITHUB_WORKSPACE;
@@ -15316,26 +15367,30 @@ function resolveExistingFile(root, relInput, label) {
   const target = import_node_path.default.resolve(root, relInput);
   assertInsideWorkspace(root, target);
   if (!(0, import_node_fs.existsSync)(target)) {
-    throw new ActionUsageError(`${label} does not exist: ${relInput}`);
+    throw new ActionUsageError(`${label} does not exist.`);
   }
-  if ((0, import_node_fs.statSync)((0, import_node_fs.realpathSync)(target)).isDirectory()) {
-    throw new ActionUsageError(`${label} is a directory, expected a file: ${relInput}`);
+  const canonical = (0, import_node_fs.realpathSync)(target);
+  assertInsideWorkspace(root, canonical);
+  if (!(0, import_node_fs.statSync)(canonical).isFile()) {
+    throw new ActionUsageError(`${label} is not a regular file.`);
   }
-  return target;
+  return canonical;
 }
 function resolveOutputDirectory(root, relInput) {
   const target = import_node_path.default.resolve(root, relInput);
   assertInsideWorkspace(root, target);
   if ((0, import_node_fs.existsSync)(target) && !(0, import_node_fs.statSync)((0, import_node_fs.realpathSync)(target)).isDirectory()) {
-    throw new ActionUsageError(`output_directory is a file, expected a directory: ${relInput}`);
+    throw new ActionUsageError("output_directory is a file, expected a directory.");
   }
   (0, import_node_fs.mkdirSync)(target, { recursive: true });
-  return target;
+  const canonical = (0, import_node_fs.realpathSync)(target);
+  assertInsideWorkspace(root, canonical);
+  return canonical;
 }
-async function readJsonFile(absolute, relForLog, label) {
+async function readJsonFile(absolute, label, invalidStatus, mode) {
   const size = (0, import_node_fs.statSync)(absolute).size;
   if (size > MAX_INPUT_BYTES) {
-    throw new ActionUsageError(`${label} exceeds the ${MAX_INPUT_BYTES}-byte limit: ${relForLog}`);
+    throw new ActionInvalidInputError(invalidStatus, mode);
   }
   const text = await (0, import_promises.readFile)(absolute, "utf8");
   try {
@@ -15347,24 +15402,109 @@ async function readJsonFile(absolute, relForLog, label) {
 function relative(root, absolute) {
   return import_node_path.default.relative(root, absolute).split(import_node_path.default.sep).join("/");
 }
+function canonicalReportPaths(outputDir) {
+  return {
+    jsonPath: import_node_path.default.join(outputDir, "report.json"),
+    markdownPath: import_node_path.default.join(outputDir, "report.md")
+  };
+}
+function assertSafeCanonicalTarget(root, target) {
+  assertInsideWorkspace(root, target);
+  if (!(0, import_node_fs.existsSync)(target)) return;
+  const entry = (0, import_node_fs.lstatSync)(target);
+  if (entry.isSymbolicLink()) {
+    throw new ActionUsageError("a canonical report path is a symbolic link.");
+  }
+  if (!entry.isFile()) {
+    throw new ActionUsageError("a canonical report path is not a regular file.");
+  }
+}
+async function removeCanonicalReport(root, target) {
+  assertSafeCanonicalTarget(root, target);
+  if ((0, import_node_fs.existsSync)(target)) await (0, import_promises.unlink)(target);
+}
+async function clearCanonicalReports(root, outputDir) {
+  const { jsonPath, markdownPath } = canonicalReportPaths(outputDir);
+  await removeCanonicalReport(root, jsonPath);
+  await removeCanonicalReport(root, markdownPath);
+}
+async function writeExclusiveFile(target, content) {
+  const handle = await (0, import_promises.open)(target, "wx", 384);
+  try {
+    await handle.writeFile(content, "utf8");
+    await handle.sync();
+  } finally {
+    await handle.close();
+  }
+}
+async function removeGeneratedFile(root, target) {
+  if (!(0, import_node_fs.existsSync)(target)) return;
+  try {
+    assertSafeCanonicalTarget(root, target);
+    await (0, import_promises.unlink)(target);
+  } catch {
+  }
+}
 async function writeReports(root, outputDir, json2, markdown) {
-  const jsonPath = import_node_path.default.join(outputDir, "report.json");
-  const markdownPath = import_node_path.default.join(outputDir, "report.md");
-  await (0, import_promises.writeFile)(jsonPath, json2, "utf8");
-  await (0, import_promises.writeFile)(markdownPath, markdown, "utf8");
-  return { jsonRel: relative(root, jsonPath), markdownRel: relative(root, markdownPath) };
+  assertInsideWorkspace(root, (0, import_node_fs.realpathSync)(outputDir));
+  const { jsonPath, markdownPath } = canonicalReportPaths(outputDir);
+  const nonce = (0, import_node_crypto.randomUUID)();
+  const jsonTemp = import_node_path.default.join(outputDir, `.promiseproof-${nonce}.json.tmp`);
+  const markdownTemp = import_node_path.default.join(outputDir, `.promiseproof-${nonce}.md.tmp`);
+  let jsonInstalled = false;
+  let markdownInstalled = false;
+  try {
+    await writeExclusiveFile(jsonTemp, json2);
+    await writeExclusiveFile(markdownTemp, markdown);
+    assertInsideWorkspace(root, (0, import_node_fs.realpathSync)(outputDir));
+    assertSafeCanonicalTarget(root, jsonPath);
+    assertSafeCanonicalTarget(root, markdownPath);
+    if ((0, import_node_fs.existsSync)(jsonPath) || (0, import_node_fs.existsSync)(markdownPath)) {
+      throw new ActionUsageError("a canonical report path changed during report creation.");
+    }
+    await (0, import_promises.rename)(jsonTemp, jsonPath);
+    jsonInstalled = true;
+    assertInsideWorkspace(root, (0, import_node_fs.realpathSync)(outputDir));
+    assertSafeCanonicalTarget(root, markdownPath);
+    if ((0, import_node_fs.existsSync)(markdownPath)) {
+      throw new ActionUsageError("a canonical report path changed during report creation.");
+    }
+    await (0, import_promises.rename)(markdownTemp, markdownPath);
+    markdownInstalled = true;
+    assertSafeCanonicalTarget(root, jsonPath);
+    assertSafeCanonicalTarget(root, markdownPath);
+    return { jsonRel: relative(root, jsonPath), markdownRel: relative(root, markdownPath) };
+  } catch (error51) {
+    if (jsonInstalled) await removeGeneratedFile(root, jsonPath);
+    if (markdownInstalled) await removeGeneratedFile(root, markdownPath);
+    throw error51;
+  } finally {
+    if ((0, import_node_fs.existsSync)(jsonTemp)) await (0, import_promises.unlink)(jsonTemp).catch(() => void 0);
+    if ((0, import_node_fs.existsSync)(markdownTemp)) await (0, import_promises.unlink)(markdownTemp).catch(() => void 0);
+  }
 }
 async function runVerify(root) {
-  const evidencePath = resolveExistingFile(root, readInput("evidence"), "evidence");
-  const outputDir = resolveOutputDirectory(root, readInput("output_directory") || "promiseproof-report");
-  const evidence = await readJsonFile(evidencePath, relative(root, evidencePath), "evidence");
+  const evidenceInput = readPathInput("evidence");
+  const outputInput = readPathInput("output_directory") || "promiseproof-report";
+  const evidencePath = resolveExistingFile(root, evidenceInput, "evidence");
+  const outputDir = resolveOutputDirectory(
+    root,
+    outputInput
+  );
+  await clearCanonicalReports(root, outputDir);
+  const evidence = await readJsonFile(
+    evidencePath,
+    "evidence",
+    "INVALID_EVIDENCE",
+    "verify"
+  );
   const result = verifyBundle(evidence);
   setOutput("evaluator_sha256", EVALUATOR_SOURCE_SHA256);
   if (result.outcome === "INVALID_EVIDENCE") {
     setOutput("status", "INVALID_EVIDENCE");
     appendSummary(actionHeader("verify", "INVALID_EVIDENCE"));
     appendSummary("Evidence failed strict validation. No report was produced.");
-    for (const issue2 of result.issues) appendSummary(`- ${issue2}`);
+    appendSummary(`Validation issue count: ${result.issues.length}.`);
     emit("error", "verify: evidence failed strict validation.");
     return { status: "INVALID_EVIDENCE", exitCode: 3 };
   }
@@ -15380,7 +15520,8 @@ async function runVerify(root) {
   setOutput("evidence_sha256", report.inputBinding.sha256);
   setOutput("status", report.outcome);
   appendSummary(actionHeader("verify", report.outcome));
-  appendSummary(serializeVerifyReportMarkdown(report));
+  appendEvaluationSummary("Deterministic evaluation", report);
+  appendSummary("Complete evidence-bound JSON and Markdown reports were written to the declared output paths.");
   if (report.outcome === "BROKEN_PROMISE") {
     emit("error", "verify: BROKEN_PROMISE. See the report for the failing clauses.");
     return { status: "BROKEN_PROMISE", exitCode: 2 };
@@ -15388,18 +15529,25 @@ async function runVerify(root) {
   return { status: "PASS", exitCode: 0 };
 }
 async function runGateMode(root) {
-  const offPath = resolveExistingFile(root, readInput("off_evidence"), "off_evidence");
-  const onPath = resolveExistingFile(root, readInput("on_evidence"), "on_evidence");
-  const outputDir = resolveOutputDirectory(root, readInput("output_directory") || "promiseproof-report");
-  const off = await readJsonFile(offPath, relative(root, offPath), "off_evidence");
-  const on = await readJsonFile(onPath, relative(root, onPath), "on_evidence");
+  const offInput = readPathInput("off_evidence");
+  const onInput = readPathInput("on_evidence");
+  const outputInput = readPathInput("output_directory") || "promiseproof-report";
+  const offPath = resolveExistingFile(root, offInput, "off_evidence");
+  const onPath = resolveExistingFile(root, onInput, "on_evidence");
+  const outputDir = resolveOutputDirectory(
+    root,
+    outputInput
+  );
+  await clearCanonicalReports(root, outputDir);
+  const off = await readJsonFile(offPath, "off_evidence", "INVALID_EVIDENCE", "gate");
+  const on = await readJsonFile(onPath, "on_evidence", "INVALID_EVIDENCE", "gate");
   const result = runGate(off, on);
   setOutput("evaluator_sha256", EVALUATOR_SOURCE_SHA256);
   if (result.outcome === "INVALID_EVIDENCE") {
     setOutput("status", "INVALID_EVIDENCE");
     appendSummary(actionHeader("gate", "INVALID_EVIDENCE"));
     appendSummary("Gate evidence failed strict validation. No report was produced.");
-    for (const issue2 of result.issues) appendSummary(`- ${issue2}`);
+    appendSummary(`Validation issue count: ${result.issues.length}.`);
     emit("error", "gate: evidence failed strict validation.");
     return { status: "INVALID_EVIDENCE", exitCode: 3 };
   }
@@ -15416,7 +15564,9 @@ async function runGateMode(root) {
   setOutput("on_evidence_sha256", report.inputBindings.on.sha256);
   setOutput("status", report.outcome);
   appendSummary(actionHeader("gate", report.outcome));
-  appendSummary(serializeGateReportMarkdown(report));
+  appendEvaluationSummary("OFF evaluation", report.evaluations.off);
+  appendEvaluationSummary("ON evaluation", report.evaluations.on);
+  appendSummary("Complete evidence-bound JSON and Markdown reports were written to the declared output paths.");
   if (report.outcome === "BROKEN_PROMISE") {
     emit("error", "gate: BROKEN_PROMISE. See the report for the failing clauses.");
     return { status: "BROKEN_PROMISE", exitCode: 2 };
@@ -15424,29 +15574,50 @@ async function runGateMode(root) {
   return { status: "PASS", exitCode: 0 };
 }
 async function runCheck(root) {
-  const reportPath = resolveExistingFile(root, readInput("report"), "report");
-  const report = await readJsonFile(reportPath, relative(root, reportPath), "report");
-  const evidenceInput = readInput("evidence");
-  const offInput = readInput("off_evidence");
-  const onInput = readInput("on_evidence");
+  const reportInput = readPathInput("report");
+  const evidenceInput = readPathInput("evidence");
+  const offInput = readPathInput("off_evidence");
+  const onInput = readPathInput("on_evidence");
+  const reportPath = resolveExistingFile(root, reportInput, "report");
+  const report = await readJsonFile(
+    reportPath,
+    "report",
+    "INVALID_REPORT_OR_EVIDENCE",
+    "check"
+  );
   setOutput("evaluator_sha256", EVALUATOR_SOURCE_SHA256);
   let status;
   if (evidenceInput !== "") {
     const evidencePath = resolveExistingFile(root, evidenceInput, "evidence");
-    const evidence = await readJsonFile(evidencePath, relative(root, evidencePath), "evidence");
+    const evidence = await readJsonFile(
+      evidencePath,
+      "evidence",
+      "INVALID_REPORT_OR_EVIDENCE",
+      "check"
+    );
     status = (await checkSingle(report, evidence)).status;
-    const derived = verifyBundle(evidence);
-    if (derived.outcome !== "INVALID_EVIDENCE") {
+    if (status !== "INVALID_REPORT_OR_EVIDENCE") {
+      const derived = verifyBundle(evidence);
       setOutput("evidence_sha256", (await createVerifyReport(derived)).inputBinding.sha256);
     }
   } else {
     const offPath = resolveExistingFile(root, offInput, "off_evidence");
     const onPath = resolveExistingFile(root, onInput, "on_evidence");
-    const off = await readJsonFile(offPath, relative(root, offPath), "off_evidence");
-    const on = await readJsonFile(onPath, relative(root, onPath), "on_evidence");
+    const off = await readJsonFile(
+      offPath,
+      "off_evidence",
+      "INVALID_REPORT_OR_EVIDENCE",
+      "check"
+    );
+    const on = await readJsonFile(
+      onPath,
+      "on_evidence",
+      "INVALID_REPORT_OR_EVIDENCE",
+      "check"
+    );
     status = (await checkGate(report, off, on)).status;
-    const derived = runGate(off, on);
-    if (derived.outcome !== "INVALID_EVIDENCE") {
+    if (status !== "INVALID_REPORT_OR_EVIDENCE") {
+      const derived = runGate(off, on);
       const derivedReport = await createGateReport(derived);
       setOutput("off_evidence_sha256", derivedReport.inputBindings.off.sha256);
       setOutput("on_evidence_sha256", derivedReport.inputBindings.on.sha256);
@@ -15493,22 +15664,35 @@ function selectMode() {
     }
     return "check";
   }
-  throw new ActionUsageError(`unknown mode: ${mode || "(empty)"}. Expected verify, gate, or check.`);
+  throw new ActionUsageError("unknown mode. Expected verify, gate, or check.");
 }
 async function main() {
   let dispatch;
+  let resolvedMode = null;
   try {
+    initializeOutputs();
     const mode = selectMode();
+    resolvedMode = mode;
     const root = workspaceRoot();
     setOutput("mode", mode);
     if (mode === "verify") dispatch = await runVerify(root);
     else if (mode === "gate") dispatch = await runGateMode(root);
     else dispatch = await runCheck(root);
   } catch (error51) {
-    const message = error51 instanceof Error ? error51.message : String(error51);
+    if (error51 instanceof ActionInvalidInputError) {
+      setOutput("status", error51.status);
+      appendSummary(actionHeader(error51.mode, error51.status));
+      appendSummary(
+        error51.status === "INVALID_EVIDENCE" ? "Evidence exceeded the strict input-size limit. No report was produced." : "A report or evidence file exceeded the strict input-size limit."
+      );
+      emit("error", `${error51.mode}: ${error51.status}.`);
+      process.exitCode = 3;
+      return;
+    }
+    const message = error51 instanceof ActionUsageError ? error51.message : "an unexpected execution failure occurred.";
     setOutput("status", "EXECUTION_ERROR");
     emit("error", `PromiseProof action error: ${message}`);
-    appendSummary(actionHeader(readInput("mode") || "unknown", "EXECUTION_ERROR"));
+    appendSummary(actionHeader(resolvedMode ?? "unknown", "EXECUTION_ERROR"));
     appendSummary("The action could not complete because of a usage or runtime error.");
     process.exitCode = 1;
     return;

@@ -178,6 +178,9 @@ jobs:
             > artifacts/verify/invalid.json
           test ! -e package.json || (echo "root package.json still present" && exit 1)
           test ! -d node_modules || (echo "node_modules still present" && exit 1)
+      - name: Exercise bundled Action symlink boundaries
+        shell: bash
+        run: node .github/consumer-smoke/symlink.mjs
       - name: Passing gate
         id: passgate
         uses: ./.github/actions/verify
