@@ -6,21 +6,52 @@
 
 **GPT-5.6 investigates. Codex repairs. Neither decides PASS.**
 
-Carry a broken product promise all the way through bounded diagnosis, constrained repair, and independent verification, where a deterministic test, *never a model*, decides PASS.
+A human approves the exact patch. An unchanged deterministic verifier decides whether the promise is actually fixed.
 
+[![CI](https://github.com/AlexPaiva/PromiseProof/actions/workflows/submission-hardening.yml/badge.svg)](https://github.com/AlexPaiva/PromiseProof/actions/workflows/submission-hardening.yml)
 [![OpenAI Build Week 2026](https://img.shields.io/badge/OpenAI-Build_Week_2026-10a37f)](https://openai.com)
 [![License: MIT](https://img.shields.io/badge/License-MIT-3f6bf0.svg)](LICENSE)
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178c6)](https://www.typescriptlang.org/)
 [![Playwright](https://img.shields.io/badge/Playwright-verified-2fa968)](https://playwright.dev/)
 [![Cloudflare Workers](https://img.shields.io/badge/hosted-Cloudflare_Workers-f38020)](https://workers.cloudflare.com/)
 
-**[▶ Live demo](https://promiseproof.alex0paiva0.workers.dev/)** · **[Judge Start Here](JUDGE_START_HERE.md)** · **[Judge walkthrough](https://promiseproof.alex0paiva0.workers.dev/walkthrough/)** · [How it works](#how-it-works) · [Quick start](#quick-start-the-judge-path)
+**[▶ Live demo](https://promiseproof.alex0paiva0.workers.dev/)** · **[⚡ Challenge the proof](https://promiseproof.alex0paiva0.workers.dev/verify/?judge=1)** · **[Judge Start Here](JUDGE_START_HERE.md)** · **[Walkthrough](https://promiseproof.alex0paiva0.workers.dev/walkthrough/)** · [How it works](#how-it-works) · [Run it in CI](#try-it-yourself)
 
 ![PromiseProof: find the boundary that broke the promise](public/og-card.png)
 
 </div>
 
 ---
+
+## The 30-second version
+
+1. **A user turned personalization off.** The interface, the browser storage, and the backend all reported the same thing: off.
+2. **One identifiable request still crossed into recommendations.** The product had quietly broken the promise it showed the user.
+3. **GPT-5.6 investigated within strict limits, Codex proposed a real source repair in isolation, and a human approved the exact change.**
+4. **The same unchanged test that caught the break decided whether the repair worked, not a model.** You can challenge that verdict yourself in the browser, and drop the identical check into your CI.
+
+Most tools confirm that your tests pass. PromiseProof answers the one question a model should never answer about its own work: *is the fix actually real?*
+
+## See the proof
+
+Two states of the hosted verifier. Same evaluator, no model in the verdict path, nothing uploaded.
+
+![PromiseProof verifier returning PASS with five passing clauses](docs/screenshots/03-unchanged-verifier.png)
+
+*The unchanged evaluator, running in your browser, returns **PASS** bound to this evidence. Five clauses hold across OFF, reload, and the ON control. The verdict path makes no model call.*
+
+![PromiseProof verifier after a tamper, showing BROKEN_PROMISE and a stale sealed report](docs/screenshots/04-challenge-and-ci.png)
+
+*Change one load-bearing observation and the same evaluator flips to **BROKEN_PROMISE** with `PP_IDENTIFIABLE_EVENT_LEAK`, while the report you sealed a moment ago no longer reproduces (**STALE_OR_MISMATCH**). A PASS cannot be carried onto changed evidence.*
+
+The first two beats, the broken promise and the bounded investigation, play in order in the [five-stage walkthrough](https://promiseproof.alex0paiva0.workers.dev/walkthrough/).
+
+<!-- Owner: to complete the four-image sequence, capture 01-broken-promise.png and 02-models-without-authority.png (1920x1080) during the walkthrough, drop them into docs/screenshots/, and uncomment:
+![The Observe stage: personalization OFF everywhere, yet one identifiable request crosses to recommendations](docs/screenshots/01-broken-promise.png)
+*The user selected OFF. One identifiable request still crossed the service boundary. That is the broken promise.*
+![The lifecycle: bounded GPT-5.6 investigation, isolated Codex repair, human approval](docs/screenshots/02-models-without-authority.png)
+*GPT-5.6 investigates inside a bounded dossier and Codex proposes the source repair. A human approves the exact patch. Neither model can write PASS.*
+-->
 
 ## The problem
 
@@ -32,20 +63,85 @@ It turns an "off means off" promise into an executable check, helps locate the i
 
 ### Who it is for
 
-PromiseProof is for product, QA, privacy, reliability, and platform engineers responsible for user-facing controls that cross browser, storage, network, and backend boundaries. It turns an ambiguous report like "OFF did not behave like OFF" into reproducible evidence and a bounded diagnostic action, so a team finds the responsible subsystem sooner.
+PromiseProof is for product, QA, privacy, reliability, and platform engineers responsible for user-facing controls that cross browser, storage, network, and backend boundaries. It turns an ambiguous report like "OFF did not behave like OFF" into reproducible evidence and a bounded diagnostic action, so a team finds the responsible subsystem sooner. As coding agents start changing repositories on their own, it also gives those teams an acceptance gate that is inspectable, human-approved, and reproducible in the CI they already trust.
 
-## What makes it different
+## Why this is more than a privacy test
+
+The personalization toggle is the proving example, not the limit of the idea. User-facing promises routinely cross the interface, storage, network, and backend at once, and every one of those surfaces can look locally correct while the combined behavior is wrong. A monitor can surface that contradiction. PromiseProof is what happens next: it carries the contradiction through bounded diagnosis, a real source repair, exact human approval, independent acceptance, full report reproduction, and CI enforcement, without ever letting the model that proposed the fix certify it. It supports one contract family today, `activity-personalization/v1`, and the mechanism is built to generalize; the honest scope is stated in [Limitations](#limitations).
+
+## Who decides it is fixed
 
 > **A model may investigate and repair. Deterministic evidence keeps the verdict.**
 
-The final investigation schema has **no verdict field**. GPT-5.6 proposes and ranks candidate causes and requests one *allowlisted* diagnostic replay; Codex proposes a constrained two-file repair in a disposable worktree; a human approves the exact patch by its fingerprint. Then an **unchanged Playwright journey and deterministic evaluator**, the very ones that caught the break, decide PASS or FAIL.
+The final investigation schema has **no verdict field**. GPT-5.6 proposes and ranks candidate causes and requests one *allowlisted* diagnostic replay. Codex proposes a constrained two-file repair in a disposable worktree. A human approves the exact patch by its fingerprint. Then an **unchanged Playwright journey and deterministic evaluator**, the very ones that caught the break, decide PASS or FAIL.
 
-The AI never grades its own work. That is the whole point.
+The AI never grades its own work. That is the whole point. The authority table and the tests that enforce it are in [JUDGE_START_HERE.md](JUDGE_START_HERE.md#the-model-cannot-award-itself-pass).
 
-## See it live
+## Why the patch is small
 
-- 🌐 **[promiseproof.alex0paiva0.workers.dev](https://promiseproof.alex0paiva0.workers.dev/)** hosts the landing page at `/` and the interactive judge walkthrough at `/walkthrough/`.
-- The walkthrough is a **recorded run** of one concrete synthetic failure and its approved repair, with no live model calls. It is reproducible without an API key once dependencies are installed.
+The approved repair is intentionally small, and that is the point. Generating two changed files is not the hard part. The hard part is proving that the correct implementation boundary changed, that the restricted OFF behavior is now protected, that the permitted ON behavior still works, that the applied patch is exactly what the human approved, and that neither model was able to certify its own code. A one-line fix carried through that chain proves more than a large patch a model graded itself.
+
+| Verified fact | Current release |
+| --- | --- |
+| Distinguishable seeded failures | 2 |
+| Allowlisted factual replays | 2 |
+| Authentic approved Codex repair | 1 |
+| Independent verification clauses | 5 |
+| Developer surfaces | Browser, CLI, GitHub Action |
+| Action runner operating systems | Windows, Ubuntu, macOS |
+| Model-owned verdicts | 0 |
+| Model calls in the verifier path | 0 |
+
+## Try it yourself
+
+Three ways in, none of them require an API key.
+
+**1. Watch the complete lifecycle.** The [five-stage walkthrough](https://promiseproof.alex0paiva0.workers.dev/walkthrough/) replays one authentic run: Observe, Investigate, Replay, Repair, Prove. The GPT-5.6 and Codex execution is authentic and recorded, not re-run live for remote judges.
+
+**2. Challenge the proof.** Open the **[hosted verifier](https://promiseproof.alex0paiva0.workers.dev/verify/?judge=1)** (no login, no key, everything runs in your browser):
+
+- On load: `PASS` and `BOUND_AND_REPRODUCED`.
+- Press **Tamper OFF evidence**: the same evaluator returns `BROKEN_PROMISE` with `PP_IDENTIFIABLE_EVENT_LEAK`, and the report you sealed a moment ago becomes `STALE_OR_MISMATCH`.
+- **Seal** the failing result: it binds honestly as `BROKEN_PROMISE`. A report can bind a failure; it cannot manufacture a PASS.
+- **Download report.json / report.md**, or load your own OFF and ON bundles under "Bring your own evidence."
+- **Reset** to return to the original PASS.
+
+**3. Run it in CI.** Drop the same verifier into any workflow with no `npm install`, no browser, and no key:
+
+```yaml
+- uses: AlexPaiva/PromiseProof/.github/actions/verify@submission-rc-03
+  with:
+    mode: gate
+    off_evidence: artifacts/personalization-off.json
+    on_evidence: artifacts/personalization-on.json
+    output_directory: artifacts/promiseproof
+```
+
+The step fails on `BROKEN_PROMISE` (exit 2) and still leaves `report.json` and `report.md` behind.
+
+**4. Reproduce a sealed receipt, with nothing to generate first.** The repo ships a committed report and the evidence it was computed from. After `npm ci`, regenerate that report byte for byte:
+
+```bash
+npm run promiseproof -- check \
+  --report artifacts/verify/passing-gate.report.json \
+  --off artifacts/verify/passing-off.example.json \
+  --on artifacts/verify/passing-on.example.json
+# BOUND_AND_REPRODUCED (exit 0)
+```
+
+Swap in the committed `artifacts/verify/broken-off.example.json` and `gate` returns `BROKEN_PROMISE` (exit 2). No `init`, no scaffolding, no key. Full CLI, exit codes, and exact scope are in [PromiseProof Verify](#try-promiseproof-verify) below.
+
+## What was built in one Build Week
+
+PromiseProof is new work, built July 14 to July 21, 2026, with a linear history a judge can walk from tag to tag:
+
+- **Jul 14** deterministic foundation: the synthetic app, the real browser-to-backend boundary, and the first seeded defect proven red.
+- **Jul 15** bounded GPT-5.6 investigation over a sanitized dossier.
+- **Jul 16** authentic, human-approved Codex source repair in a disposable worktree.
+- **Jul 17** CI hardening and the judge walkthrough experience.
+- **Jul 20 to 21** the public product: hosted verifier, external CLI, report reproduction, the cross-platform GitHub Action, and the judge and adoption guides.
+
+The full record, tags, and honest limitations are in [BUILD_WEEK.md](BUILD_WEEK.md).
 
 ## How it works
 
@@ -227,7 +323,7 @@ The full milestone record, live-receipt details, and limitations live in [`BUILD
 
 - **Signal Shelf is synthetic.** It exists to make one broken promise visible and repairable end to end; it is not a real product, and PromiseProof makes no legal or regulatory compliance claim.
 - The integrity evidence is **internal and repository-level**, not external provider attestation.
-- The current checkpoint is directly verified on **Windows 10 x64** with Node 22 and Playwright Chromium; macOS and Linux use the same cross-platform primitives but are not yet claimed as verified.
+- The full investigation-and-repair lifecycle and the elevated repair sandbox are directly verified on **Windows 10 x64** (Node 22, Playwright Chromium); macOS and Linux use the same cross-platform primitives but are not yet claimed as verified for that lifecycle. The reusable verifier surface a team actually adopts, the bundled **GitHub Action**, is exercised on **Windows, Ubuntu, and macOS** runners.
 - The authentic Codex repair provider is intentionally restricted to a trusted, administrator-provisioned elevated Windows sandbox and **fails closed**, so it never falls back to a weaker backend.
 
 ## License

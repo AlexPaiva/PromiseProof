@@ -1,5 +1,47 @@
 # PromiseProof Build Week Log
 
+## What PromiseProof shipped by 2026-07-21
+
+PromiseProof is a new OpenAI Build Week project, built July 14 to July 21, 2026. This section summarizes the finished release. The dated milestone log that follows is the original historical record.
+
+The finished release carries one broken product promise from symptom to proof:
+
+- a synthetic reference product with a real browser-to-backend HTTP boundary;
+- one user-facing "off means off" promise that crosses UI, storage, network, and backend;
+- two independent seeded defects that produce different evidence and different violation codes, so one flag cannot explain both and one fix cannot silence the other;
+- a bounded GPT-5.6 investigation over a sanitized, versioned dossier;
+- two allowlisted deterministic factual replays;
+- an authentic, human-approved Codex source repair;
+- exact, digest-bound human approval of the patch;
+- application only in a fresh disposable git worktree;
+- an unchanged deterministic verifier that alone decides PASS;
+- a five-stage hosted walkthrough of the recorded run;
+- external, evidence-only verification through a repository-local CLI;
+- deterministic JSON and Markdown reports, bound to the evaluator source by digest;
+- complete report reproduction that recomputes the report, not only its hashes;
+- a hosted semantic tamper challenge that runs entirely in the browser;
+- a reusable GitHub Action exercised on Windows, Ubuntu, and macOS runners;
+- public judge and adoption documentation.
+
+Timeline, tag by tag:
+
+- **Jul 14** baseline, the deterministic initialization-race proof, and the propagation-failure defect (`build-week-baseline`, `milestone-02-deterministic-foundation`).
+- **Jul 15** the bounded GPT-5.6 investigation layer (`milestone-03-gpt56-investigation`).
+- **Jul 16** the authentic Codex repair with human approval (`milestone-04-authentic-repair-proof`, `submission-hardening-01`).
+- **Jul 17** CI hardening and the judge experience (`ci-green-01`, `judge-rehearsal-01`, `judge-experience-01`).
+- **Jul 20 to 21** the public product: hosted verifier and CLI (PR #1), the reusable GitHub Action (PR #2), and the judge package (PR #3), tagged `submission-rc-01` through `submission-rc-03`.
+
+**Why one week matters.** Building this in a single week demonstrates execution speed and architectural closure: the complete working lifecycle, its tests, the authentic repair proof, the hosted product, the CLI, and the CI integration were all built and verified inside the submission period. It is not a claim of production maturity or third-party adoption. The honest scope and limitations are recorded below and in the [README](README.md#limitations).
+
+Start here:
+
+- [JUDGE_START_HERE.md](JUDGE_START_HERE.md)
+- [ADOPTION.md](ADOPTION.md)
+- Hosted walkthrough: https://promiseproof.alex0paiva0.workers.dev/walkthrough/
+- Hosted verifier: https://promiseproof.alex0paiva0.workers.dev/verify/?judge=1
+- Pull requests: [#1](https://github.com/AlexPaiva/PromiseProof/pull/1), [#2](https://github.com/AlexPaiva/PromiseProof/pull/2), [#3](https://github.com/AlexPaiva/PromiseProof/pull/3)
+- Submission tags: `submission-rc-01`, `submission-rc-02`, `submission-rc-03`
+
 ## Project baseline — 2026-07-14
 
 PromiseProof begins as a new OpenAI Build Week project. `AGENTS.md` is the canonical product and engineering specification.
