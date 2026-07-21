@@ -8,6 +8,7 @@
 
 A human approves the exact patch. An unchanged deterministic verifier decides whether the promise is actually fixed.
 
+[![CI](https://github.com/AlexPaiva/PromiseProof/actions/workflows/submission-hardening.yml/badge.svg)](https://github.com/AlexPaiva/PromiseProof/actions/workflows/submission-hardening.yml)
 [![OpenAI Build Week 2026](https://img.shields.io/badge/OpenAI-Build_Week_2026-10a37f)](https://openai.com)
 [![License: MIT](https://img.shields.io/badge/License-MIT-3f6bf0.svg)](LICENSE)
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178c6)](https://www.typescriptlang.org/)
@@ -116,7 +117,19 @@ Three ways in, none of them require an API key.
     output_directory: artifacts/promiseproof
 ```
 
-The step fails on `BROKEN_PROMISE` (exit 2) and still leaves `report.json` and `report.md` behind. Full CLI, exit codes, and exact scope are in [PromiseProof Verify](#try-promiseproof-verify) below.
+The step fails on `BROKEN_PROMISE` (exit 2) and still leaves `report.json` and `report.md` behind.
+
+**4. Reproduce a sealed receipt, with nothing to generate first.** The repo ships a committed report and the evidence it was computed from. After `npm ci`, regenerate that report byte for byte:
+
+```bash
+npm run promiseproof -- check \
+  --report artifacts/verify/passing-gate.report.json \
+  --off artifacts/verify/passing-off.example.json \
+  --on artifacts/verify/passing-on.example.json
+# BOUND_AND_REPRODUCED (exit 0)
+```
+
+Swap in the committed `artifacts/verify/broken-off.example.json` and `gate` returns `BROKEN_PROMISE` (exit 2). No `init`, no scaffolding, no key. Full CLI, exit codes, and exact scope are in [PromiseProof Verify](#try-promiseproof-verify) below.
 
 ## What was built in one Build Week
 

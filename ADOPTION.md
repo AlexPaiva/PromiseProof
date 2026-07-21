@@ -124,6 +124,37 @@ npm run promiseproof -- check \
 
 `check` also accepts a single report with `--report ... --evidence ...`.
 
+## Committed examples
+
+The repository ships a ready evidence set under `artifacts/verify/`, so you can reproduce a result without scaffolding anything first:
+
+- `passing-off.example.json`, `passing-on.example.json`: a passing OFF and ON pair.
+- `passing-gate.report.json`, `passing-gate.report.md`: the sealed gate report for that pair.
+- `broken-off.example.json`: an OFF bundle that breaks the promise.
+
+```bash
+# Regenerate the sealed report byte for byte:
+npm run promiseproof -- check \
+  --report artifacts/verify/passing-gate.report.json \
+  --off artifacts/verify/passing-off.example.json \
+  --on artifacts/verify/passing-on.example.json   # BOUND_AND_REPRODUCED (exit 0)
+
+# Watch a broken bundle fail the gate:
+npm run promiseproof -- gate \
+  --off artifacts/verify/broken-off.example.json \
+  --on artifacts/verify/passing-on.example.json   # BROKEN_PROMISE (exit 2)
+```
+
+## Programmatic use
+
+PromiseProof does not publish an npm package, and the verdict is not hidden behind a service. Inside a checkout, the entire verdict comes from one pure function, `evaluatePromise(evidence)` in `src/shared/evaluator.ts`: no network, no state, no model. This deterministic function is the authority that owns the verdict. The CLI, the GitHub Action, and the hosted browser verifier all call it, which is why their results are identical, and the models never call it or produce its output.
+
+```ts
+import { evaluatePromise } from "./src/shared/evaluator";
+
+const evaluation = evaluatePromise(evidence); // deterministic verdict, clause results, and violations
+```
+
 ## Reports
 
 `verify` and `gate` write two files to `--out`:
