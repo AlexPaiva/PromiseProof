@@ -1,0 +1,52 @@
+name: PromiseProof Verify
+description: >-
+  Reproducible, deterministic verification of one activity-personalization
+  product promise. No API key, no browser, and no model call in the verdict path.
+author: Alex Paiva
+branding:
+  icon: shield
+  color: blue
+inputs:
+  mode:
+    description: "verify, gate, or check."
+    required: true
+  evidence:
+    description: "Path to a single evidence bundle. Used by verify and single check."
+    required: false
+    default: ""
+  off_evidence:
+    description: "Path to the OFF evidence bundle. Used by gate and gate check."
+    required: false
+    default: ""
+  on_evidence:
+    description: "Path to the ON evidence bundle. Used by gate and gate check."
+    required: false
+    default: ""
+  report:
+    description: "Path to a report.json to reproduce. Used by check."
+    required: false
+    default: ""
+  output_directory:
+    description: "Directory that receives report.json and report.md. Used by verify and gate."
+    required: false
+    default: "promiseproof-report"
+outputs:
+  status:
+    description: "PASS, BROKEN_PROMISE, INVALID_EVIDENCE, BOUND_AND_REPRODUCED, STALE_OR_MISMATCH, INVALID_REPORT_OR_EVIDENCE, or EXECUTION_ERROR."
+  mode:
+    description: "The resolved mode."
+  report_json:
+    description: "Workspace-relative path to report.json, for verify and gate."
+  report_markdown:
+    description: "Workspace-relative path to report.md, for verify and gate."
+  evaluator_sha256:
+    description: "The pinned evaluator source SHA-256."
+  evidence_sha256:
+    description: "Evidence digest for verify or single check."
+  off_evidence_sha256:
+    description: "OFF evidence digest for gate or gate check."
+  on_evidence_sha256:
+    description: "ON evidence digest for gate or gate check."
+runs:
+  using: node20
+  main: dist/index.js

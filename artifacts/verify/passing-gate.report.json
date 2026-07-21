@@ -1,0 +1,69 @@
+{
+  "schemaVersion": "2",
+  "contractFamily": "activity-personalization/v1",
+  "outcome": "PASS",
+  "inputBindings": {
+    "off": {
+      "canonicalization": "promiseproof-canonical-json/v1",
+      "algorithm": "SHA-256",
+      "sha256": "ec899c353c8808392a2d5bc820870a78c95ff31bdc0cf6f6e350274bb65cf0d6"
+    },
+    "on": {
+      "canonicalization": "promiseproof-canonical-json/v1",
+      "algorithm": "SHA-256",
+      "sha256": "dc211e0a71396caa7bd7aa4765143158c6cb4e1c0c4fbee4f34d8772d7195a3c"
+    }
+  },
+  "evaluations": {
+    "off": {
+      "scenario": "off",
+      "canonicalVerdict": "pass",
+      "clauses": [
+        {
+          "id": "no_identifiable_activity",
+          "passed": true,
+          "expected": "0 identifiable activity requests and 0 receipts at the recommendation service",
+          "observed": "0 captured request(s), 0 backend receipt(s)"
+        },
+        {
+          "id": "contextual_feed_functional",
+          "passed": true,
+          "expected": "a non-empty contextual recommendation feed",
+          "observed": "contextual feed with 1 item(s); backend receipt match=true"
+        },
+        {
+          "id": "preference_survives_reload",
+          "passed": true,
+          "expected": "a witnessed reload followed by OFF in the UI, browser storage, and backend",
+          "observed": "reload=true, ui=off, toggleChecked=false, storage=off, backend=off"
+        }
+      ],
+      "violations": []
+    },
+    "on": {
+      "scenario": "on",
+      "canonicalVerdict": "pass",
+      "clauses": [
+        {
+          "id": "expected_activity_received",
+          "passed": true,
+          "expected": "activity for article-atlas-reader-001 at the recommendation service",
+          "observed": "1 captured request(s), 1 backend receipt(s), correlated=true"
+        },
+        {
+          "id": "behavioral_feed_functional",
+          "passed": true,
+          "expected": "a non-empty behavioral recommendation feed",
+          "observed": "behavioral feed with 1 item(s); backend receipt match=true"
+        }
+      ],
+      "violations": []
+    }
+  },
+  "authority": {
+    "evidenceSource": "externally-supplied",
+    "collectionAttested": false,
+    "evaluation": "deterministic-promiseproof-evaluator",
+    "evaluatorSourceSha256": "fca20925861d1de2772ad0297a2465029678c4f34faa7a4755592f37aef9f87f"
+  }
+}

@@ -129,6 +129,19 @@ npm run promiseproof -- check \
 - `verify` and `gate` exit `0` PASS, `2` BROKEN_PROMISE, `3` INVALID_EVIDENCE, `1` usage or execution error.
 - `check` exits `0` BOUND_AND_REPRODUCED, `4` STALE_OR_MISMATCH, `3` INVALID_REPORT_OR_EVIDENCE, `1` usage or execution error.
 
+**GitHub Action**, drop the verifier into any workflow with no `npm install`, browser, or key:
+
+```yaml
+- uses: AlexPaiva/PromiseProof/.github/actions/verify@main
+  with:
+    mode: gate
+    off_evidence: artifacts/personalization-off.json
+    on_evidence: artifacts/personalization-on.json
+    output_directory: artifacts/promiseproof
+```
+
+The step fails on `BROKEN_PROMISE` and still leaves `report.json` and `report.md` behind. Replace `@main` with an immutable release tag once one contains the Action. Details in the [Action README](.github/actions/verify/README.md).
+
 What it is, stated exactly:
 
 - One supported contract family: `activity-personalization/v1`.
