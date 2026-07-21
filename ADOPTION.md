@@ -204,6 +204,25 @@ npm run test:verify:judge      # hosted Judge Mode, privacy, browser/CLI parity
 
 You can run the same commands in your own CI to gate a change against the contract.
 
+## GitHub Action
+
+A bundled GitHub Action runs the same frozen verifier in a workflow with no `npm install`, no browser, no API key, and no model call in the verdict path. It supports three modes.
+
+Gate an OFF and an ON bundle:
+
+```yaml
+- uses: AlexPaiva/PromiseProof/.github/actions/verify@main
+  with:
+    mode: gate
+    off_evidence: artifacts/personalization-off.json
+    on_evidence: artifacts/personalization-on.json
+    output_directory: artifacts/promiseproof
+```
+
+`mode: verify` takes a single `evidence` bundle. `mode: check` takes a `report` with either `evidence`, or both `off_evidence` and `on_evidence`, and reproduces the complete report rather than trusting its hashes.
+
+The step exposes `status`, `mode`, the report paths, the evaluator fingerprint, and the evidence digests as outputs, written before the step fails so a `continue-on-error` consumer can read them. A `BROKEN_PROMISE` fails the step and still leaves `report.json` and `report.md`. The Action is bundled into one committed file and is exercised on Windows, Ubuntu, and macOS runners by a consumer smoke job that first removes the repository source and `node_modules`, proving it depends on neither. Full reference: [.github/actions/verify/README.md](.github/actions/verify/README.md).
+
 ## Trust boundaries
 
 Four distinct layers, kept separate on purpose:
@@ -224,7 +243,6 @@ Four distinct layers, kept separate on purpose:
 
 Not promised, and none of it blocks the current release:
 
-- A repository GitHub Action wrapping the CLI, to make the check easy to drop into another project's CI.
-- Verification on macOS and Linux runners.
+- Verification of the CLI itself on macOS and Linux runners.
 
-PromiseProof does not promise package publication, arbitrary evidence collection, arbitrary promise contracts, or external provenance.
+PromiseProof does not promise Marketplace publication, npm package publication, arbitrary evidence collection, arbitrary promise contracts, or external provenance.

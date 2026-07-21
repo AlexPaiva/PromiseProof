@@ -1,5 +1,8 @@
 node_modules/
 dist/
+# The committed PromiseProof Action bundle must be tracked despite the dist/ rule.
+!.github/actions/verify/dist/
+!.github/actions/verify/dist/index.js
 test-results/
 playwright-report/
 blob-report/

@@ -1,0 +1,7 @@
+{
+  "name": "promiseproof-verify-action",
+  "private": true,
+  "type": "commonjs",
+  "description": "Bundled PromiseProof Verify GitHub Action. The committed dist/index.js is generated; run `npm run build:action` from the repository root to regenerate it.",
+  "main": "dist/index.js"
+}

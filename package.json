@@ -63,7 +63,10 @@
     "repair:race:verify": "node ./node_modules/tsx/dist/cli.mjs scripts/repair-race.ts verify",
     "repair:race:cleanup": "node ./node_modules/tsx/dist/cli.mjs scripts/repair-race.ts cleanup",
     "repair:race:recover-lock": "node ./node_modules/tsx/dist/cli.mjs scripts/repair-race.ts recover-lock",
-    "build:site": "node scripts/build-site.mjs"
+    "build:site": "node scripts/build-site.mjs",
+    "build:action": "esbuild src/action/index.ts --bundle --platform=node --target=node20 --format=cjs --outfile=.github/actions/verify/dist/index.js",
+    "check:action-bundle": "node scripts/check-action-bundle.mjs",
+    "test:action": "tsx --test tests/action/action.unit.ts tests/action/fixture.unit.ts"
   },
   "dependencies": {
     "@openai/codex-sdk": "0.144.4",

@@ -40,6 +40,8 @@ jobs:
       - run: npm run build
       - run: npm run evidence:verify
       - run: npm run test:external
+      - run: npm run check:action-bundle
+      - run: npm run test:action
       - run: npm run test:evidence:unit
       - run: npm run test:investigation:unit
       - run: npm run test:investigation:offline
@@ -152,3 +154,113 @@ jobs:
           path: test-results/
           if-no-files-found: ignore
           retention-days: 7
+
+  action-consumer:
+    name: Action consumer (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Strip repository source and dependencies
+        shell: bash
+        run: |
+          rm -rf src node_modules tests scripts dist package.json package-lock.json \
+            tsconfig.json vite.config.ts playwright.config.ts index.html judge.html \
+            verify.html landing public
+          echo '{"schemaVersion":"1","contractFamily":"wrong/family","evidence":{}}' \
+            > artifacts/verify/invalid.json
+          test ! -e package.json || (echo "root package.json still present" && exit 1)
+          test ! -d node_modules || (echo "node_modules still present" && exit 1)
+      - name: Exercise bundled Action symlink boundaries
+        shell: bash
+        run: node .github/consumer-smoke/symlink.mjs
+      - name: Passing gate
+        id: passgate
+        uses: ./.github/actions/verify
+        with:
+          mode: gate
+          off_evidence: artifacts/verify/passing-off.example.json
+          on_evidence: artifacts/verify/passing-on.example.json
+          output_directory: artifacts/promiseproof
+      - name: Assert passing gate
+        shell: bash
+        env:
+          STATUS: ${{ steps.passgate.outputs.status }}
+          REPORT_JSON: ${{ steps.passgate.outputs.report_json }}
+          REPORT_MD: ${{ steps.passgate.outputs.report_markdown }}
+          EVALUATOR_SHA: ${{ steps.passgate.outputs.evaluator_sha256 }}
+          OFF_SHA: ${{ steps.passgate.outputs.off_evidence_sha256 }}
+          ON_SHA: ${{ steps.passgate.outputs.on_evidence_sha256 }}
+        run: node .github/consumer-smoke/assert.mjs pass-gate
+      - name: Broken gate
+        id: brokengate
+        continue-on-error: true
+        uses: ./.github/actions/verify
+        with:
+          mode: gate
+          off_evidence: artifacts/verify/broken-off.example.json
+          on_evidence: artifacts/verify/passing-on.example.json
+          output_directory: artifacts/promiseproof-broken
+      - name: Assert broken gate fails closed with reports
+        shell: bash
+        env:
+          OUTCOME: ${{ steps.brokengate.outcome }}
+          STATUS: ${{ steps.brokengate.outputs.status }}
+          REPORT_JSON: ${{ steps.brokengate.outputs.report_json }}
+        run: |
+          if [ "$OUTCOME" != "failure" ]; then echo "broken gate step should fail"; exit 1; fi
+          node .github/consumer-smoke/assert.mjs broken-gate
+      - name: Check reproduces the committed fixture
+        id: checkbound
+        uses: ./.github/actions/verify
+        with:
+          mode: check
+          report: artifacts/verify/passing-gate.report.json
+          off_evidence: artifacts/verify/passing-off.example.json
+          on_evidence: artifacts/verify/passing-on.example.json
+      - name: Assert check bound
+        shell: bash
+        env:
+          STATUS: ${{ steps.checkbound.outputs.status }}
+        run: node .github/consumer-smoke/assert.mjs check-bound
+      - name: Check against changed evidence
+        id: checkstale
+        continue-on-error: true
+        uses: ./.github/actions/verify
+        with:
+          mode: check
+          report: artifacts/verify/passing-gate.report.json
+          off_evidence: artifacts/verify/broken-off.example.json
+          on_evidence: artifacts/verify/passing-on.example.json
+      - name: Assert check stale
+        shell: bash
+        env:
+          OUTCOME: ${{ steps.checkstale.outcome }}
+          STATUS: ${{ steps.checkstale.outputs.status }}
+        run: |
+          if [ "$OUTCOME" != "failure" ]; then echo "stale check step should fail"; exit 1; fi
+          node .github/consumer-smoke/assert.mjs check-stale
+      - name: Invalid evidence
+        id: invalid
+        continue-on-error: true
+        uses: ./.github/actions/verify
+        with:
+          mode: verify
+          evidence: artifacts/verify/invalid.json
+          output_directory: artifacts/promiseproof-invalid
+      - name: Assert invalid evidence
+        shell: bash
+        env:
+          OUTCOME: ${{ steps.invalid.outcome }}
+          STATUS: ${{ steps.invalid.outputs.status }}
+          REPORT_JSON: artifacts/promiseproof-invalid/report.json
+        run: |
+          if [ "$OUTCOME" != "failure" ]; then echo "invalid evidence step should fail"; exit 1; fi
+          node .github/consumer-smoke/assert.mjs invalid
