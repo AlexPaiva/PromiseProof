@@ -125,7 +125,7 @@ function offFacts(ev: WorkEvidence): Fact[] {
   const captured = ev.activity.capturedActivities.length;
   const receipts = ev.activity.recommendationServiceReceipts.length;
   return [
-    { k: "Scenario", v: "OFF — personalization off" },
+    { k: "Scenario", v: "OFF, personalization off" },
     { k: "Subject", v: ev.subjectId },
     {
       k: "Preference (ui / stored / backend)",
@@ -142,7 +142,7 @@ function offFacts(ev: WorkEvidence): Fact[] {
 }
 function onFacts(ev: WorkEvidence): Fact[] {
   return [
-    { k: "Scenario", v: "ON — personalization on" },
+    { k: "Scenario", v: "ON, personalization on" },
     { k: "Subject", v: ev.subjectId },
     {
       k: "Preference (ui / stored / backend)",
@@ -224,7 +224,7 @@ function renderViolations(list: HTMLElement, violations: readonly ViolationLike[
   list.replaceChildren();
   if (violations.length === 0) {
     list.className = "vf-violations empty";
-    list.append(tag("li", undefined, "Promise verified — no violations."));
+    list.append(tag("li", undefined, "Promise verified, no violations."));
     return;
   }
   list.className = "vf-violations";
@@ -232,7 +232,7 @@ function renderViolations(list: HTMLElement, violations: readonly ViolationLike[
     const item = tag("li");
     item.append(
       tag("code", undefined, violation.code),
-      document.createTextNode(` (${violation.clause}) — ${violation.message}`),
+      document.createTextNode(` (${violation.clause}): ${violation.message}`),
     );
     list.append(item);
   }
@@ -259,13 +259,13 @@ function noteFor(outcome: string, repro: string, tampered: boolean): string {
     return "This evidence does not pass strict validation, so the deterministic evaluator does not run on it.";
   }
   if (outcome === "PASS" && repro === "BOUND_AND_REPRODUCED") {
-    return "PASS. The deterministic evaluator verified the promise over the recorded evidence, and the sealed report reproduces exactly from it. No model graded this — an unchanged evaluator did.";
+    return "PASS. The deterministic evaluator verified the promise over the recorded evidence, and the sealed report reproduces exactly from it. No model graded this. An unchanged evaluator did.";
   }
   if (outcome === "BROKEN_PROMISE" && repro !== "BOUND_AND_REPRODUCED") {
-    return "Broken promise. Identifiable activity is present in the OFF evidence, so the same evaluator now fails no_identifiable_activity and raises PP_IDENTIFIABLE_EVENT_LEAK. The report sealed a moment ago no longer reproduces from this evidence — a PASS cannot be silently carried onto changed evidence.";
+    return "Broken promise. Identifiable activity is present in the OFF evidence, so the same evaluator now fails no_identifiable_activity and raises PP_IDENTIFIABLE_EVENT_LEAK. The report sealed a moment ago no longer reproduces from this evidence. A PASS cannot be silently carried onto changed evidence.";
   }
   if (outcome === "BROKEN_PROMISE" && repro === "BOUND_AND_REPRODUCED") {
-    return "Broken promise, sealed honestly. A new report was sealed for the current evidence and it reproduces — as BROKEN_PROMISE. Sealing binds whatever is true; it cannot manufacture a PASS.";
+    return "Broken promise, sealed honestly. A new report was sealed for the current evidence and it reproduces, as BROKEN_PROMISE. Sealing binds whatever is true; it cannot manufacture a PASS.";
   }
   if (tampered) {
     return "The evidence changed. Re-evaluate it, and verify the sealed report against it.";
@@ -324,8 +324,8 @@ const APP_HTML = `
       <div class="vf-result" style="margin-top:20px">
         <div id="vf-live" role="status" aria-live="polite">
           <div class="vf-verdict">
-            <span class="vf-pill" id="vf-outcome" data-testid="outcome-pill"><span class="vf-pill-label">Current evidence</span>—</span>
-            <span class="vf-pill" id="vf-repro" data-testid="repro-pill"><span class="vf-pill-label">Sealed report</span>—</span>
+            <span class="vf-pill" id="vf-outcome" data-testid="outcome-pill"><span class="vf-pill-label">Current evidence</span></span>
+            <span class="vf-pill" id="vf-repro" data-testid="repro-pill"><span class="vf-pill-label">Sealed report</span></span>
           </div>
           <p class="vf-result-note" id="vf-note" data-testid="result-note"></p>
         </div>
@@ -386,7 +386,7 @@ const APP_HTML = `
       </div>
       <div class="vf-result" style="margin-top:16px" id="vf-byo-result" hidden>
         <div class="vf-verdict">
-          <span class="vf-pill" id="vf-byo-outcome" data-testid="byo-outcome"><span class="vf-pill-label">Local evidence</span>—</span>
+          <span class="vf-pill" id="vf-byo-outcome" data-testid="byo-outcome"><span class="vf-pill-label">Local evidence</span></span>
         </div>
         <ul class="vf-issues" id="vf-byo-issues" hidden></ul>
         <table class="vf-clauses" id="vf-byo-table" hidden>
@@ -405,7 +405,7 @@ const APP_HTML = `
     <div class="vf-panel-body">
       <p><strong>What it proves.</strong> The verdict comes from one deterministic evaluator whose source is fingerprinted above. The AI that diagnoses and repairs the promise never writes PASS; this unchanged evaluator does, and you can re-derive it here or from the CLI and get the same answer.</p>
       <p><strong>Tamper-evidence.</strong> A sealed report is bound to the exact evidence it was computed from. Change the evidence and the report no longer reproduces (STALE_OR_MISMATCH); you can only ever seal what is actually true.</p>
-      <p><strong>What it does not claim.</strong> Evidence is externally supplied and, here, synthetic. PromiseProof does not attest how evidence was collected — only that a bundle which passes strict validation is evaluated deterministically. Full loop and source: <a href="https://github.com/AlexPaiva/PromiseProof">github.com/AlexPaiva/PromiseProof</a>.</p>
+      <p><strong>What it does not claim.</strong> Evidence is externally supplied and, here, synthetic. PromiseProof does not attest how evidence was collected, only that a bundle which passes strict validation is evaluated deterministically. Full loop and source: <a href="https://github.com/AlexPaiva/PromiseProof">github.com/AlexPaiva/PromiseProof</a>.</p>
     </div>
   </section>
 `;
@@ -613,7 +613,7 @@ function wireFile(
     byId("vf-byo-result").hidden = true;
     if (file.size > MAX_INPUT_BYTES) {
       const issue = `<root>: input exceeds ${MAX_INPUT_BYTES}-byte limit`;
-      nameEl.textContent = `${file.name} — rejected`;
+      nameEl.textContent = `${file.name} (rejected)`;
       input.value = "";
       renderByoInvalid(issue);
       toast("That file exceeds the verifier input-size limit.");
