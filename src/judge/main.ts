@@ -516,7 +516,7 @@ function renderInvestigate(data: JudgeData): HTMLElement {
     element(
       "p",
       "replay-caption",
-      "A registered replay is one allowlisted factual experiment the model can request; deterministic code runs it and records the facts. This recorded replay confirms the leading explanation — it does not decide the verdict.",
+      "A registered replay is one allowlisted factual experiment the model can request; deterministic code runs it and records the facts. This recorded replay confirms the leading explanation, but it does not decide the verdict.",
     ),
   );
   fork.append(down);
@@ -658,7 +658,7 @@ function renderReplay(data: JudgeData): HTMLElement {
   section.append(toolbar);
 
   // The reveal is a fresh CSS animation on mount, so re-rendering these nodes
-  // replays it on demand — the crossing is the one moment judges should see move.
+  // replays it on demand. The crossing is the one moment judges should see move.
   // `data-replaying` marks the explicit "Play the crossing" click: under
   // prefers-reduced-motion the crossing stays still on stage entry (honoring the
   // preference) and only animates when the user actually asks for it.
@@ -1252,7 +1252,7 @@ function start(): void {
       return;
     }
     stageHost.replaceChildren(definition.render(data));
-    // Marks that the DOM now holds THIS stage — the signal transitions settle on.
+    // Marks that the DOM now holds THIS stage. The signal transitions settle on.
     root.dataset.rendered = stage;
     if (focus) {
       stageHost.focus();
@@ -1294,7 +1294,7 @@ function start(): void {
       return;
     }
 
-    // Ease the outgoing content out, swap, then ease the incoming content in —
+    // Ease the outgoing content out, swap, then ease the incoming content in,
     // a real crossfade instead of a hard cut.
     stageHost.classList.remove("is-entering");
     stageHost.classList.add("is-leaving");
