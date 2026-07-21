@@ -311,14 +311,26 @@ const APP_HTML = `
         </div>
       </div>
 
-      <div class="vf-actions" style="margin-top:18px">
-        <button type="button" class="vf-btn vf-btn-tamper" id="vf-tamper" data-testid="tamper" title="Add one identifiable request to the OFF evidence, the way the seeded defect would.">Tamper OFF evidence</button>
-        <button type="button" class="vf-btn vf-btn-primary" id="vf-evaluate" data-testid="evaluate" title="Re-run the deterministic evaluator on the evidence shown above.">Evaluate current evidence</button>
-        <button type="button" class="vf-btn" id="vf-check" data-testid="check" title="Re-derive the sealed report from the current evidence and check that it reproduces.">Verify loaded report</button>
-        <button type="button" class="vf-btn" id="vf-seal" data-testid="seal" title="Bind a report to exactly the evidence shown now.">Seal current result</button>
-        <button type="button" class="vf-btn vf-btn-quiet" id="vf-reset" data-testid="reset" title="Restore the original passing OFF and ON evidence.">Reset passing example</button>
-        <button type="button" class="vf-btn vf-btn-quiet" id="vf-dl-json" title="Download the machine-readable report for the current evidence.">Download report.json</button>
-        <button type="button" class="vf-btn vf-btn-quiet" id="vf-dl-md" title="Download the human-readable report for the current evidence.">Download report.md</button>
+      <div class="vf-try" data-testid="try-panel">
+        <span class="vf-try-badge">&#9654; Try it here</span>
+        <p class="vf-try-lede">This is the live control panel, and it opens at <b>PASS</b>. Break the evidence, watch the same deterministic evaluator flip the verdict, then seal or download the proof. Nothing you do here leaves the page.</p>
+        <ol class="vf-try-steps">
+          <li><b>Tamper OFF evidence</b> to inject one identifiable request, the way the seeded bug would.</li>
+          <li>The same evaluator returns <b>BROKEN_PROMISE</b> (<code>PP_IDENTIFIABLE_EVENT_LEAK</code>), and the report you sealed a moment ago goes <b>STALE_OR_MISMATCH</b>.</li>
+          <li><b>Seal current result</b> to bind the honest failure, or <b>Download</b> the JSON and Markdown proof.</li>
+          <li><b>Reset passing example</b> to return to the original PASS.</li>
+        </ol>
+        <p class="vf-try-hint">The buttons below are live. Hover any button for a one-line description of what it does.</p>
+        <div class="vf-actions" style="margin-top:14px">
+          <button type="button" class="vf-btn vf-btn-tamper" id="vf-tamper" data-testid="tamper" title="Add one identifiable request to the OFF evidence, the way the seeded defect would.">Tamper OFF evidence</button>
+          <button type="button" class="vf-btn vf-btn-primary" id="vf-evaluate" data-testid="evaluate" title="Re-run the deterministic evaluator on the evidence shown above.">Evaluate current evidence</button>
+          <button type="button" class="vf-btn" id="vf-check" data-testid="check" title="Re-derive the sealed report from the current evidence and check that it reproduces.">Verify loaded report</button>
+          <button type="button" class="vf-btn" id="vf-seal" data-testid="seal" title="Bind a report to exactly the evidence shown now.">Seal current result</button>
+          <button type="button" class="vf-btn vf-btn-quiet" id="vf-reset" data-testid="reset" title="Restore the original passing OFF and ON evidence.">Reset passing example</button>
+          <span class="vf-actions-div" aria-hidden="true"></span>
+          <button type="button" class="vf-btn vf-btn-quiet" id="vf-dl-json" title="Download the machine-readable report for the current evidence.">Download report.json</button>
+          <button type="button" class="vf-btn vf-btn-quiet" id="vf-dl-md" title="Download the human-readable report for the current evidence.">Download report.md</button>
+        </div>
       </div>
 
       <div class="vf-result" style="margin-top:20px">
